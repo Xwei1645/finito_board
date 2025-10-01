@@ -5,18 +5,28 @@ import 'package:flutter/material.dart';
 import 'package:flutter_localizations/flutter_localizations.dart';
 import 'package:flutter_quill/flutter_quill.dart';
 import 'package:window_manager/window_manager.dart';
+import 'package:launch_at_startup/launch_at_startup.dart';
+import 'package:win32/win32.dart' as win32;
 import 'models/subject.dart';
 import 'models/homework.dart';
 import 'widgets/homework_card.dart';
 import 'widgets/subject_header.dart';
 import 'widgets/homework_editor.dart';
 import 'widgets/empty_state.dart';
+import 'widgets/settings_window.dart';
 
 void main() async {
   WidgetsFlutterBinding.ensureInitialized();
   
   if (!kIsWeb && (Platform.isWindows || Platform.isLinux || Platform.isMacOS)) {
     await windowManager.ensureInitialized();
+    
+    // 初始化开机自启功能
+    launchAtStartup.setup(
+      appName: "FinitoBoard",
+      appPath: Platform.resolvedExecutable,
+      packageName: 'dev.xwei1645.finitoboard',
+    );
     
     WindowOptions windowOptions = const WindowOptions(
       size: Size(1200, 800),
@@ -107,16 +117,44 @@ class _HomeworkBoardState extends State<HomeworkBoard> {
   
   // 拖动状态
   bool _isDragging = false;
+  
+  // 开机自启状态
+  bool _isAutoStart = false;
+  
+  // 窗口置底状态
+  bool _isAlwaysOnBottom = false;
+  
+  // 窗口置底维持定时器
+  Timer? _alwaysOnBottomTimer;
 
   @override
   void initState() {
     super.initState();
     _distributeHomeworksToColumns();
+    _checkAutoStartStatus();
+  }
+  
+  // 检查开机自启状态
+  void _checkAutoStartStatus() async {
+    if (!kIsWeb && (Platform.isWindows || Platform.isLinux || Platform.isMacOS)) {
+      try {
+        bool isEnabled = await launchAtStartup.isEnabled();
+        setState(() {
+          _isAutoStart = isEnabled;
+        });
+      } catch (e) {
+        // 如果检查失败，默认为false
+        setState(() {
+          _isAutoStart = false;
+        });
+      }
+    }
   }
 
   @override
   void dispose() {
     _selectionTimer?.cancel();
+    _stopAlwaysOnBottomTimer();
     super.dispose();
   }
 
@@ -191,7 +229,7 @@ class _HomeworkBoardState extends State<HomeworkBoard> {
           _isFullScreen = false;
         });
       }
-      _showCustomSnackBar('窗口已解锁，可调整大小和拖动');
+      _showCustomSnackBar('窗口已解锁，可调整大小或按住底部操纵杆拖动窗口');
     }
   }
 
@@ -207,6 +245,8 @@ class _HomeworkBoardState extends State<HomeworkBoard> {
       });
     }
   }
+
+
 
   void _onEditHomework(String homeworkId) {
     Homework? homeworkToEdit;
@@ -472,15 +512,6 @@ class _HomeworkBoardState extends State<HomeworkBoard> {
           ),
           const SizedBox(width: 4),
           _buildToolbarButton(
-            icon: Icons.settings,
-            onPressed: () {
-              // TODO: 实现设置功能
-              _showCustomSnackBar('设置功能待实现');
-            },
-            tooltip: '设置',
-          ),
-          const SizedBox(width: 4),
-          _buildToolbarButton(
             icon: Icons.menu,
             onPressed: _toggleQuickMenu,
             tooltip: '快捷菜单',
@@ -523,7 +554,7 @@ class _HomeworkBoardState extends State<HomeworkBoard> {
   // 构建快捷菜单
   Widget _buildQuickMenu() {
     return Container(
-      width: 200,
+      width: 220,
       padding: const EdgeInsets.all(12),
       decoration: BoxDecoration(
         color: Colors.white,
@@ -541,72 +572,151 @@ class _HomeworkBoardState extends State<HomeworkBoard> {
         mainAxisSize: MainAxisSize.min,
         crossAxisAlignment: CrossAxisAlignment.start,
         children: [
-          // 窗口锁定控制
+          // 更多选项
+          _buildMenuButton(
+            icon: Icons.more_horiz,
+            text: '更多选项...',
+            onPressed: _openSettingsWindow,
+          ),
+          const SizedBox(height: 12),
+          // 窗口控制
           _buildMenuSection(
             title: '窗口控制',
-            child: _buildMenuButton(
-              icon: _isWindowLocked ? Icons.lock : Icons.lock_open,
-              text: _isWindowLocked ? '解锁窗口' : '锁定窗口',
-              onPressed: _toggleWindowLock,
-            ),
-          ),
-          const SizedBox(height: 12),
-          // 界面缩放
-          _buildMenuSection(
-            title: '界面缩放',
             child: Row(
               children: [
-                _buildScaleButton(
-                  icon: Icons.remove,
-                  onPressed: () => _adjustScale(-10),
-                ),
-                const SizedBox(width: 8),
                 Expanded(
-                  child: Text(
-                    '${_scaleFactor.toInt()}%',
-                    textAlign: TextAlign.center,
-                    style: const TextStyle(
-                      fontSize: 14,
-                      fontWeight: FontWeight.w500,
-                    ),
+                  child: _buildMenuButton(
+                    icon: _isWindowLocked ? Icons.lock_open : Icons.lock,
+                    text: _isWindowLocked ? '解锁' : '锁定',
+                    onPressed: _toggleWindowLock,
                   ),
                 ),
                 const SizedBox(width: 8),
-                _buildScaleButton(
-                  icon: Icons.add,
-                  onPressed: () => _adjustScale(10),
+                Expanded(
+                  child: _buildMenuButton(
+                    icon: Icons.picture_in_picture_alt,
+                    text: '收起',
+                    onPressed: () {
+                      // TODO: 实现收起功能
+                    },
+                  ),
                 ),
               ],
             ),
           ),
           const SizedBox(height: 12),
-          // 作业列数
+          // 编辑选项
           _buildMenuSection(
-            title: '作业列数',
+            title: '编辑...',
             child: Row(
               children: [
-                _buildScaleButton(
-                  icon: Icons.remove,
-                  onPressed: () => _adjustColumnCount(-1),
-                ),
-                const SizedBox(width: 8),
                 Expanded(
-                  child: Text(
-                    '$_columnCount 列',
-                    textAlign: TextAlign.center,
-                    style: const TextStyle(
-                      fontSize: 14,
-                      fontWeight: FontWeight.w500,
-                    ),
+                  child: _buildMenuButton(
+                    icon: Icons.subject,
+                    text: '科目',
+                    onPressed: () {
+                      // TODO: 实现科目编辑功能
+                    },
                   ),
                 ),
                 const SizedBox(width: 8),
-                _buildScaleButton(
-                  icon: Icons.add,
-                  onPressed: () => _adjustColumnCount(1),
+                Expanded(
+                  child: _buildMenuButton(
+                    icon: Icons.label,
+                    text: '标签',
+                    onPressed: () {
+                      // TODO: 实现标签编辑功能
+                    },
+                  ),
                 ),
               ],
             ),
+          ),
+          const SizedBox(height: 12),
+          // 界面设置
+          _buildMenuSection(
+            title: '界面设置',
+            child: Column(
+              children: [
+              // 界面缩放
+              Row(
+                children: [
+                  Text(
+                    '界面缩放',
+                    style: TextStyle(
+                      fontSize: 12,
+                      color: Colors.grey[700],
+                    ),
+                  ),
+                  const Spacer(),
+                  _buildScaleButton(
+                    icon: Icons.remove,
+                    onPressed: () => _adjustScale(-10),
+                  ),
+                  const SizedBox(width: 8),
+                  SizedBox(
+                    width: 50,
+                    child: Text(
+                      '${_scaleFactor.toInt()}%',
+                      textAlign: TextAlign.center,
+                      style: const TextStyle(
+                        fontSize: 12,
+                        fontWeight: FontWeight.w500,
+                      ),
+                    ),
+                  ),
+                  const SizedBox(width: 8),
+                  _buildScaleButton(
+                    icon: Icons.add,
+                    onPressed: () => _adjustScale(10),
+                  ),
+                ],
+              ),
+              const SizedBox(height: 8),
+              // 作业列数
+              Row(
+                children: [
+                  Text(
+                    '作业列数',
+                    style: TextStyle(
+                      fontSize: 12,
+                      color: Colors.grey[700],
+                    ),
+                  ),
+                  const Spacer(),
+                  _buildScaleButton(
+                    icon: Icons.remove,
+                    onPressed: () => _adjustColumnCount(-1),
+                  ),
+                  const SizedBox(width: 8),
+                  SizedBox(
+                    width: 50,
+                    child: Text(
+                      '$_columnCount 列',
+                      textAlign: TextAlign.center,
+                      style: const TextStyle(
+                        fontSize: 12,
+                        fontWeight: FontWeight.w500,
+                      ),
+                    ),
+                  ),
+                  const SizedBox(width: 8),
+                  _buildScaleButton(
+                    icon: Icons.add,
+                    onPressed: () => _adjustColumnCount(1),
+                  ),
+                ],
+              ),
+            ],
+            ),
+          ),
+          const SizedBox(height: 12),
+          // 退出选项
+          _buildMenuButton(
+            icon: Icons.exit_to_app,
+            text: '退出...',
+            onPressed: _exitApplication,
+            isDestructive: true,
           ),
         ],
       ),
@@ -624,9 +734,9 @@ class _HomeworkBoardState extends State<HomeworkBoard> {
         Text(
           title,
           style: TextStyle(
-            fontSize: 12,
-            color: Colors.grey[600],
-            fontWeight: FontWeight.w500,
+            fontSize: 14,
+            color: Colors.grey[700],
+            fontWeight: FontWeight.w600,
           ),
         ),
         const SizedBox(height: 6),
@@ -640,6 +750,7 @@ class _HomeworkBoardState extends State<HomeworkBoard> {
     required IconData icon,
     required String text,
     required VoidCallback onPressed,
+    bool isDestructive = false,
   }) {
     return Material(
       color: Colors.transparent,
@@ -650,7 +761,7 @@ class _HomeworkBoardState extends State<HomeworkBoard> {
           width: double.infinity,
           padding: const EdgeInsets.symmetric(horizontal: 12, vertical: 8),
           decoration: BoxDecoration(
-            color: Colors.grey[50],
+            color: isDestructive ? Colors.red[50] : Colors.grey[50],
             borderRadius: BorderRadius.circular(8),
           ),
           child: Row(
@@ -658,14 +769,14 @@ class _HomeworkBoardState extends State<HomeworkBoard> {
               Icon(
                 icon,
                 size: 18,
-                color: Colors.grey[700],
+                color: isDestructive ? Colors.red[600] : Colors.grey[700],
               ),
               const SizedBox(width: 8),
               Text(
                 text,
                 style: TextStyle(
                   fontSize: 14,
-                  color: Colors.grey[800],
+                  color: isDestructive ? Colors.red[700] : Colors.grey[800],
                   fontWeight: FontWeight.w500,
                 ),
               ),
@@ -724,33 +835,191 @@ class _HomeworkBoardState extends State<HomeworkBoard> {
     });
   }
 
+  // 切换窗口置底状态
+  void _toggleAlwaysOnBottom() async {
+    if (!Platform.isWindows) {
+      _showCustomSnackBar('窗口置底功能仅支持Windows系统');
+      return;
+    }
+    
+    setState(() {
+      _isAlwaysOnBottom = !_isAlwaysOnBottom;
+    });
+    
+    if (_isAlwaysOnBottom) {
+      _startAlwaysOnBottomTimer();
+      _showCustomSnackBar('窗口已置底');
+    } else {
+      _stopAlwaysOnBottomTimer();
+      _showCustomSnackBar('已取消窗口置底');
+    }
+  }
+  
+  // 开始窗口置底定时器
+  void _startAlwaysOnBottomTimer() {
+    _stopAlwaysOnBottomTimer(); // 确保之前的定时器被清理
+    
+    // 立即执行一次
+    _setWindowToBottom();
+    
+    // 每500毫秒检查一次并维持窗口在底层
+    _alwaysOnBottomTimer = Timer.periodic(const Duration(milliseconds: 500), (timer) {
+      if (_isAlwaysOnBottom) {
+        _setWindowToBottom();
+      } else {
+        timer.cancel();
+      }
+    });
+  }
+  
+  // 停止窗口置底定时器
+  void _stopAlwaysOnBottomTimer() {
+    _alwaysOnBottomTimer?.cancel();
+    _alwaysOnBottomTimer = null;
+    
+    // 恢复窗口到正常层级
+    if (Platform.isWindows) {
+      try {
+        final hwnd = win32.GetActiveWindow();
+        if (hwnd != 0) {
+          win32.SetWindowPos(
+            hwnd,
+            win32.HWND_NOTOPMOST,
+            0, 0, 0, 0,
+            win32.SWP_NOMOVE | win32.SWP_NOSIZE | win32.SWP_NOACTIVATE,
+          );
+        }
+      } catch (e) {
+        // 忽略错误
+      }
+    }
+  }
+  
+  // 设置窗口到底层
+  void _setWindowToBottom() {
+    if (!Platform.isWindows) return;
+    
+    try {
+      final hwnd = win32.GetActiveWindow();
+      if (hwnd != 0) {
+        win32.SetWindowPos(
+          hwnd,
+          win32.HWND_BOTTOM,
+          0, 0, 0, 0,
+          win32.SWP_NOMOVE | win32.SWP_NOSIZE | win32.SWP_NOACTIVATE,
+        );
+      }
+    } catch (e) {
+      // 忽略错误，避免频繁显示错误消息
+    }
+  }
+
+  // 打开设置窗口
+  void _openSettingsWindow() async {
+    await Navigator.of(context).push(
+      MaterialPageRoute(
+        builder: (context) => SettingsWindow(
+          isAlwaysOnBottom: _isAlwaysOnBottom,
+          isAutoStart: _isAutoStart,
+          onAlwaysOnBottomChanged: (value) {
+            setState(() {
+              _isAlwaysOnBottom = value;
+            });
+            _toggleAlwaysOnBottom();
+          },
+          onAutoStartChanged: (value) {
+            setState(() {
+              _isAutoStart = value;
+            });
+            _toggleAutoStart();
+          },
+        ),
+      ),
+    );
+  }
+
+  // 切换开机自启状态
+  void _toggleAutoStart() async {
+    try {
+      if (_isAutoStart) {
+        // 禁用开机自启
+        await launchAtStartup.disable();
+        setState(() {
+          _isAutoStart = false;
+        });
+        _showCustomSnackBar('已取消开机自启');
+      } else {
+        // 启用开机自启
+        await launchAtStartup.enable();
+        setState(() {
+          _isAutoStart = true;
+        });
+        _showCustomSnackBar('已设置开机自启');
+      }
+    } catch (e) {
+      _showCustomSnackBar('设置开机自启失败: $e');
+    }
+  }
+
+  // 退出应用
+  void _exitApplication() {
+    // 显示确认对话框
+    showDialog(
+      context: context,
+      builder: (BuildContext context) {
+        return AlertDialog(
+          title: const Text('确认退出'),
+          content: const Text('确定要退出应用程序吗？'),
+          actions: [
+            TextButton(
+              onPressed: () {
+                Navigator.of(context).pop();
+              },
+              child: const Text('取消'),
+            ),
+            TextButton(
+              onPressed: () {
+                Navigator.of(context).pop();
+                // 退出应用
+                windowManager.close();
+              },
+              child: Text(
+                '退出',
+                style: TextStyle(color: Colors.red[600]),
+              ),
+            ),
+          ],
+        );
+      },
+    );
+  }
+
   // 构建底部拖动条
   Widget _buildDragBar() {
     return GestureDetector(
-      onPanStart: (_) => _startDragWindow(),
+      onPanStart: (_) {
+        _startDragWindow();
+      },
       child: Container(
-        height: 24, // 增加容器高度
+        height: 16, // 减小容器高度，为snackbar留出空间
         width: double.infinity,
         decoration: BoxDecoration(
           color: Colors.transparent,
-          borderRadius: const BorderRadius.only(
-            bottomLeft: Radius.circular(12),
-            bottomRight: Radius.circular(12),
-          ),
         ),
         child: Center(
           child: Container(
-            width: 120, // 更宽的拖动条
-            height: 8, // 更粗的拖动条
+            width: 150,
+            height: 4,
             decoration: BoxDecoration(
-              color: _isDragging 
-                  ? Colors.grey[600] // 按住时整条变暗
+              color: _isDragging
+                  ? Colors.grey[600] // 拖动时变暗
                   : Colors.grey[400], // 正常状态
-              borderRadius: BorderRadius.circular(4),
+              borderRadius: BorderRadius.circular(2),
             ),
           ),
         ),
       ),
     );
   }
+
 }
