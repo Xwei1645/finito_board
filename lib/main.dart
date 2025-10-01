@@ -30,8 +30,10 @@ void main() async {
     windowManager.waitUntilReadyToShow(windowOptions, () async {
       await windowManager.show();
       await windowManager.focus();
+      // 初始状态设置为锁定（无边框，不可调整大小）
       await windowManager.setAsFrameless();
       await windowManager.setHasShadow(false);
+      await windowManager.setResizable(false);
     });
   }
   
@@ -99,6 +101,12 @@ class _HomeworkBoardState extends State<HomeworkBoard> {
   
   // 全屏状态
   bool _isFullScreen = false;
+  
+  // 窗口锁定状态
+  bool _isWindowLocked = true;
+  
+  // 拖动状态
+  bool _isDragging = false;
 
   @override
   void initState() {
@@ -158,6 +166,45 @@ class _HomeworkBoardState extends State<HomeworkBoard> {
     } else {
       await windowManager.setFullScreen(false);
       _showCustomSnackBar('已退出全屏模式');
+    }
+  }
+
+  // 切换窗口锁定状态
+  void _toggleWindowLock() async {
+    setState(() {
+      _isWindowLocked = !_isWindowLocked;
+    });
+    
+    if (_isWindowLocked) {
+      // 锁定窗口 - 设置为无边框并禁用调整大小
+      await windowManager.setAsFrameless();
+      await windowManager.setResizable(false);
+      _showCustomSnackBar('窗口已锁定');
+    } else {
+      // 解锁窗口 - 恢复边框但隐藏标题栏，允许调整大小
+      await windowManager.setTitleBarStyle(TitleBarStyle.hidden);
+      await windowManager.setResizable(true);
+      // 确保窗口不是全屏状态，这样边缘才能拖拽
+      if (_isFullScreen) {
+        await windowManager.setFullScreen(false);
+        setState(() {
+          _isFullScreen = false;
+        });
+      }
+      _showCustomSnackBar('窗口已解锁，可调整大小和拖动');
+    }
+  }
+
+  // 开始拖动窗口
+  void _startDragWindow() async {
+    if (!_isWindowLocked) {
+      setState(() {
+        _isDragging = true;
+      });
+      await windowManager.startDragging();
+      setState(() {
+        _isDragging = false;
+      });
     }
   }
 
@@ -366,6 +413,14 @@ class _HomeworkBoardState extends State<HomeworkBoard> {
                     child: const EmptyState(),
                   ),
           ),
+          // 底部拖动条 - 仅在窗口解锁时显示
+          if (!_isWindowLocked && !_isFullScreen)
+            Positioned(
+              bottom: 0,
+              left: 0,
+              right: 0,
+              child: _buildDragBar(),
+            ),
           // 悬浮工具栏 - 吸附在窗口右下角边缘
           Positioned(
             bottom: 16,
@@ -486,6 +541,16 @@ class _HomeworkBoardState extends State<HomeworkBoard> {
         mainAxisSize: MainAxisSize.min,
         crossAxisAlignment: CrossAxisAlignment.start,
         children: [
+          // 窗口锁定控制
+          _buildMenuSection(
+            title: '窗口控制',
+            child: _buildMenuButton(
+              icon: _isWindowLocked ? Icons.lock : Icons.lock_open,
+              text: _isWindowLocked ? '解锁窗口' : '锁定窗口',
+              onPressed: _toggleWindowLock,
+            ),
+          ),
+          const SizedBox(height: 12),
           // 界面缩放
           _buildMenuSection(
             title: '界面缩放',
@@ -570,6 +635,47 @@ class _HomeworkBoardState extends State<HomeworkBoard> {
     );
   }
 
+  // 构建菜单按钮
+  Widget _buildMenuButton({
+    required IconData icon,
+    required String text,
+    required VoidCallback onPressed,
+  }) {
+    return Material(
+      color: Colors.transparent,
+      child: InkWell(
+        onTap: onPressed,
+        borderRadius: BorderRadius.circular(8),
+        child: Container(
+          width: double.infinity,
+          padding: const EdgeInsets.symmetric(horizontal: 12, vertical: 8),
+          decoration: BoxDecoration(
+            color: Colors.grey[50],
+            borderRadius: BorderRadius.circular(8),
+          ),
+          child: Row(
+            children: [
+              Icon(
+                icon,
+                size: 18,
+                color: Colors.grey[700],
+              ),
+              const SizedBox(width: 8),
+              Text(
+                text,
+                style: TextStyle(
+                  fontSize: 14,
+                  color: Colors.grey[800],
+                  fontWeight: FontWeight.w500,
+                ),
+              ),
+            ],
+          ),
+        ),
+      ),
+    );
+  }
+
   // 构建缩放按钮
   Widget _buildScaleButton({
     required IconData icon,
@@ -616,5 +722,35 @@ class _HomeworkBoardState extends State<HomeworkBoard> {
     setState(() {
       _isQuickMenuVisible = !_isQuickMenuVisible;
     });
+  }
+
+  // 构建底部拖动条
+  Widget _buildDragBar() {
+    return GestureDetector(
+      onPanStart: (_) => _startDragWindow(),
+      child: Container(
+        height: 24, // 增加容器高度
+        width: double.infinity,
+        decoration: BoxDecoration(
+          color: Colors.transparent,
+          borderRadius: const BorderRadius.only(
+            bottomLeft: Radius.circular(12),
+            bottomRight: Radius.circular(12),
+          ),
+        ),
+        child: Center(
+          child: Container(
+            width: 120, // 更宽的拖动条
+            height: 8, // 更粗的拖动条
+            decoration: BoxDecoration(
+              color: _isDragging 
+                  ? Colors.grey[600] // 按住时整条变暗
+                  : Colors.grey[400], // 正常状态
+              borderRadius: BorderRadius.circular(4),
+            ),
+          ),
+        ),
+      ),
+    );
   }
 }

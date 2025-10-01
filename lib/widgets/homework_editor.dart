@@ -298,7 +298,7 @@ class _HomeworkEditorState extends State<HomeworkEditor> {
             Row(
               children: [
                 Text(
-                  widget.homework == null ? '新建作业' : '编辑作业',
+                  widget.homework == null ? '布置作业' : '编辑作业',
                   style: theme.textTheme.headlineSmall?.copyWith(
                     fontWeight: FontWeight.w500,
                     color: colorScheme.onSurface,
