@@ -87,6 +87,15 @@ class _HomeworkBoardState extends State<HomeworkBoard> {
 
   String? _selectedHomeworkId;
   Timer? _selectionTimer;
+  
+  // 界面缩放倍数（百分比）
+  double _scaleFactor = 100.0;
+  
+  // 作业列数
+  int _columnCount = 3;
+  
+  // 快捷菜单显示状态
+  bool _isQuickMenuVisible = false;
 
   @override
   void initState() {
@@ -216,9 +225,9 @@ class _HomeworkBoardState extends State<HomeworkBoard> {
 
 
 
-  // 将所有作业分配到三列中 - 改进的分配逻辑
+  // 将所有作业分配到动态列数中 - 改进的分配逻辑
   List<List<Widget>> _distributeHomeworksToColumns() {
-    List<List<Widget>> columns = [[], [], []];
+    List<List<Widget>> columns = List.generate(_columnCount, (index) => <Widget>[]);
     int currentColumn = 0;
     
     // 为每个学科创建标题和作业卡片，保持在同一列
@@ -246,7 +255,7 @@ class _HomeworkBoardState extends State<HomeworkBoard> {
         }
         
         // 移动到下一列
-        currentColumn = (currentColumn + 1) % 3;
+        currentColumn = (currentColumn + 1) % _columnCount;
       }
     }
     
@@ -262,8 +271,16 @@ class _HomeworkBoardState extends State<HomeworkBoard> {
     
     return Scaffold(
       backgroundColor: Colors.transparent,
-      body: Stack(
-        children: [
+      body: GestureDetector(
+        onTap: () {
+          if (_isQuickMenuVisible) {
+            setState(() {
+              _isQuickMenuVisible = false;
+            });
+          }
+        },
+        child: Stack(
+          children: [
           // 背景容器 - 填满整个窗口
           Container(
             width: double.infinity,
@@ -273,41 +290,50 @@ class _HomeworkBoardState extends State<HomeworkBoard> {
               borderRadius: BorderRadius.circular(12),
             ),
             child: hasHomework
-                ? SingleChildScrollView(
-                    padding: const EdgeInsets.all(12),
-                    child: IntrinsicHeight(
-                      child: Row(
-                        crossAxisAlignment: CrossAxisAlignment.start,
-                        children: [
-                          Expanded(
-                            child: Padding(
-                              padding: const EdgeInsets.only(right: 6),
-                              child: Column(
-                                children: columns[0],
+                ? Theme(
+                    data: Theme.of(context).copyWith(
+                      textTheme: Theme.of(context).textTheme.apply(
+                        fontSizeFactor: _scaleFactor / 100.0,
+                      ),
+                    ),
+                    child: SingleChildScrollView(
+                      padding: const EdgeInsets.all(12),
+                      child: IntrinsicHeight(
+                        child: Row(
+                          crossAxisAlignment: CrossAxisAlignment.start,
+                          children: List.generate(_columnCount, (index) {
+                            EdgeInsets padding;
+                            if (_columnCount == 1) {
+                              padding = EdgeInsets.zero;
+                            } else if (index == 0) {
+                              padding = const EdgeInsets.only(right: 6);
+                            } else if (index == _columnCount - 1) {
+                              padding = const EdgeInsets.only(left: 6);
+                            } else {
+                              padding = const EdgeInsets.symmetric(horizontal: 6);
+                            }
+                            
+                            return Expanded(
+                              child: Padding(
+                                padding: padding,
+                                child: Column(
+                                  children: index < columns.length ? columns[index] : [],
+                                ),
                               ),
-                            ),
-                          ),
-                          Expanded(
-                            child: Padding(
-                              padding: const EdgeInsets.symmetric(horizontal: 6),
-                              child: Column(
-                                children: columns[1],
-                              ),
-                            ),
-                          ),
-                          Expanded(
-                            child: Padding(
-                              padding: const EdgeInsets.only(left: 6),
-                              child: Column(
-                                children: columns[2],
-                              ),
-                            ),
-                          ),
-                        ],
+                            );
+                          }),
+                        ),
                       ),
                     ),
                   )
-                : const EmptyState(),
+                : Theme(
+                    data: Theme.of(context).copyWith(
+                      textTheme: Theme.of(context).textTheme.apply(
+                        fontSizeFactor: _scaleFactor / 100.0,
+                      ),
+                    ),
+                    child: const EmptyState(),
+                  ),
           ),
           // 悬浮工具栏 - 吸附在窗口右下角边缘
           Positioned(
@@ -315,7 +341,15 @@ class _HomeworkBoardState extends State<HomeworkBoard> {
             right: 16,
             child: _buildFloatingToolbar(),
           ),
+          // 快捷菜单
+          if (_isQuickMenuVisible)
+            Positioned(
+              bottom: 70,
+              right: 16,
+              child: _buildQuickMenu(),
+            ),
         ],
+        ),
       ),
     );
   }
@@ -356,11 +390,8 @@ class _HomeworkBoardState extends State<HomeworkBoard> {
           const SizedBox(width: 4),
           _buildToolbarButton(
             icon: Icons.menu,
-            onPressed: () {
-              // TODO: 实现菜单功能
-              _showCustomSnackBar('菜单功能待实现');
-            },
-            tooltip: '菜单',
+            onPressed: _toggleQuickMenu,
+            tooltip: '快捷菜单',
           ),
         ],
       ),
@@ -395,5 +426,158 @@ class _HomeworkBoardState extends State<HomeworkBoard> {
         ),
       ),
     );
+  }
+
+  // 构建快捷菜单
+  Widget _buildQuickMenu() {
+    return Container(
+      width: 200,
+      padding: const EdgeInsets.all(12),
+      decoration: BoxDecoration(
+        color: Colors.white,
+        borderRadius: BorderRadius.circular(12),
+        boxShadow: [
+          BoxShadow(
+            color: Colors.black.withValues(alpha: 0.15),
+            spreadRadius: 1,
+            blurRadius: 8,
+            offset: const Offset(0, 4),
+          ),
+        ],
+      ),
+      child: Column(
+        mainAxisSize: MainAxisSize.min,
+        crossAxisAlignment: CrossAxisAlignment.start,
+        children: [
+          // 界面缩放
+          _buildMenuSection(
+            title: '界面缩放',
+            child: Row(
+              children: [
+                _buildScaleButton(
+                  icon: Icons.remove,
+                  onPressed: () => _adjustScale(-10),
+                ),
+                const SizedBox(width: 8),
+                Expanded(
+                  child: Text(
+                    '${_scaleFactor.toInt()}%',
+                    textAlign: TextAlign.center,
+                    style: const TextStyle(
+                      fontSize: 14,
+                      fontWeight: FontWeight.w500,
+                    ),
+                  ),
+                ),
+                const SizedBox(width: 8),
+                _buildScaleButton(
+                  icon: Icons.add,
+                  onPressed: () => _adjustScale(10),
+                ),
+              ],
+            ),
+          ),
+          const SizedBox(height: 12),
+          // 作业列数
+          _buildMenuSection(
+            title: '作业列数',
+            child: Row(
+              children: [
+                _buildScaleButton(
+                  icon: Icons.remove,
+                  onPressed: () => _adjustColumnCount(-1),
+                ),
+                const SizedBox(width: 8),
+                Expanded(
+                  child: Text(
+                    '$_columnCount 列',
+                    textAlign: TextAlign.center,
+                    style: const TextStyle(
+                      fontSize: 14,
+                      fontWeight: FontWeight.w500,
+                    ),
+                  ),
+                ),
+                const SizedBox(width: 8),
+                _buildScaleButton(
+                  icon: Icons.add,
+                  onPressed: () => _adjustColumnCount(1),
+                ),
+              ],
+            ),
+          ),
+        ],
+      ),
+    );
+  }
+
+  // 构建菜单区块
+  Widget _buildMenuSection({
+    required String title,
+    required Widget child,
+  }) {
+    return Column(
+      crossAxisAlignment: CrossAxisAlignment.start,
+      children: [
+        Text(
+          title,
+          style: TextStyle(
+            fontSize: 12,
+            color: Colors.grey[600],
+            fontWeight: FontWeight.w500,
+          ),
+        ),
+        const SizedBox(height: 6),
+        child,
+      ],
+    );
+  }
+
+  // 构建缩放按钮
+  Widget _buildScaleButton({
+    required IconData icon,
+    required VoidCallback onPressed,
+  }) {
+    return Material(
+      color: Colors.transparent,
+      child: InkWell(
+        onTap: onPressed,
+        borderRadius: BorderRadius.circular(6),
+        child: Container(
+          width: 28,
+          height: 28,
+          decoration: BoxDecoration(
+            color: Colors.grey[100],
+            borderRadius: BorderRadius.circular(6),
+          ),
+          child: Icon(
+            icon,
+            size: 16,
+            color: Colors.grey[700],
+          ),
+        ),
+      ),
+    );
+  }
+
+  // 调整界面缩放
+  void _adjustScale(double delta) {
+    setState(() {
+      _scaleFactor = (_scaleFactor + delta).clamp(50.0, 200.0);
+    });
+  }
+
+  // 调整作业列数
+  void _adjustColumnCount(int delta) {
+    setState(() {
+      _columnCount = (_columnCount + delta).clamp(1, 5);
+    });
+  }
+
+  // 切换快捷菜单显示状态
+  void _toggleQuickMenu() {
+    setState(() {
+      _isQuickMenuVisible = !_isQuickMenuVisible;
+    });
   }
 }

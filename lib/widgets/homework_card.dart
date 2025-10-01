@@ -89,6 +89,7 @@ class _HomeworkCardState extends State<HomeworkCard> {
   Widget build(BuildContext context) {
     final theme = Theme.of(context);
     final colorScheme = theme.colorScheme;
+    final textScaleFactor = MediaQuery.textScalerOf(context).scale(1.0);
     
     return GestureDetector(
         onTap: widget.onTap,
@@ -124,20 +125,27 @@ class _HomeworkCardState extends State<HomeworkCard> {
                   maxHeight: 120, // 限制最大高度，避免卡片过高
                 ),
                 child: widget.homework.content.isNotEmpty
-                    ? QuillEditor.basic(
-                        controller: _contentController,
-                        config: const QuillEditorConfig(
-                          showCursor: false,
-                          padding: EdgeInsets.zero,
+                    ? Theme(
+                        data: theme.copyWith(
+                          textTheme: theme.textTheme.apply(
+                            fontSizeFactor: textScaleFactor,
+                          ),
                         ),
-                        focusNode: _editorFocusNode,
+                        child: QuillEditor.basic(
+                          controller: _contentController,
+                          config: const QuillEditorConfig(
+                            showCursor: false,
+                            padding: EdgeInsets.zero,
+                          ),
+                          focusNode: _editorFocusNode,
+                        ),
                       )
                     : Text(
                         '暂无内容',
-                        style: TextStyle(
-                          fontSize: 15,
+                        style: theme.textTheme.bodyMedium?.copyWith(
                           color: colorScheme.onSurfaceVariant,
                           fontStyle: FontStyle.italic,
+                          fontSize: (theme.textTheme.bodyMedium?.fontSize ?? 14) * textScaleFactor,
                         ),
                       ),
               ),
@@ -148,7 +156,7 @@ class _HomeworkCardState extends State<HomeworkCard> {
                 children: [
                   Icon(
                     Icons.calendar_today_outlined,
-                    size: 16,
+                    size: 16 * textScaleFactor,
                     color: widget.homework.isOverdue 
                         ? colorScheme.error 
                         : colorScheme.onSurfaceVariant,
@@ -156,12 +164,12 @@ class _HomeworkCardState extends State<HomeworkCard> {
                   const SizedBox(width: 6),
                   Text(
                     _getFormattedDate(),
-                    style: TextStyle(
-                      fontSize: 14,
+                    style: theme.textTheme.bodySmall?.copyWith(
                       color: widget.homework.isOverdue 
                           ? colorScheme.error 
                           : colorScheme.onSurfaceVariant,
                       fontWeight: FontWeight.w500,
+                      fontSize: (theme.textTheme.bodySmall?.fontSize ?? 12) * textScaleFactor,
                     ),
                   ),
                 ],
@@ -190,10 +198,10 @@ class _HomeworkCardState extends State<HomeworkCard> {
                     ),
                     child: Text(
                       tag,
-                      style: TextStyle(
-                        fontSize: 11,
+                      style: theme.textTheme.labelSmall?.copyWith(
                         color: colorScheme.onSecondaryContainer,
                         fontWeight: FontWeight.w500,
+                        fontSize: (theme.textTheme.labelSmall?.fontSize ?? 11) * textScaleFactor,
                       ),
                     ),
                   )).toList(),
@@ -207,26 +215,26 @@ class _HomeworkCardState extends State<HomeworkCard> {
                   mainAxisAlignment: MainAxisAlignment.end,
                   children: [
                     IconButton.outlined( // MD3 outlined icon button
-                      icon: const Icon(Icons.edit_outlined, size: 18),
+                      icon: Icon(Icons.edit_outlined, size: 18 * textScaleFactor),
                       onPressed: widget.onEdit,
                       tooltip: '编辑',
                       style: IconButton.styleFrom(
                         foregroundColor: colorScheme.primary,
                         side: BorderSide(color: colorScheme.outline),
                         padding: const EdgeInsets.all(8),
-                        minimumSize: const Size(36, 36),
+                        minimumSize: Size(36 * textScaleFactor, 36 * textScaleFactor),
                       ),
                     ),
                     const SizedBox(width: 8),
                     IconButton.outlined( // MD3 outlined icon button
-                      icon: const Icon(Icons.delete_outline, size: 18),
+                      icon: Icon(Icons.delete_outline, size: 18 * textScaleFactor),
                       onPressed: widget.onDelete,
                       tooltip: '删除',
                       style: IconButton.styleFrom(
                         foregroundColor: colorScheme.error,
                         side: BorderSide(color: colorScheme.outline),
                         padding: const EdgeInsets.all(8),
-                        minimumSize: const Size(36, 36),
+                        minimumSize: Size(36 * textScaleFactor, 36 * textScaleFactor),
                       ),
                     ),
                   ],
