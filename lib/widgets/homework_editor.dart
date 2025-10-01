@@ -84,7 +84,7 @@ class _HomeworkEditorState extends State<HomeworkEditor> {
   }
 
   void _selectDate() async {
-    final DateTime? picked = await showDatePicker(
+    final DateTime? pickedDate = await showDatePicker(
       context: context,
       initialDate: _selectedDate,
       firstDate: DateTime.now(),
@@ -92,16 +92,30 @@ class _HomeworkEditorState extends State<HomeworkEditor> {
       locale: const Locale('zh', 'CN'),
     );
     
-    if (picked != null && mounted) {
-      setState(() {
-        _selectedDate = DateTime(
-          picked.year,
-          picked.month,
-          picked.day,
-          0, // 设置为0点
-          0, // 设置为0分
-        );
-      });
+    if (pickedDate != null && mounted) {
+      final TimeOfDay? pickedTime = await showTimePicker(
+        context: context,
+        initialTime: TimeOfDay.fromDateTime(_selectedDate),
+        builder: (BuildContext context, Widget? child) {
+          return Localizations.override(
+            context: context,
+            locale: const Locale('zh', 'CN'),
+            child: child,
+          );
+        },
+      );
+      
+      if (pickedTime != null && mounted) {
+        setState(() {
+          _selectedDate = DateTime(
+            pickedDate.year,
+            pickedDate.month,
+            pickedDate.day,
+            pickedTime.hour,
+            pickedTime.minute,
+          );
+        });
+      }
     }
   }
 
@@ -302,56 +316,96 @@ class _HomeworkEditorState extends State<HomeworkEditor> {
             Row(
               children: [
                 Expanded(
-                  child: Container(
-                    decoration: BoxDecoration(
-                      color: colorScheme.surfaceContainerHighest,
-                      borderRadius: BorderRadius.circular(12),
-                    ),
-                    child: DropdownButtonFormField<String>(
-                      initialValue: _selectedSubject,
-                      decoration: const InputDecoration(
-                        labelText: '学科',
-                        border: InputBorder.none,
-                        enabledBorder: InputBorder.none,
-                        focusedBorder: InputBorder.none,
-                        filled: false,
-                        contentPadding: EdgeInsets.symmetric(horizontal: 16, vertical: 12),
+                  child: Column(
+                    crossAxisAlignment: CrossAxisAlignment.start,
+                    children: [
+                      Text(
+                        '科目',
+                        style: theme.textTheme.labelMedium?.copyWith(
+                          color: colorScheme.onSurfaceVariant,
+                          fontWeight: FontWeight.w500,
+                        ),
                       ),
-                      items: _availableSubjects.map((subject) => DropdownMenuItem(
-                        value: subject,
-                        child: Text(subject),
-                      )).toList(),
-                      onChanged: (value) {
-                        if (value != null) {
-                          setState(() {
-                            _selectedSubject = value;
-                          });
-                        }
-                      },
-                    ),
+                      const SizedBox(height: 8),
+                      Container(
+                        height: 48,
+                        decoration: BoxDecoration(
+                          color: colorScheme.surfaceContainerHighest,
+                          borderRadius: BorderRadius.circular(12),
+                        ),
+                        child: DropdownButtonFormField<String>(
+                          initialValue: _selectedSubject,
+                          decoration: InputDecoration(
+                            border: OutlineInputBorder(
+                              borderRadius: BorderRadius.circular(12),
+                              borderSide: BorderSide.none,
+                            ),
+                            enabledBorder: OutlineInputBorder(
+                              borderRadius: BorderRadius.circular(12),
+                              borderSide: BorderSide.none,
+                            ),
+                            focusedBorder: OutlineInputBorder(
+                              borderRadius: BorderRadius.circular(12),
+                              borderSide: BorderSide.none,
+                            ),
+                            filled: false,
+                            contentPadding: const EdgeInsets.symmetric(horizontal: 16, vertical: 12),
+                          ),
+                          items: _availableSubjects.map((subject) => DropdownMenuItem(
+                            value: subject,
+                            child: Text(subject),
+                          )).toList(),
+                          onChanged: (value) {
+                            if (value != null) {
+                              setState(() {
+                                _selectedSubject = value;
+                              });
+                            }
+                          },
+                        ),
+                      ),
+                    ],
                   ),
                 ),
                 const SizedBox(width: 16),
                 
                 Expanded(
-                  child: OutlinedButton.icon(
-                    onPressed: _selectDate,
-                    icon: Icon(Icons.calendar_today_outlined, 
-                      color: colorScheme.primary,
-                    ),
-                    label: Text(
-                      DateFormat('yyyy年MM月dd日').format(_selectedDate),
-                      style: TextStyle(color: colorScheme.onSurface),
-                    ),
-                    style: OutlinedButton.styleFrom(
-                      padding: const EdgeInsets.symmetric(horizontal: 16, vertical: 12),
-                      shape: RoundedRectangleBorder(
-                        borderRadius: BorderRadius.circular(12),
+                  child: Column(
+                    crossAxisAlignment: CrossAxisAlignment.start,
+                    children: [
+                      Text(
+                        '截止时间',
+                        style: theme.textTheme.labelMedium?.copyWith(
+                          color: colorScheme.onSurfaceVariant,
+                          fontWeight: FontWeight.w500,
+                        ),
                       ),
-                      side: BorderSide.none,
-                      backgroundColor: colorScheme.surfaceContainerHighest,
-                      minimumSize: const Size(0, 48),
-                    ),
+                      const SizedBox(height: 8),
+                      SizedBox(
+                        height: 48,
+                        width: double.infinity,
+                        child: OutlinedButton.icon(
+                          onPressed: _selectDate,
+                          icon: Icon(Icons.access_time, 
+                            color: colorScheme.primary,
+                          ),
+                          label: Text(
+                            DateFormat('MM月dd日 HH:mm').format(_selectedDate),
+                            style: TextStyle(color: colorScheme.onSurface),
+                          ),
+                          style: OutlinedButton.styleFrom(
+                            padding: const EdgeInsets.symmetric(horizontal: 16, vertical: 12),
+                            shape: RoundedRectangleBorder(
+                              borderRadius: BorderRadius.circular(12),
+                            ),
+                            side: BorderSide.none,
+                            backgroundColor: colorScheme.surfaceContainerHighest,
+                            minimumSize: const Size(double.infinity, 48),
+                            alignment: Alignment.centerLeft,
+                          ),
+                        ),
+                      ),
+                    ],
                   ),
                 ),
               ],

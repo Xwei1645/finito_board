@@ -1,6 +1,7 @@
 import 'dart:convert';
 import 'package:flutter/material.dart';
 import 'package:flutter_quill/flutter_quill.dart';
+import 'package:intl/intl.dart';
 import '../models/homework.dart';
 
 class HomeworkCard extends StatefulWidget {
@@ -71,10 +72,28 @@ class _HomeworkCardState extends State<HomeworkCard> {
     super.dispose();
   }
 
-  // 获取格式化的月/日
+  // 获取格式化的截止时间
   String _getFormattedDate() {
-    final date = widget.homework.dueDate;
-    return '${date.month}/${date.day}';
+    final dueDate = widget.homework.dueDate;
+    final now = DateTime.now();
+    final today = DateTime(now.year, now.month, now.day);
+    final tomorrow = today.add(const Duration(days: 1));
+    final dayAfterTomorrow = today.add(const Duration(days: 2));
+    final dueDay = DateTime(dueDate.year, dueDate.month, dueDate.day);
+    
+    final timeFormat = DateFormat('HH:mm');
+    final timeStr = timeFormat.format(dueDate);
+    
+    if (dueDay == today) {
+      return '今天 $timeStr';
+    } else if (dueDay == tomorrow) {
+      return '明天 $timeStr';
+    } else if (dueDay == dayAfterTomorrow) {
+      return '后天 $timeStr';
+    } else {
+      final dateFormat = DateFormat('MM月dd日');
+      return '${dateFormat.format(dueDate)} $timeStr';
+    }
   }
 
   // 获取状态标签
@@ -151,7 +170,7 @@ class _HomeworkCardState extends State<HomeworkCard> {
                     mainAxisSize: MainAxisSize.min,
                     children: [
                       Icon(
-                        Icons.calendar_today_outlined,
+                        Icons.access_time,
                         size: 16,
                         color: widget.homework.isOverdue 
                             ? colorScheme.error 
