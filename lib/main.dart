@@ -15,7 +15,6 @@ import 'widgets/empty_state.dart';
 void main() async {
   WidgetsFlutterBinding.ensureInitialized();
   
-  // 只在桌面平台初始化窗口管理器
   if (!kIsWeb && (Platform.isWindows || Platform.isLinux || Platform.isMacOS)) {
     await windowManager.ensureInitialized();
     
@@ -24,14 +23,13 @@ void main() async {
       center: true,
       backgroundColor: Colors.transparent,
       skipTaskbar: true,
-      titleBarStyle: TitleBarStyle.hidden, // 隐藏标题栏
-      windowButtonVisibility: false, // 隐藏窗口按钮
+      titleBarStyle: TitleBarStyle.hidden,
+      windowButtonVisibility: false,
     );
     
     windowManager.waitUntilReadyToShow(windowOptions, () async {
       await windowManager.show();
       await windowManager.focus();
-      // 确保移除所有系统装饰
       await windowManager.setAsFrameless();
       await windowManager.setHasShadow(false);
     });
@@ -87,8 +85,8 @@ class HomeworkBoard extends StatefulWidget {
 class _HomeworkBoardState extends State<HomeworkBoard> {
   List<Subject> subjects = SampleData.getSubjects();
 
-  String? _selectedHomeworkId; // 当前选中的作业ID
-  Timer? _selectionTimer; // 10秒自动取消选择的定时器
+  String? _selectedHomeworkId;
+  Timer? _selectionTimer;
 
   @override
   void initState() {
@@ -107,10 +105,8 @@ class _HomeworkBoardState extends State<HomeworkBoard> {
       _selectedHomeworkId = homeworkId;
     });
     
-    // 取消之前的定时器
     _selectionTimer?.cancel();
     
-    // 设置10秒后自动取消选择
     _selectionTimer = Timer(const Duration(seconds: 10), () {
       setState(() {
         _selectedHomeworkId = null;
@@ -118,7 +114,6 @@ class _HomeworkBoardState extends State<HomeworkBoard> {
     });
   }
 
-  // 显示自定义样式的SnackBar，避免挡住工具栏
   void _showCustomSnackBar(String message) {
     ScaffoldMessenger.of(context).showSnackBar(
       SnackBar(
@@ -137,7 +132,6 @@ class _HomeworkBoardState extends State<HomeworkBoard> {
   }
 
   void _onEditHomework(String homeworkId) {
-    // 查找要编辑的作业
     Homework? homeworkToEdit;
     for (var subject in subjects) {
       for (var homework in subject.homeworks) {

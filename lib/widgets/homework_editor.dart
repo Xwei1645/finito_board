@@ -52,16 +52,13 @@ class _HomeworkEditorState extends State<HomeworkEditor> {
   void initState() {
     super.initState();
     
-    // 初始化控制器
     _contentController = QuillController.basic();
     _editorFocusNode = FocusNode();
     _selectedSubject = widget.homework?.subject ?? widget.initialSubject ?? _availableSubjects.first;
     _fontSizeController.text = _currentFontSize.toInt().toString();
     
-    // 添加选择变化监听器来同步字号显示
     _contentController.addListener(_updateFontSizeDisplay);
     
-    // 如果是编辑模式，设置富文本内容
     if (widget.homework != null && widget.homework!.content.isNotEmpty) {
       try {
         // 尝试解析JSON格式的富文本内容

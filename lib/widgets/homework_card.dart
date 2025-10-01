@@ -30,10 +30,9 @@ class _HomeworkCardState extends State<HomeworkCard> {
   @override
   void initState() {
     super.initState();
-    // 初始化QuillController来显示富文本内容
     _contentController = QuillController.basic();
-    _contentController.readOnly = true; // 设置为只读模式
-    _editorFocusNode = FocusNode(); // 初始化 FocusNode
+    _contentController.readOnly = true;
+    _editorFocusNode = FocusNode();
     if (widget.homework.content.isNotEmpty) {
       try {
         // 尝试解析JSON格式的富文本内容
@@ -49,7 +48,6 @@ class _HomeworkCardState extends State<HomeworkCard> {
   @override
   void didUpdateWidget(HomeworkCard oldWidget) {
     super.didUpdateWidget(oldWidget);
-    // 如果作业内容发生变化，更新QuillController
     if (oldWidget.homework.content != widget.homework.content) {
       if (widget.homework.content.isNotEmpty) {
         try {
@@ -69,7 +67,7 @@ class _HomeworkCardState extends State<HomeworkCard> {
   @override
   void dispose() {
     _contentController.dispose();
-    _editorFocusNode.dispose(); // 释放 FocusNode
+    _editorFocusNode.dispose();
     super.dispose();
   }
 
@@ -129,10 +127,10 @@ class _HomeworkCardState extends State<HomeworkCard> {
                     ? QuillEditor.basic(
                         controller: _contentController,
                         config: const QuillEditorConfig(
-                          showCursor: false, // 不显示光标
-                          padding: EdgeInsets.zero, // 移除内边距
+                          showCursor: false,
+                          padding: EdgeInsets.zero,
                         ),
-                        focusNode: _editorFocusNode, // 添加 FocusNode
+                        focusNode: _editorFocusNode,
                       )
                     : Text(
                         '暂无内容',
