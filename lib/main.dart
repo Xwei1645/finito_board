@@ -273,11 +273,17 @@ class _HomeworkBoardState extends State<HomeworkBoard> {
       backgroundColor: Colors.transparent,
       body: GestureDetector(
         onTap: () {
-          if (_isQuickMenuVisible) {
-            setState(() {
+          setState(() {
+            // 隐藏快捷菜单
+            if (_isQuickMenuVisible) {
               _isQuickMenuVisible = false;
-            });
-          }
+            }
+            // 取消选中卡片
+            if (_selectedHomeworkId != null) {
+              _selectedHomeworkId = null;
+              _selectionTimer?.cancel(); // 取消定时器
+            }
+          });
         },
         child: Stack(
           children: [

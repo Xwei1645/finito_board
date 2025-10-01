@@ -89,7 +89,6 @@ class _HomeworkCardState extends State<HomeworkCard> {
   Widget build(BuildContext context) {
     final theme = Theme.of(context);
     final colorScheme = theme.colorScheme;
-    final textScaleFactor = MediaQuery.textScalerOf(context).scale(1.0);
     
     return GestureDetector(
         onTap: widget.onTap,
@@ -99,20 +98,17 @@ class _HomeworkCardState extends State<HomeworkCard> {
           padding: const EdgeInsets.all(16), // MD3 间距
           decoration: BoxDecoration(
             color: widget.isSelected 
-                ? colorScheme.primaryContainer.withValues(alpha: 0.3)
-                : colorScheme.surface,
-            borderRadius: BorderRadius.circular(16), // MD3 圆角
-            border: widget.isSelected 
-                ? Border.all(color: colorScheme.primary, width: 2)
-                : Border.all(color: colorScheme.outline.withValues(alpha: 0.2)),
+                ? Colors.grey.shade100
+                : Colors.white,
+            borderRadius: BorderRadius.circular(12), // 与快捷菜单保持一致的圆角
             boxShadow: [
               BoxShadow(
                 color: widget.isSelected 
-                    ? colorScheme.primary.withValues(alpha: 0.1) 
-                    : colorScheme.shadow.withValues(alpha: 0.05),
-                spreadRadius: widget.isSelected ? 1 : 0,
-                blurRadius: widget.isSelected ? 8 : 4,
-                offset: const Offset(0, 2),
+                    ? Colors.grey.withValues(alpha: 0.3) 
+                    : Colors.black.withValues(alpha: 0.08),
+                spreadRadius: widget.isSelected ? 2 : 1,
+                blurRadius: widget.isSelected ? 12 : 6,
+                offset: Offset(0, widget.isSelected ? 4 : 2),
               ),
             ],
           ),
@@ -120,93 +116,80 @@ class _HomeworkCardState extends State<HomeworkCard> {
             crossAxisAlignment: CrossAxisAlignment.start,
             children: [
               // 富文本作业内容
-              Container(
-                constraints: const BoxConstraints(
-                  maxHeight: 120, // 限制最大高度，避免卡片过高
-                ),
-                child: widget.homework.content.isNotEmpty
-                    ? Theme(
-                        data: theme.copyWith(
-                          textTheme: theme.textTheme.apply(
-                            fontSizeFactor: textScaleFactor,
-                          ),
+              widget.homework.content.isNotEmpty
+                  ? GestureDetector(
+                      onTap: widget.onTap,
+                      child: QuillEditor.basic(
+                        controller: _contentController,
+                        config: const QuillEditorConfig(
+                          showCursor: false,
+                          padding: EdgeInsets.zero,
                         ),
-                        child: QuillEditor.basic(
-                          controller: _contentController,
-                          config: const QuillEditorConfig(
-                            showCursor: false,
-                            padding: EdgeInsets.zero,
-                          ),
-                          focusNode: _editorFocusNode,
-                        ),
-                      )
-                    : Text(
+                        focusNode: _editorFocusNode,
+                      ),
+                    )
+                  : GestureDetector(
+                      onTap: widget.onTap,
+                      child: Text(
                         '暂无内容',
                         style: theme.textTheme.bodyMedium?.copyWith(
                           color: colorScheme.onSurfaceVariant,
                           fontStyle: FontStyle.italic,
-                          fontSize: (theme.textTheme.bodyMedium?.fontSize ?? 14) * textScaleFactor,
                         ),
                       ),
-              ),
+                    ),
               const SizedBox(height: 12),
               
-              // 截止日期
-              Row(
+              // 截止日期和标签
+              Wrap(
+                spacing: 8,
+                runSpacing: 6,
+                crossAxisAlignment: WrapCrossAlignment.center,
                 children: [
-                  Icon(
-                    Icons.calendar_today_outlined,
-                    size: 16 * textScaleFactor,
-                    color: widget.homework.isOverdue 
-                        ? colorScheme.error 
-                        : colorScheme.onSurfaceVariant,
+                  // 截止日期
+                  Row(
+                    mainAxisSize: MainAxisSize.min,
+                    children: [
+                      Icon(
+                        Icons.calendar_today_outlined,
+                        size: 16,
+                        color: widget.homework.isOverdue 
+                            ? colorScheme.error 
+                            : colorScheme.onSurfaceVariant,
+                      ),
+                      const SizedBox(width: 6),
+                      Text(
+                        _getFormattedDate(),
+                        style: theme.textTheme.bodySmall?.copyWith(
+                        color: widget.homework.isOverdue 
+                            ? colorScheme.error 
+                            : colorScheme.onSurfaceVariant,
+                        fontWeight: FontWeight.w500,
+                      ),
+                      ),
+                    ],
                   ),
-                  const SizedBox(width: 6),
-                  Text(
-                    _getFormattedDate(),
-                    style: theme.textTheme.bodySmall?.copyWith(
-                      color: widget.homework.isOverdue 
-                          ? colorScheme.error 
-                          : colorScheme.onSurfaceVariant,
-                      fontWeight: FontWeight.w500,
-                      fontSize: (theme.textTheme.bodySmall?.fontSize ?? 12) * textScaleFactor,
-                    ),
-                  ),
-                ],
-              ),
-              
-              // 状态标签
-              if (_getStatusTag() != null) ...[
-                const SizedBox(height: 8),
-                _getStatusTag()!,
-              ],
-              
-              // 作业标签
-              if (widget.homework.tags.isNotEmpty) ...[
-                const SizedBox(height: 8),
-                Wrap(
-                  spacing: 6,
-                  runSpacing: 6,
-                  children: widget.homework.tags.map((tag) => Container(
+                  
+                  // 状态标签
+                  if (_getStatusTag() != null) _getStatusTag()!,
+                  
+                  // 作业标签
+                  ...widget.homework.tags.map((tag) => Container(
                     padding: const EdgeInsets.symmetric(horizontal: 8, vertical: 4),
                     decoration: BoxDecoration(
                       color: colorScheme.secondaryContainer,
                       borderRadius: BorderRadius.circular(8),
-                      border: Border.all(
-                        color: colorScheme.outline.withValues(alpha: 0.2),
-                      ),
                     ),
                     child: Text(
                       tag,
                       style: theme.textTheme.labelSmall?.copyWith(
                         color: colorScheme.onSecondaryContainer,
                         fontWeight: FontWeight.w500,
-                        fontSize: (theme.textTheme.labelSmall?.fontSize ?? 11) * textScaleFactor,
                       ),
                     ),
-                  )).toList(),
-                ),
-              ],
+                  )),
+                ],
+              ),
               
               // 编辑和删除按钮
               if (widget.isSelected) ...[
@@ -214,27 +197,33 @@ class _HomeworkCardState extends State<HomeworkCard> {
                 Row(
                   mainAxisAlignment: MainAxisAlignment.end,
                   children: [
-                    IconButton.outlined( // MD3 outlined icon button
-                      icon: Icon(Icons.edit_outlined, size: 18 * textScaleFactor),
+                    IconButton( // 改为填充样式的按钮
+                      icon: const Icon(Icons.edit_outlined, size: 18),
                       onPressed: widget.onEdit,
                       tooltip: '编辑',
                       style: IconButton.styleFrom(
                         foregroundColor: colorScheme.primary,
-                        side: BorderSide(color: colorScheme.outline),
+                        backgroundColor: colorScheme.primaryContainer.withValues(alpha: 0.3),
                         padding: const EdgeInsets.all(8),
-                        minimumSize: Size(36 * textScaleFactor, 36 * textScaleFactor),
+                        minimumSize: const Size(36, 36),
+                        shape: RoundedRectangleBorder(
+                          borderRadius: BorderRadius.circular(8),
+                        ),
                       ),
                     ),
                     const SizedBox(width: 8),
-                    IconButton.outlined( // MD3 outlined icon button
-                      icon: Icon(Icons.delete_outline, size: 18 * textScaleFactor),
+                    IconButton( // 改为填充样式的按钮
+                      icon: const Icon(Icons.delete_outline, size: 18),
                       onPressed: widget.onDelete,
                       tooltip: '删除',
                       style: IconButton.styleFrom(
                         foregroundColor: colorScheme.error,
-                        side: BorderSide(color: colorScheme.outline),
+                        backgroundColor: colorScheme.errorContainer.withValues(alpha: 0.3),
                         padding: const EdgeInsets.all(8),
-                        minimumSize: Size(36 * textScaleFactor, 36 * textScaleFactor),
+                        minimumSize: const Size(36, 36),
+                        shape: RoundedRectangleBorder(
+                          borderRadius: BorderRadius.circular(8),
+                        ),
                       ),
                     ),
                   ],

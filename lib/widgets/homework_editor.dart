@@ -260,10 +260,22 @@ class _HomeworkEditorState extends State<HomeworkEditor> {
     final colorScheme = theme.colorScheme;
     
     return Dialog(
-      shape: RoundedRectangleBorder(borderRadius: BorderRadius.circular(28)), // MD3 圆角
+      backgroundColor: Colors.transparent,
+      elevation: 0,
       child: Container(
         width: 700,
         height: 750,
+        decoration: BoxDecoration(
+          color: colorScheme.surface,
+          borderRadius: BorderRadius.circular(16),
+          boxShadow: [
+            BoxShadow(
+              color: Colors.black.withValues(alpha: 0.1),
+              blurRadius: 20,
+              offset: const Offset(0, 8),
+            ),
+          ],
+        ),
         padding: const EdgeInsets.all(24),
         child: Column(
           crossAxisAlignment: CrossAxisAlignment.start,
@@ -279,7 +291,7 @@ class _HomeworkEditorState extends State<HomeworkEditor> {
                   ),
                 ),
                 const Spacer(),
-                IconButton.outlined(
+                IconButton(
                   icon: const Icon(Icons.close),
                   onPressed: widget.onCancel,
                 ),
@@ -290,35 +302,38 @@ class _HomeworkEditorState extends State<HomeworkEditor> {
             Row(
               children: [
                 Expanded(
-                  flex: 2,
-                  child: DropdownButtonFormField<String>(
-                    initialValue: _selectedSubject,
-                    decoration: InputDecoration(
-                      labelText: '学科',
-                      border: OutlineInputBorder(
-                        borderRadius: BorderRadius.circular(12), // MD3 圆角
-                      ),
-                      filled: true,
-                      fillColor: colorScheme.surfaceContainerHighest.withValues(alpha: 0.3),
-                      contentPadding: const EdgeInsets.symmetric(horizontal: 16, vertical: 12),
+                  child: Container(
+                    decoration: BoxDecoration(
+                      color: colorScheme.surfaceContainerHighest,
+                      borderRadius: BorderRadius.circular(12),
                     ),
-                    items: _availableSubjects.map((subject) => DropdownMenuItem(
-                      value: subject,
-                      child: Text(subject),
-                    )).toList(),
-                    onChanged: (value) {
-                      if (value != null) {
-                        setState(() {
-                          _selectedSubject = value;
-                        });
-                      }
-                    },
+                    child: DropdownButtonFormField<String>(
+                      initialValue: _selectedSubject,
+                      decoration: const InputDecoration(
+                        labelText: '学科',
+                        border: InputBorder.none,
+                        enabledBorder: InputBorder.none,
+                        focusedBorder: InputBorder.none,
+                        filled: false,
+                        contentPadding: EdgeInsets.symmetric(horizontal: 16, vertical: 12),
+                      ),
+                      items: _availableSubjects.map((subject) => DropdownMenuItem(
+                        value: subject,
+                        child: Text(subject),
+                      )).toList(),
+                      onChanged: (value) {
+                        if (value != null) {
+                          setState(() {
+                            _selectedSubject = value;
+                          });
+                        }
+                      },
+                    ),
                   ),
                 ),
                 const SizedBox(width: 16),
                 
                 Expanded(
-                  flex: 3,
                   child: OutlinedButton.icon(
                     onPressed: _selectDate,
                     icon: Icon(Icons.calendar_today_outlined, 
@@ -333,8 +348,8 @@ class _HomeworkEditorState extends State<HomeworkEditor> {
                       shape: RoundedRectangleBorder(
                         borderRadius: BorderRadius.circular(12),
                       ),
-                      side: BorderSide(color: colorScheme.outline),
-                      backgroundColor: colorScheme.surfaceContainerHighest.withValues(alpha: 0.3),
+                      side: BorderSide.none,
+                      backgroundColor: colorScheme.surfaceContainerHighest,
                       minimumSize: const Size(0, 48),
                     ),
                   ),
@@ -371,8 +386,9 @@ class _HomeworkEditorState extends State<HomeworkEditor> {
                         color: colorScheme.onSecondaryContainer,
                       ),
                       backgroundColor: colorScheme.secondaryContainer,
+                      side: BorderSide.none,
                       shape: RoundedRectangleBorder(
-                        borderRadius: BorderRadius.circular(8), // MD3 圆角
+                        borderRadius: BorderRadius.circular(8),
                       ),
                       materialTapTargetSize: MaterialTapTargetSize.shrinkWrap,
                     )).toList(),
@@ -395,8 +411,9 @@ class _HomeworkEditorState extends State<HomeworkEditor> {
                               )),
                               onPressed: () => _addTag(tag),
                               backgroundColor: colorScheme.surfaceContainerHighest,
+                              side: BorderSide.none,
                               shape: RoundedRectangleBorder(
-                                borderRadius: BorderRadius.circular(8), // MD3 圆角
+                                borderRadius: BorderRadius.circular(8),
                               ),
                               materialTapTargetSize: MaterialTapTargetSize.shrinkWrap,
                             )),
@@ -409,9 +426,8 @@ class _HomeworkEditorState extends State<HomeworkEditor> {
                       ),
                       onPressed: () => _showAddTagDialog(),
                       backgroundColor: colorScheme.primaryContainer,
-                      shape: RoundedRectangleBorder(
-                        borderRadius: BorderRadius.circular(8), // MD3 圆角
-                      ),
+                      side: BorderSide.none,
+                      shape: const CircleBorder(),
                       materialTapTargetSize: MaterialTapTargetSize.shrinkWrap,
                     ),
                   ],
@@ -439,13 +455,8 @@ class _HomeworkEditorState extends State<HomeworkEditor> {
                       decoration: BoxDecoration(
                         color: _isBold 
                           ? colorScheme.primaryContainer 
-                          : colorScheme.surfaceContainerHighest.withValues(alpha: 0.3),
+                          : colorScheme.surfaceContainerHighest,
                         borderRadius: BorderRadius.circular(6),
-                        border: Border.all(
-                          color: _isBold 
-                            ? colorScheme.primary 
-                            : colorScheme.outline.withValues(alpha: 0.2)
-                        ),
                       ),
                       child: IconButton(
                         icon: Icon(
@@ -488,13 +499,8 @@ class _HomeworkEditorState extends State<HomeworkEditor> {
                       decoration: BoxDecoration(
                         color: _isItalic 
                           ? colorScheme.primaryContainer 
-                          : colorScheme.surfaceContainerHighest.withValues(alpha: 0.3),
+                          : colorScheme.surfaceContainerHighest,
                         borderRadius: BorderRadius.circular(6),
-                        border: Border.all(
-                          color: _isItalic 
-                            ? colorScheme.primary 
-                            : colorScheme.outline.withValues(alpha: 0.2)
-                        ),
                       ),
                       child: IconButton(
                         icon: Icon(
@@ -537,13 +543,8 @@ class _HomeworkEditorState extends State<HomeworkEditor> {
                       decoration: BoxDecoration(
                         color: _isStrikethrough 
                           ? colorScheme.primaryContainer 
-                          : colorScheme.surfaceContainerHighest.withValues(alpha: 0.3),
+                          : colorScheme.surfaceContainerHighest,
                         borderRadius: BorderRadius.circular(6),
-                        border: Border.all(
-                          color: _isStrikethrough 
-                            ? colorScheme.primary 
-                            : colorScheme.outline.withValues(alpha: 0.2)
-                        ),
                       ),
                       child: IconButton(
                         icon: Icon(
@@ -584,9 +585,8 @@ class _HomeworkEditorState extends State<HomeworkEditor> {
                     // 减小字号按钮
                     Container(
                       decoration: BoxDecoration(
-                        color: colorScheme.surfaceContainerHighest.withValues(alpha: 0.3),
+                        color: colorScheme.surfaceContainerHighest,
                         borderRadius: BorderRadius.circular(6),
-                        border: Border.all(color: colorScheme.outline.withValues(alpha: 0.2)),
                       ),
                       child: IconButton(
                         icon: const Icon(Icons.text_decrease),
@@ -604,9 +604,8 @@ class _HomeworkEditorState extends State<HomeworkEditor> {
                       width: 50,
                       height: 32,
                       decoration: BoxDecoration(
-                        border: Border.all(color: colorScheme.outline.withValues(alpha: 0.3)),
                         borderRadius: BorderRadius.circular(6),
-                        color: colorScheme.surface,
+                        color: colorScheme.surfaceContainerHighest,
                       ),
                       child: Center(
                         child: TextField(
@@ -632,9 +631,8 @@ class _HomeworkEditorState extends State<HomeworkEditor> {
                     // 增大字号按钮
                     Container(
                       decoration: BoxDecoration(
-                        color: colorScheme.surfaceContainerHighest.withValues(alpha: 0.3),
+                        color: colorScheme.surfaceContainerHighest,
                         borderRadius: BorderRadius.circular(6),
-                        border: Border.all(color: colorScheme.outline.withValues(alpha: 0.2)),
                       ),
                       child: IconButton(
                         icon: const Icon(Icons.text_increase),
@@ -654,9 +652,8 @@ class _HomeworkEditorState extends State<HomeworkEditor> {
             Expanded(
               child: Container(
                 decoration: BoxDecoration(
-                  border: Border.all(color: colorScheme.outline),
-                  borderRadius: BorderRadius.circular(12), // MD3 圆角
-                  color: colorScheme.surface,
+                  borderRadius: BorderRadius.circular(12),
+                  color: colorScheme.surfaceContainerHighest,
                 ),
                 child: QuillEditor.basic(
                    controller: _contentController,
@@ -676,12 +673,15 @@ class _HomeworkEditorState extends State<HomeworkEditor> {
             Row(
               mainAxisAlignment: MainAxisAlignment.end,
               children: [
-                OutlinedButton(
+                ElevatedButton(
                   onPressed: widget.onCancel,
-                  style: OutlinedButton.styleFrom(
+                  style: ElevatedButton.styleFrom(
                     padding: const EdgeInsets.symmetric(horizontal: 24, vertical: 12),
+                    backgroundColor: colorScheme.surfaceContainerHighest,
+                    foregroundColor: colorScheme.onSurface,
+                    elevation: 0,
                     shape: RoundedRectangleBorder(
-                      borderRadius: BorderRadius.circular(20), // MD3 圆角
+                      borderRadius: BorderRadius.circular(20),
                     ),
                   ),
                   child: const Text('取消'),
@@ -713,7 +713,9 @@ class _HomeworkEditorState extends State<HomeworkEditor> {
         final colorScheme = theme.colorScheme;
         
         return AlertDialog(
-          shape: RoundedRectangleBorder(borderRadius: BorderRadius.circular(28)), // MD3 圆角
+          backgroundColor: colorScheme.surface,
+          elevation: 0,
+          shape: RoundedRectangleBorder(borderRadius: BorderRadius.circular(16)),
           title: Text('添加新标签', 
             style: theme.textTheme.headlineSmall?.copyWith(
               fontWeight: FontWeight.w500,
@@ -723,11 +725,12 @@ class _HomeworkEditorState extends State<HomeworkEditor> {
             controller: _newTagController,
             decoration: InputDecoration(
               hintText: '输入标签名称',
-              border: OutlineInputBorder(
-                borderRadius: BorderRadius.circular(12), // MD3 圆角
-              ),
+              border: InputBorder.none,
+              enabledBorder: InputBorder.none,
+              focusedBorder: InputBorder.none,
               filled: true,
-              fillColor: colorScheme.surfaceContainerHighest.withValues(alpha: 0.3),
+              fillColor: colorScheme.surfaceContainerHighest,
+              contentPadding: const EdgeInsets.symmetric(horizontal: 16, vertical: 12),
             ),
             autofocus: true,
             onSubmitted: (_) {
