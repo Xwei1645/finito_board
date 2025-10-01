@@ -96,6 +96,9 @@ class _HomeworkBoardState extends State<HomeworkBoard> {
   
   // 快捷菜单显示状态
   bool _isQuickMenuVisible = false;
+  
+  // 全屏状态
+  bool _isFullScreen = false;
 
   @override
   void initState() {
@@ -124,6 +127,10 @@ class _HomeworkBoardState extends State<HomeworkBoard> {
   }
 
   void _showCustomSnackBar(String message) {
+    // 先清除当前显示的SnackBar，实现覆盖效果
+    ScaffoldMessenger.of(context).clearSnackBars();
+    
+    // 显示新的SnackBar
     ScaffoldMessenger.of(context).showSnackBar(
       SnackBar(
         content: Text(message),
@@ -138,6 +145,20 @@ class _HomeworkBoardState extends State<HomeworkBoard> {
         ),
       ),
     );
+  }
+
+  void _toggleFullScreen() async {
+    setState(() {
+      _isFullScreen = !_isFullScreen;
+    });
+    
+    if (_isFullScreen) {
+      await windowManager.setFullScreen(true);
+      _showCustomSnackBar('已进入全屏模式');
+    } else {
+      await windowManager.setFullScreen(false);
+      _showCustomSnackBar('已退出全屏模式');
+    }
   }
 
   void _onEditHomework(String homeworkId) {
@@ -292,8 +313,12 @@ class _HomeworkBoardState extends State<HomeworkBoard> {
             width: double.infinity,
             height: double.infinity,
             decoration: BoxDecoration(
-              color: Colors.white.withValues(alpha: 0.92),
-              borderRadius: BorderRadius.circular(12),
+              color: _isFullScreen 
+                  ? Colors.white 
+                  : Colors.white.withValues(alpha: 0.92),
+              borderRadius: _isFullScreen 
+                  ? BorderRadius.zero 
+                  : BorderRadius.circular(12),
             ),
             child: hasHomework
                 ? Theme(
@@ -383,6 +408,12 @@ class _HomeworkBoardState extends State<HomeworkBoard> {
             icon: Icons.add,
             onPressed: () => _showHomeworkEditor(),
             tooltip: '新建',
+          ),
+          const SizedBox(width: 4),
+          _buildToolbarButton(
+            icon: _isFullScreen ? Icons.fullscreen_exit : Icons.fullscreen,
+            onPressed: _toggleFullScreen,
+            tooltip: _isFullScreen ? '退出全屏' : '全屏',
           ),
           const SizedBox(width: 4),
           _buildToolbarButton(
