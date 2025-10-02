@@ -1,0 +1,34 @@
+name: Build Release
+
+on:
+  push:
+  workflow_dispatch:
+
+permissions:
+  contents: write
+
+jobs:
+  build_windows:
+    runs-on: windows-latest
+    steps:
+      - name: Clone repository
+        uses: actions/checkout@v4
+
+      - name: Set up Flutter
+        uses: subosito/flutter-action@v2
+        with:
+          flutter-version: '3.35.4'
+          channel: stable
+
+      - name: Init flutter env
+        run: flutter pub get
+
+      - name: Build windows app
+        run: flutter build windows --release
+
+      - name: Upload windows artifact
+        uses: actions/upload-artifact@v4
+        with:
+          name: finito-board-windows-x64
+          path: |
+            build\windows\x64\runner\Release
