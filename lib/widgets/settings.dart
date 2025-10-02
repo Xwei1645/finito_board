@@ -1,5 +1,6 @@
 import 'package:flutter/material.dart';
 import 'package:url_launcher/url_launcher.dart';
+import 'package:package_info_plus/package_info_plus.dart';
 
 class SettingsWindow extends StatefulWidget {
   const SettingsWindow({
@@ -110,7 +111,11 @@ class _SettingsWindowState extends State<SettingsWindow> {
 
 
 
-  void _showAboutDialog(BuildContext context) {
+  void _showAboutDialog(BuildContext context) async {
+    final packageInfo = await PackageInfo.fromPlatform();
+    
+    if (!context.mounted) return;
+    
     showDialog(
       context: context,
       builder: (context) => AlertDialog(
@@ -121,9 +126,9 @@ class _SettingsWindowState extends State<SettingsWindow> {
           children: [
             const Text('FinitoBoard'),
             const SizedBox(height: 8),
-            const Text('版本: 1.0.0'),
+            Text('版本: ${packageInfo.version}'),
             const SizedBox(height: 8),
-            const Text('一个简洁高效的作业管理工具'),
+            const Text('集中布置作业！'),
             const SizedBox(height: 16),
             TextButton.icon(
               onPressed: () async {

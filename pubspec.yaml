@@ -1,7 +1,7 @@
 name: finito_board
 description: "A new Flutter project."
 publish_to: 'none'
-version: 0.1.0
+version: 0.1.0-dev.1
 
 environment:
   sdk: ^3.9.2
@@ -15,6 +15,7 @@ dependencies:
   flutter_quill: ^11.4.2
   intl: any
   url_launcher: ^6.2.4
+  package_info_plus: ^8.0.0
 
 dev_dependencies:
   flutter_test:
