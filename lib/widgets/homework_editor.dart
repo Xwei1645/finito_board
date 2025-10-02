@@ -295,21 +295,12 @@ class _HomeworkEditorState extends State<HomeworkEditor> {
           crossAxisAlignment: CrossAxisAlignment.start,
           children: [
             // 标题栏
-            Row(
-              children: [
-                Text(
-                  widget.homework == null ? '布置作业' : '编辑作业',
-                  style: theme.textTheme.headlineSmall?.copyWith(
-                    fontWeight: FontWeight.w500,
-                    color: colorScheme.onSurface,
-                  ),
-                ),
-                const Spacer(),
-                IconButton(
-                  icon: const Icon(Icons.close),
-                  onPressed: widget.onCancel,
-                ),
-              ],
+            Text(
+              widget.homework == null ? '布置作业' : '编辑作业',
+              style: theme.textTheme.headlineSmall?.copyWith(
+                fontWeight: FontWeight.w500,
+                color: colorScheme.onSurface,
+              ),
             ),
             const SizedBox(height: 24),
             
@@ -481,7 +472,9 @@ class _HomeworkEditorState extends State<HomeworkEditor> {
                       onPressed: () => _showAddTagDialog(),
                       backgroundColor: colorScheme.primaryContainer,
                       side: BorderSide.none,
-                      shape: const CircleBorder(),
+                      shape: RoundedRectangleBorder(
+                        borderRadius: BorderRadius.circular(8),
+                      ),
                       materialTapTargetSize: MaterialTapTargetSize.shrinkWrap,
                     ),
                   ],

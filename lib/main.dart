@@ -14,6 +14,8 @@ import 'widgets/subject_header.dart';
 import 'widgets/homework_editor.dart';
 import 'widgets/empty_state.dart';
 import 'widgets/settings_window.dart';
+import 'widgets/subject_manager.dart';
+import 'widgets/tag_manager.dart';
 
 void main() async {
   WidgetsFlutterBinding.ensureInitialized();
@@ -615,7 +617,7 @@ class _HomeworkBoardState extends State<HomeworkBoard> {
                     icon: Icons.subject,
                     text: '科目',
                     onPressed: () {
-                      // TODO: 实现科目编辑功能
+                      _showSubjectManager();
                     },
                   ),
                 ),
@@ -625,7 +627,7 @@ class _HomeworkBoardState extends State<HomeworkBoard> {
                     icon: Icons.label,
                     text: '标签',
                     onPressed: () {
-                      // TODO: 实现标签编辑功能
+                      _showTagManager();
                     },
                   ),
                 ),
@@ -989,6 +991,40 @@ class _HomeworkBoardState extends State<HomeworkBoard> {
               ),
             ),
           ],
+        );
+      },
+    );
+  }
+
+  // 显示科目管理对话框
+  void _showSubjectManager() {
+    showDialog(
+      context: context,
+      builder: (BuildContext context) {
+        return SubjectManager(
+          subjects: SampleData.getAvailableSubjects(),
+          onSubjectsChanged: (updatedSubjects) {
+            // 这里可以添加更新科目列表的逻辑
+            // 目前只是显示提示信息
+            _showCustomSnackBar('科目列表已更新');
+          },
+        );
+      },
+    );
+  }
+
+  // 显示标签管理对话框
+  void _showTagManager() {
+    showDialog(
+      context: context,
+      builder: (BuildContext context) {
+        return TagManager(
+          tags: SampleData.getAvailableTags(),
+          onTagsChanged: (updatedTags) {
+            // 这里可以添加更新标签列表的逻辑
+            // 目前只是显示提示信息
+            _showCustomSnackBar('标签列表已更新');
+          },
         );
       },
     );
