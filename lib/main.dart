@@ -5,15 +5,13 @@ import 'package:flutter/material.dart';
 import 'package:flutter_localizations/flutter_localizations.dart';
 import 'package:flutter_quill/flutter_quill.dart';
 import 'package:window_manager/window_manager.dart';
-import 'package:launch_at_startup/launch_at_startup.dart';
-import 'package:win32/win32.dart' as win32;
 import 'models/subject.dart';
 import 'models/homework.dart';
 import 'widgets/homework_card.dart';
 import 'widgets/subject_header.dart';
 import 'widgets/homework_editor.dart';
 import 'widgets/empty_state.dart';
-import 'widgets/settings_window.dart';
+import 'widgets/settings.dart';
 import 'widgets/subject_manager.dart';
 import 'widgets/tag_manager.dart';
 
@@ -22,13 +20,6 @@ void main() async {
   
   if (!kIsWeb && (Platform.isWindows || Platform.isLinux || Platform.isMacOS)) {
     await windowManager.ensureInitialized();
-    
-    // 初始化开机自启功能
-    launchAtStartup.setup(
-      appName: "FinitoBoard",
-      appPath: Platform.resolvedExecutable,
-      packageName: 'dev.xwei1645.finitoboard',
-    );
     
     WindowOptions windowOptions = const WindowOptions(
       size: Size(1200, 800),
@@ -119,44 +110,16 @@ class _HomeworkBoardState extends State<HomeworkBoard> {
   
   // 拖动状态
   bool _isDragging = false;
-  
-  // 开机自启状态
-  bool _isAutoStart = false;
-  
-  // 窗口置底状态
-  bool _isAlwaysOnBottom = false;
-  
-  // 窗口置底维持定时器
-  Timer? _alwaysOnBottomTimer;
 
   @override
   void initState() {
     super.initState();
     _distributeHomeworksToColumns();
-    _checkAutoStartStatus();
   }
   
-  // 检查开机自启状态
-  void _checkAutoStartStatus() async {
-    if (!kIsWeb && (Platform.isWindows || Platform.isLinux || Platform.isMacOS)) {
-      try {
-        bool isEnabled = await launchAtStartup.isEnabled();
-        setState(() {
-          _isAutoStart = isEnabled;
-        });
-      } catch (e) {
-        // 如果检查失败，默认为false
-        setState(() {
-          _isAutoStart = false;
-        });
-      }
-    }
-  }
-
   @override
   void dispose() {
     _selectionTimer?.cancel();
-    _stopAlwaysOnBottomTimer();
     super.dispose();
   }
 
@@ -837,130 +800,14 @@ class _HomeworkBoardState extends State<HomeworkBoard> {
     });
   }
 
-  // 切换窗口置底状态
-  void _toggleAlwaysOnBottom() async {
-    if (!Platform.isWindows) {
-      _showCustomSnackBar('窗口置底功能仅支持Windows系统');
-      return;
-    }
-    
-    setState(() {
-      _isAlwaysOnBottom = !_isAlwaysOnBottom;
-    });
-    
-    if (_isAlwaysOnBottom) {
-      _startAlwaysOnBottomTimer();
-      _showCustomSnackBar('窗口已置底');
-    } else {
-      _stopAlwaysOnBottomTimer();
-      _showCustomSnackBar('已取消窗口置底');
-    }
-  }
-  
-  // 开始窗口置底定时器
-  void _startAlwaysOnBottomTimer() {
-    _stopAlwaysOnBottomTimer(); // 确保之前的定时器被清理
-    
-    // 立即执行一次
-    _setWindowToBottom();
-    
-    // 每500毫秒检查一次并维持窗口在底层
-    _alwaysOnBottomTimer = Timer.periodic(const Duration(milliseconds: 500), (timer) {
-      if (_isAlwaysOnBottom) {
-        _setWindowToBottom();
-      } else {
-        timer.cancel();
-      }
-    });
-  }
-  
-  // 停止窗口置底定时器
-  void _stopAlwaysOnBottomTimer() {
-    _alwaysOnBottomTimer?.cancel();
-    _alwaysOnBottomTimer = null;
-    
-    // 恢复窗口到正常层级
-    if (Platform.isWindows) {
-      try {
-        final hwnd = win32.GetActiveWindow();
-        if (hwnd != 0) {
-          win32.SetWindowPos(
-            hwnd,
-            win32.HWND_NOTOPMOST,
-            0, 0, 0, 0,
-            win32.SWP_NOMOVE | win32.SWP_NOSIZE | win32.SWP_NOACTIVATE,
-          );
-        }
-      } catch (e) {
-        // 忽略错误
-      }
-    }
-  }
-  
-  // 设置窗口到底层
-  void _setWindowToBottom() {
-    if (!Platform.isWindows) return;
-    
-    try {
-      final hwnd = win32.GetActiveWindow();
-      if (hwnd != 0) {
-        win32.SetWindowPos(
-          hwnd,
-          win32.HWND_BOTTOM,
-          0, 0, 0, 0,
-          win32.SWP_NOMOVE | win32.SWP_NOSIZE | win32.SWP_NOACTIVATE,
-        );
-      }
-    } catch (e) {
-      // 忽略错误，避免频繁显示错误消息
-    }
-  }
+
 
   // 打开设置窗口
   void _openSettingsWindow() async {
-    await Navigator.of(context).push(
-      MaterialPageRoute(
-        builder: (context) => SettingsWindow(
-          isAlwaysOnBottom: _isAlwaysOnBottom,
-          isAutoStart: _isAutoStart,
-          onAlwaysOnBottomChanged: (value) {
-            setState(() {
-              _isAlwaysOnBottom = value;
-            });
-            _toggleAlwaysOnBottom();
-          },
-          onAutoStartChanged: (value) {
-            setState(() {
-              _isAutoStart = value;
-            });
-            _toggleAutoStart();
-          },
-        ),
-      ),
+    await showDialog(
+      context: context,
+      builder: (context) => SettingsWindow(),
     );
-  }
-
-  // 切换开机自启状态
-  void _toggleAutoStart() async {
-    try {
-      if (_isAutoStart) {
-        // 禁用开机自启
-        await launchAtStartup.disable();
-        setState(() {
-          _isAutoStart = false;
-        });
-        _showCustomSnackBar('已取消开机自启');
-      } else {
-        // 启用开机自启
-        await launchAtStartup.enable();
-        setState(() {
-          _isAutoStart = true;
-        });
-        _showCustomSnackBar('已设置开机自启');
-      }
-    } catch (e) {
-      _showCustomSnackBar('设置开机自启失败: $e');
-    }
   }
 
   // 退出应用
