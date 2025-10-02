@@ -301,7 +301,7 @@ class _TagManagerState extends State<TagManager> {
                                   child: Container(
                                     padding: const EdgeInsets.all(2),
                                     decoration: BoxDecoration(
-                                      color: colorScheme.onPrimaryContainer.withOpacity(0.1),
+                                      color: colorScheme.onPrimaryContainer.withValues(alpha: 0.1),
                                       borderRadius: BorderRadius.circular(3),
                                     ),
                                     child: Icon(
