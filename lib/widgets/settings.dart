@@ -93,6 +93,11 @@ class _SettingsWindowState extends State<SettingsWindow> {
                   onPressed: () {
                     Navigator.of(context).pop();
                   },
+                  style: FilledButton.styleFrom(
+                    shape: RoundedRectangleBorder(
+                      borderRadius: BorderRadius.circular(20),
+                    ),
+                  ),
                   child: const Text('关闭'),
                 ),
               ],
@@ -191,8 +196,13 @@ class _SettingsWindowState extends State<SettingsWindow> {
           ],
         ),
         actions: [
-          TextButton(
+          FilledButton(
             onPressed: () => Navigator.of(context).pop(),
+            style: FilledButton.styleFrom(
+              shape: RoundedRectangleBorder(
+                borderRadius: BorderRadius.circular(20),
+              ),
+            ),
             child: const Text('确定'),
           ),
         ],

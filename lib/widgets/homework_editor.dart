@@ -786,11 +786,15 @@ class _HomeworkEditorState extends State<HomeworkEditor> {
             },
           ),
           actions: [
-            OutlinedButton(
+            ElevatedButton(
               onPressed: () => Navigator.of(context).pop(),
-              style: OutlinedButton.styleFrom(
+              style: ElevatedButton.styleFrom(
+                padding: const EdgeInsets.symmetric(horizontal: 24, vertical: 12),
+                backgroundColor: colorScheme.surfaceContainerHighest,
+                foregroundColor: colorScheme.onSurface,
+                elevation: 0,
                 shape: RoundedRectangleBorder(
-                  borderRadius: BorderRadius.circular(20), // MD3 圆角
+                  borderRadius: BorderRadius.circular(20),
                 ),
               ),
               child: const Text('取消'),

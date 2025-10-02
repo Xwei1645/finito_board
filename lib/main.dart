@@ -820,22 +820,30 @@ class _HomeworkBoardState extends State<HomeworkBoard> {
           title: const Text('确认退出'),
           content: const Text('确定要退出应用程序吗？'),
           actions: [
-            TextButton(
+            OutlinedButton(
               onPressed: () {
                 Navigator.of(context).pop();
               },
+              style: OutlinedButton.styleFrom(
+                shape: RoundedRectangleBorder(
+                  borderRadius: BorderRadius.circular(20),
+                ),
+              ),
               child: const Text('取消'),
             ),
-            TextButton(
+            FilledButton(
               onPressed: () {
                 Navigator.of(context).pop();
                 // 退出应用
                 windowManager.close();
               },
-              child: Text(
-                '退出',
-                style: TextStyle(color: Colors.red[600]),
+              style: FilledButton.styleFrom(
+                backgroundColor: Colors.red[600],
+                shape: RoundedRectangleBorder(
+                  borderRadius: BorderRadius.circular(20),
+                ),
               ),
+              child: const Text('退出'),
             ),
           ],
         );

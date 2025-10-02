@@ -311,6 +311,11 @@ class _SubjectManagerState extends State<SubjectManager> {
               children: [
                 FilledButton(
                   onPressed: () => Navigator.of(context).pop(),
+                  style: FilledButton.styleFrom(
+                    shape: RoundedRectangleBorder(
+                      borderRadius: BorderRadius.circular(20),
+                    ),
+                  ),
                   child: const Text('关闭'),
                 ),
               ],
