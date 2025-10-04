@@ -990,6 +990,9 @@ class _HomeworkBoardState extends State<HomeworkBoard> with WindowListener {
       context: context,
       builder: (BuildContext context) {
         return AlertDialog(
+          shape: RoundedRectangleBorder(
+            borderRadius: BorderRadius.circular(16),
+          ),
           title: const Text('确认退出'),
           content: const Text('确定要退出应用程序吗？'),
           actions: [

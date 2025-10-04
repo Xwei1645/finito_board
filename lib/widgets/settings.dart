@@ -66,7 +66,7 @@ class _SettingsWindowState extends State<SettingsWindow> {
         height: 600,
         decoration: BoxDecoration(
           color: colorScheme.surface,
-          borderRadius: BorderRadius.circular(8),
+          borderRadius: BorderRadius.circular(16),
         ),
         padding: const EdgeInsets.all(24),
         child: Column(
@@ -401,6 +401,9 @@ class _SettingsWindowState extends State<SettingsWindow> {
     showDialog(
       context: context,
       builder: (context) => AlertDialog(
+        shape: RoundedRectangleBorder(
+          borderRadius: BorderRadius.circular(16),
+        ),
         title: const Text('关于 FinitoBoard'),
         content: Column(
           mainAxisSize: MainAxisSize.min,
