@@ -15,10 +15,14 @@ import 'widgets/settings.dart';
 import 'widgets/subject_manager.dart';
 import 'widgets/tag_manager.dart';
 import 'services/settings_service.dart';
+import 'services/storage/hive_storage_service.dart';
 
 
 void main() async {
   WidgetsFlutterBinding.ensureInitialized();
+  
+  // 初始化Hive存储服务
+  await HiveStorageService.instance.init();
   
   // 初始化设置服务
   await SettingsService.instance.initialize();
@@ -26,9 +30,15 @@ void main() async {
   if (!kIsWeb && (Platform.isWindows || Platform.isLinux || Platform.isMacOS)) {
     await windowManager.ensureInitialized();
     
-    WindowOptions windowOptions = const WindowOptions(
-      size: Size(1200, 800),
-      center: true,
+    // 尝试恢复窗口状态
+    final savedWindowState = SettingsService.instance.getWindowState();
+    final windowSize = savedWindowState != null 
+        ? Size(savedWindowState.width, savedWindowState.height)
+        : const Size(1200, 800);
+    
+    WindowOptions windowOptions = WindowOptions(
+      size: windowSize,
+      center: savedWindowState == null,
       backgroundColor: Colors.transparent,
       skipTaskbar: true,
       titleBarStyle: TitleBarStyle.hidden,
@@ -38,6 +48,12 @@ void main() async {
     windowManager.waitUntilReadyToShow(windowOptions, () async {
       await windowManager.show();
       await windowManager.focus();
+      
+      // 恢复窗口状态
+      if (savedWindowState != null) {
+        await SettingsService.instance.restoreWindowState();
+      }
+      
       // 初始状态设置为锁定（无边框，不可调整大小）
       await windowManager.setAsFrameless();
       await windowManager.setHasShadow(false);
@@ -130,8 +146,8 @@ class HomeworkBoard extends StatefulWidget {
   State<HomeworkBoard> createState() => _HomeworkBoardState();
 }
 
-class _HomeworkBoardState extends State<HomeworkBoard> {
-  List<Subject> subjects = SampleData.getSubjects();
+class _HomeworkBoardState extends State<HomeworkBoard> with WindowListener {
+  List<Subject> subjects = [];
 
   String? _selectedHomeworkId;
   Timer? _selectionTimer;
@@ -162,8 +178,44 @@ class _HomeworkBoardState extends State<HomeworkBoard> {
   @override
   void initState() {
     super.initState();
-    _distributeHomeworksToColumns();
+    windowManager.addListener(this);
+    _loadDataFromHive();
     _loadBackgroundSettings();
+  }
+
+  Future<void> _loadDataFromHive() async {
+    final storageService = HiveStorageService.instance;
+    final homeworks = storageService.getAllHomework();
+    
+    // 加载界面设置
+    final appConfig = storageService.getAppConfig();
+    
+    // 按科目分组作业
+    Map<String, List<Homework>> homeworksBySubject = {};
+    for (var homework in homeworks) {
+      if (!homeworksBySubject.containsKey(homework.subject)) {
+        homeworksBySubject[homework.subject] = [];
+      }
+      homeworksBySubject[homework.subject]!.add(homework);
+    }
+    
+    // 创建Subject对象
+    List<Subject> loadedSubjects = [];
+    for (var entry in homeworksBySubject.entries) {
+      loadedSubjects.add(Subject(
+        name: entry.key,
+        homeworks: entry.value,
+      ));
+    }
+    
+    setState(() {
+      subjects = loadedSubjects;
+      // 从存储中恢复界面设置
+      _scaleFactor = appConfig.scaleFactor;
+      _columnCount = appConfig.columnCount;
+    });
+    
+    _distributeHomeworksToColumns();
   }
   
   void _loadBackgroundSettings() {
@@ -175,6 +227,7 @@ class _HomeworkBoardState extends State<HomeworkBoard> {
   
   @override
   void dispose() {
+    windowManager.removeListener(this);
     _selectionTimer?.cancel();
     super.dispose();
   }
@@ -292,7 +345,12 @@ class _HomeworkBoardState extends State<HomeworkBoard> {
     }
   }
 
-  void _onDeleteHomework(String homeworkId) {
+  Future<void> _onDeleteHomework(String homeworkId) async {
+    final storageService = HiveStorageService.instance;
+    
+    // 从Hive中删除作业
+    await storageService.deleteHomework(homeworkId);
+    
     setState(() {
       for (var subject in subjects) {
         subject.homeworks.removeWhere((homework) => homework.id == homeworkId);
@@ -315,9 +373,25 @@ class _HomeworkBoardState extends State<HomeworkBoard> {
     );
   }
 
-  void _saveHomework(Homework homework) {
+  Future<void> _saveHomework(Homework homework) async {
+    final storageService = HiveStorageService.instance;
+    
     // 查找是否已存在该作业（编辑模式）
     bool found = false;
+    
+    // 检查是否为编辑模式
+    try {
+      final existingHomework = storageService.getHomeworkById(homework.id);
+      if (existingHomework != null) {
+        found = true;
+      }
+    } catch (e) {
+      // 作业不存在，是新建模式
+      found = false;
+    }
+    
+    // 保存到Hive
+    await storageService.saveHomework(homework);
     
     setState(() {
       for (var subject in subjects) {
@@ -354,8 +428,12 @@ class _HomeworkBoardState extends State<HomeworkBoard> {
       }
     });
 
-    Navigator.of(context).pop();
-    _showCustomSnackBar(found ? '作业已更新' : '作业已创建');
+    if (mounted && context.mounted) {
+      Navigator.of(context).pop();
+    }
+    if (mounted) {
+      _showCustomSnackBar(found ? '作业已更新' : '作业已创建');
+    }
   }
 
 
@@ -864,17 +942,25 @@ class _HomeworkBoardState extends State<HomeworkBoard> {
   }
 
   // 调整界面缩放
-  void _adjustScale(double delta) {
+  void _adjustScale(double delta) async {
+    final newScaleFactor = (_scaleFactor + delta).clamp(50.0, 200.0);
     setState(() {
-      _scaleFactor = (_scaleFactor + delta).clamp(50.0, 200.0);
+      _scaleFactor = newScaleFactor;
     });
+    
+    // 保存到持久化存储
+    await HiveStorageService.instance.saveScaleFactor(newScaleFactor);
   }
 
   // 调整作业列数
-  void _adjustColumnCount(int delta) {
+  void _adjustColumnCount(int delta) async {
+    final newColumnCount = (_columnCount + delta).clamp(1, 5);
     setState(() {
-      _columnCount = (_columnCount + delta).clamp(1, 5);
+      _columnCount = newColumnCount;
     });
+    
+    // 保存到持久化存储
+    await HiveStorageService.instance.saveColumnCount(newColumnCount);
   }
 
   // 切换快捷菜单显示状态
@@ -1006,4 +1092,55 @@ class _HomeworkBoardState extends State<HomeworkBoard> {
     );
   }
 
+  // WindowListener 方法
+  @override
+  void onWindowMoved() {
+    _saveWindowState();
+  }
+
+  @override
+  void onWindowResized() {
+    _saveWindowState();
+  }
+
+  @override
+  void onWindowMaximize() {
+    _saveWindowState();
+  }
+
+  @override
+  void onWindowUnmaximize() {
+    _saveWindowState();
+  }
+
+  @override
+  void onWindowMinimize() {
+    _saveWindowState();
+  }
+
+  @override
+  void onWindowRestore() {
+    _saveWindowState();
+  }
+
+  Future<void> _saveWindowState() async {
+    try {
+      final bounds = await windowManager.getBounds();
+      final isMaximized = await windowManager.isMaximized();
+      final isMinimized = await windowManager.isMinimized();
+      final isFullScreen = await windowManager.isFullScreen();
+
+      await SettingsService.instance.saveWindowState(
+        x: bounds.left,
+        y: bounds.top,
+        width: bounds.width,
+        height: bounds.height,
+        maximized: isMaximized,
+        minimized: isMinimized,
+        fullscreen: isFullScreen,
+      );
+    } catch (e) {
+      // 保存失败，静默处理
+    }
+  }
 }

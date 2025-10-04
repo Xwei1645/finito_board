@@ -7,7 +7,7 @@ import '../models/homework.dart';
 class HomeworkEditor extends StatefulWidget {
   final Homework? homework; // null表示新建，非null表示编辑
   final String? initialSubject; // 新建时的默认学科
-  final Function(Homework) onSave;
+  final Future<void> Function(Homework) onSave;
   final VoidCallback onCancel;
 
   const HomeworkEditor({
@@ -252,7 +252,7 @@ class _HomeworkEditorState extends State<HomeworkEditor> {
     }
   }
 
-  void _save() {
+  Future<void> _save() async {
     // 保存富文本格式的JSON数据
     final content = jsonEncode(_contentController.document.toDelta().toJson());
     
@@ -265,7 +265,7 @@ class _HomeworkEditorState extends State<HomeworkEditor> {
       createdAt: widget.homework?.createdAt ?? DateTime.now(),
     );
 
-    widget.onSave(homework);
+    await widget.onSave(homework);
   }
 
   @override
@@ -735,7 +735,7 @@ class _HomeworkEditorState extends State<HomeworkEditor> {
                 ),
                 const SizedBox(width: 12),
                 FilledButton( // MD3 FilledButton
-                  onPressed: _save,
+                  onPressed: () async => await _save(),
                   style: FilledButton.styleFrom(
                     padding: const EdgeInsets.symmetric(horizontal: 24, vertical: 12),
                     shape: RoundedRectangleBorder(

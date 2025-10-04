@@ -23,6 +23,9 @@ jobs:
       - name: Init flutter env
         run: flutter pub get
 
+      - name: Generate Hive adapters
+        run: dart run build_runner build --delete-conflicting-outputs
+
       - name: Build windows app
         run: flutter build windows --release
 
