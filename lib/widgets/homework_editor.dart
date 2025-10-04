@@ -40,7 +40,7 @@ class _HomeworkEditorState extends State<HomeworkEditor> {
   bool _isStrikethrough = false;
 
   // 可选学科列表
-  static const List<String> _availableSubjects = [];
+  List<String> _availableSubjects = [];
 
 
 
@@ -50,8 +50,11 @@ class _HomeworkEditorState extends State<HomeworkEditor> {
     
     _contentController = QuillController.basic();
     _editorFocusNode = FocusNode();
-    _selectedSubject = widget.homework?.subjectUuid ?? widget.initialSubject ?? _availableSubjects.first;
+    _selectedSubject = widget.homework?.subjectUuid ?? widget.initialSubject ?? '';
     _fontSizeController.text = _currentFontSize.toInt().toString();
+    
+    // 加载所有科目
+    _loadSubjects();
     
     _contentController.addListener(_updateFontSizeDisplay);
     
@@ -67,7 +70,7 @@ class _HomeworkEditorState extends State<HomeworkEditor> {
     }
     
     _selectedDate = widget.homework?.dueDate ?? DateTime.now().add(const Duration(days: 1));
-    _selectedTagUuids = List.from(widget.homework?.tagUuids ?? []);
+    _selectedTagUuids = _cleanInvalidTagUuids(List.from(widget.homework?.tagUuids ?? []));
   }
 
   @override
@@ -77,6 +80,29 @@ class _HomeworkEditorState extends State<HomeworkEditor> {
     _newTagController.dispose();
     _fontSizeController.dispose();
     super.dispose();
+  }
+
+  void _loadSubjects() {
+    final subjects = HiveStorageService.instance.getAllSubjects();
+    setState(() {
+      _availableSubjects = subjects.map((subject) => subject.uuid).toList();
+      // 如果当前选中的科目为空或不在可用科目列表中，且有可用科目，选择第一个
+      if ((_selectedSubject.isEmpty || !_availableSubjects.contains(_selectedSubject)) && _availableSubjects.isNotEmpty) {
+        _selectedSubject = _availableSubjects.first;
+      }
+    });
+  }
+
+  String _getSubjectName(String subjectUuid) {
+    final subject = HiveStorageService.instance.getSubjectByUuid(subjectUuid);
+    return subject?.name ?? '未知科目';
+  }
+
+  List<String> _cleanInvalidTagUuids(List<String> tagUuids) {
+    return tagUuids.where((tagUuid) {
+      final tag = HiveStorageService.instance.getTagByUuid(tagUuid);
+      return tag != null;
+    }).toList();
   }
 
   void _selectDate() async {
@@ -356,9 +382,9 @@ class _HomeworkEditorState extends State<HomeworkEditor> {
                             filled: false,
                             contentPadding: const EdgeInsets.symmetric(horizontal: 16, vertical: 12),
                           ),
-                          items: _availableSubjects.map((subject) => DropdownMenuItem(
-                            value: subject,
-                            child: Text(subject),
+                          items: _availableSubjects.map((subjectUuid) => DropdownMenuItem(
+                            value: subjectUuid,
+                            child: Text(_getSubjectName(subjectUuid)),
                           )).toList(),
                           onChanged: (value) {
                             if (value != null) {
@@ -434,8 +460,10 @@ class _HomeworkEditorState extends State<HomeworkEditor> {
                   Wrap(
                     spacing: 8,
                     runSpacing: 8,
-                    children: _selectedTagUuids.map((tagUuid) {
-                      final tagName = HiveStorageService.instance.getTagByUuid(tagUuid)?.name ?? '未知标签';
+                    children: _selectedTagUuids.where((tagUuid) {
+                      return HiveStorageService.instance.getTagByUuid(tagUuid) != null;
+                    }).map((tagUuid) {
+                      final tagName = HiveStorageService.instance.getTagByUuid(tagUuid)!.name;
                       return Chip(
                         label: Text(tagName, style: TextStyle(
                           fontSize: 13,

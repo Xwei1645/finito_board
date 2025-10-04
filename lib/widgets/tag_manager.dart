@@ -1,13 +1,14 @@
 import 'package:flutter/material.dart';
+import 'package:uuid/uuid.dart';
+import '../models/tag.dart';
+import '../services/storage/hive_storage_service.dart';
 
 class TagManager extends StatefulWidget {
-  final List<String> tags;
-  final Function(List<String>) onTagsChanged;
+  final VoidCallback? onTagsChanged;
 
   const TagManager({
     super.key,
-    required this.tags,
-    required this.onTagsChanged,
+    this.onTagsChanged,
   });
 
   @override
@@ -15,15 +16,19 @@ class TagManager extends StatefulWidget {
 }
 
 class _TagManagerState extends State<TagManager> {
-  late List<String> _tags;
+  late List<Tag> _tags;
   final TextEditingController _newTagController = TextEditingController();
   final TextEditingController _editTagController = TextEditingController();
-  String? _editingTag;
+  String? _editingTagUuid;
 
   @override
   void initState() {
     super.initState();
-    _tags = List.from(widget.tags);
+    _loadTags();
+  }
+
+  void _loadTags() {
+    _tags = HiveStorageService.instance.getAllTags();
   }
 
   @override
@@ -33,49 +38,62 @@ class _TagManagerState extends State<TagManager> {
     super.dispose();
   }
 
-  void _addTag() {
-    final newTag = _newTagController.text.trim();
-    if (newTag.isNotEmpty && !_tags.contains(newTag)) {
+  void _addTag() async {
+    final newTagName = _newTagController.text.trim();
+    if (newTagName.isNotEmpty && !_tags.any((t) => t.name == newTagName)) {
+      final newTag = Tag(
+        uuid: const Uuid().v4(),
+        name: newTagName,
+      );
+      
+      await HiveStorageService.instance.saveTag(newTag);
+      
       setState(() {
-        _tags.add(newTag);
+        _loadTags();
       });
       _newTagController.clear();
-      widget.onTagsChanged(_tags);
+      widget.onTagsChanged?.call();
     }
   }
 
-  void _deleteTag(String tag) {
+  void _deleteTag(Tag tag) async {
+    await HiveStorageService.instance.deleteTag(tag.uuid);
     setState(() {
-      _tags.remove(tag);
+      _loadTags();
     });
-    widget.onTagsChanged(_tags);
+    widget.onTagsChanged?.call();
   }
 
-  void _startEditTag(String tag) {
+  void _startEditTag(Tag tag) {
     setState(() {
-      _editingTag = tag;
-      _editTagController.text = tag;
+      _editingTagUuid = tag.uuid;
+      _editTagController.text = tag.name;
     });
   }
 
-  void _saveEditTag() {
+  void _saveEditTag() async {
     final newName = _editTagController.text.trim();
-    if (newName.isNotEmpty && _editingTag != null) {
+    if (newName.isNotEmpty && _editingTagUuid != null) {
+      final tag = _tags.firstWhere((t) => t.uuid == _editingTagUuid);
+      final updatedTag = Tag(
+        uuid: tag.uuid,
+        name: newName,
+      );
+      
+      await HiveStorageService.instance.saveTag(updatedTag);
+      
       setState(() {
-        final index = _tags.indexOf(_editingTag!);
-        if (index != -1) {
-          _tags[index] = newName;
-        }
-        _editingTag = null;
+        _loadTags();
+        _editingTagUuid = null;
       });
       _editTagController.clear();
-      widget.onTagsChanged(_tags);
+      widget.onTagsChanged?.call();
     }
   }
 
   void _cancelEdit() {
     setState(() {
-      _editingTag = null;
+      _editingTagUuid = null;
     });
     _editTagController.clear();
   }
@@ -210,7 +228,7 @@ class _TagManagerState extends State<TagManager> {
                         spacing: 8,
                         runSpacing: 8,
                         children: _tags.map((tag) {
-                          final isEditing = _editingTag == tag;
+                          final isEditing = _editingTagUuid == tag.uuid;
                           
                           if (isEditing) {
                             return Container(
@@ -289,7 +307,7 @@ class _TagManagerState extends State<TagManager> {
                               mainAxisSize: MainAxisSize.min,
                               children: [
                                 Text(
-                                  tag,
+                                  tag.name,
                                   style: theme.textTheme.bodyLarge?.copyWith(
                                     color: colorScheme.onPrimaryContainer,
                                     fontWeight: FontWeight.w500,

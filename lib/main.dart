@@ -7,7 +7,6 @@ import 'package:flutter_quill/flutter_quill.dart';
 import 'package:window_manager/window_manager.dart';
 import 'models/subject.dart';
 import 'models/homework.dart';
-import 'models/tag.dart';
 import 'widgets/homework_card.dart';
 import 'widgets/subject_header.dart';
 import 'widgets/homework_editor.dart';
@@ -1032,10 +1031,9 @@ class _HomeworkBoardState extends State<HomeworkBoard> with WindowListener {
       context: context,
       builder: (BuildContext context) {
         return SubjectManager(
-          subjects: SampleData.getAvailableSubjects(),
-          onSubjectsChanged: (updatedSubjects) {
-            // 这里可以添加更新科目列表的逻辑
-            // 目前只是显示提示信息
+          onSubjectsChanged: () {
+            // 重新加载作业数据以反映科目变化
+            _loadDataFromHive();
             _showCustomSnackBar('科目列表已更新');
           },
         );
@@ -1049,10 +1047,9 @@ class _HomeworkBoardState extends State<HomeworkBoard> with WindowListener {
       context: context,
       builder: (BuildContext context) {
         return TagManager(
-          tags: Tag.getAvailableTags(),
-          onTagsChanged: (updatedTags) {
-            // 这里可以添加更新标签列表的逻辑
-            // 目前只是显示提示信息
+          onTagsChanged: () {
+            // 重新加载作业数据以反映标签变化
+            _loadDataFromHive();
             _showCustomSnackBar('标签列表已更新');
           },
         );

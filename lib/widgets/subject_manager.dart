@@ -1,13 +1,14 @@
 import 'package:flutter/material.dart';
+import 'package:uuid/uuid.dart';
+import '../models/subject.dart';
+import '../services/storage/hive_storage_service.dart';
 
 class SubjectManager extends StatefulWidget {
-  final List<String> subjects;
-  final Function(List<String>) onSubjectsChanged;
+  final VoidCallback? onSubjectsChanged;
 
   const SubjectManager({
     super.key,
-    required this.subjects,
-    required this.onSubjectsChanged,
+    this.onSubjectsChanged,
   });
 
   @override
@@ -15,15 +16,19 @@ class SubjectManager extends StatefulWidget {
 }
 
 class _SubjectManagerState extends State<SubjectManager> {
-  late List<String> _subjects;
+  late List<Subject> _subjects;
   final TextEditingController _newSubjectController = TextEditingController();
   final TextEditingController _editSubjectController = TextEditingController();
-  String? _editingSubject;
+  String? _editingSubjectUuid;
 
   @override
   void initState() {
     super.initState();
-    _subjects = List.from(widget.subjects);
+    _loadSubjects();
+  }
+
+  void _loadSubjects() {
+    _subjects = HiveStorageService.instance.getAllSubjects();
   }
 
   @override
@@ -33,49 +38,62 @@ class _SubjectManagerState extends State<SubjectManager> {
     super.dispose();
   }
 
-  void _addSubject() {
-    final newSubject = _newSubjectController.text.trim();
-    if (newSubject.isNotEmpty && !_subjects.contains(newSubject)) {
+  void _addSubject() async {
+    final newSubjectName = _newSubjectController.text.trim();
+    if (newSubjectName.isNotEmpty && !_subjects.any((s) => s.name == newSubjectName)) {
+      final newSubject = Subject(
+        uuid: const Uuid().v4(),
+        name: newSubjectName,
+      );
+      
+      await HiveStorageService.instance.saveSubject(newSubject);
+      
       setState(() {
-        _subjects.add(newSubject);
+        _loadSubjects();
       });
       _newSubjectController.clear();
-      widget.onSubjectsChanged(_subjects);
+      widget.onSubjectsChanged?.call();
     }
   }
 
-  void _deleteSubject(String subject) {
+  void _deleteSubject(Subject subject) async {
+    await HiveStorageService.instance.deleteSubject(subject.uuid);
     setState(() {
-      _subjects.remove(subject);
+      _loadSubjects();
     });
-    widget.onSubjectsChanged(_subjects);
+    widget.onSubjectsChanged?.call();
   }
 
-  void _startEditSubject(String subject) {
+  void _startEditSubject(Subject subject) {
     setState(() {
-      _editingSubject = subject;
-      _editSubjectController.text = subject;
+      _editingSubjectUuid = subject.uuid;
+      _editSubjectController.text = subject.name;
     });
   }
 
-  void _saveEditSubject() {
+  void _saveEditSubject() async {
     final newName = _editSubjectController.text.trim();
-    if (newName.isNotEmpty && _editingSubject != null) {
+    if (newName.isNotEmpty && _editingSubjectUuid != null) {
+      final subject = _subjects.firstWhere((s) => s.uuid == _editingSubjectUuid);
+      final updatedSubject = Subject(
+        uuid: subject.uuid,
+        name: newName,
+      );
+      
+      await HiveStorageService.instance.saveSubject(updatedSubject);
+      
       setState(() {
-        final index = _subjects.indexOf(_editingSubject!);
-        if (index != -1) {
-          _subjects[index] = newName;
-        }
-        _editingSubject = null;
+        _loadSubjects();
+        _editingSubjectUuid = null;
       });
       _editSubjectController.clear();
-      widget.onSubjectsChanged(_subjects);
+      widget.onSubjectsChanged?.call();
     }
   }
 
   void _cancelEdit() {
     setState(() {
-      _editingSubject = null;
+      _editingSubjectUuid = null;
     });
     _editSubjectController.clear();
   }
@@ -210,7 +228,7 @@ class _SubjectManagerState extends State<SubjectManager> {
                       itemCount: _subjects.length,
                       itemBuilder: (context, index) {
                         final subject = _subjects[index];
-                        final isEditing = _editingSubject == subject;
+                        final isEditing = _editingSubjectUuid == subject.uuid;
                         
                         return Container(
                           margin: const EdgeInsets.only(bottom: 8),
@@ -263,7 +281,7 @@ class _SubjectManagerState extends State<SubjectManager> {
                                   children: [
                                     Expanded(
                                       child: Text(
-                                   subject,
+                                   subject.name,
                                    style: theme.textTheme.bodyLarge?.copyWith(
                                      color: colorScheme.onSurfaceVariant,
                                      fontWeight: FontWeight.w500,
