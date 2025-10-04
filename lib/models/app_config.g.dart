@@ -17,14 +17,14 @@ class AppConfigAdapter extends TypeAdapter<AppConfig> {
       for (int i = 0; i < numOfFields; i++) reader.readByte(): reader.read(),
     };
     return AppConfig(
-      theme: fields[0] as String? ?? 'system',
-      language: fields[1] as String? ?? 'zh_CN',
-      autoStartup: fields[2] as bool? ?? false,
-      enableNotifications: fields[3] as bool? ?? true,
-      availableSubjects: (fields[4] as List?)?.cast<String>() ?? const [],
-      availableTags: (fields[5] as List?)?.cast<String>() ?? const [],
-      scaleFactor: fields[6] as double? ?? 100.0,
-      columnCount: fields[7] as int? ?? 3,
+      theme: fields[0] as String,
+      language: fields[1] as String,
+      autoStartup: fields[2] as bool,
+      enableNotifications: fields[3] as bool,
+      availableSubjects: (fields[4] as List).cast<String>(),
+      availableTags: (fields[5] as List).cast<String>(),
+      scaleFactor: fields[6] as double,
+      columnCount: fields[7] as int,
     );
   }
 

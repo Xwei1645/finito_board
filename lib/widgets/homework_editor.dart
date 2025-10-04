@@ -3,6 +3,8 @@ import 'package:flutter/material.dart';
 import 'package:flutter_quill/flutter_quill.dart';
 import 'package:intl/intl.dart';
 import '../models/homework.dart';
+import '../services/storage/hive_storage_service.dart';
+import '../models/tag.dart';
 
 class HomeworkEditor extends StatefulWidget {
   final Homework? homework; // null表示新建，非null表示编辑
@@ -27,7 +29,7 @@ class _HomeworkEditorState extends State<HomeworkEditor> {
   late FocusNode _editorFocusNode;
   late String _selectedSubject;
   late DateTime _selectedDate;
-  late List<String> _selectedTags;
+  late List<String> _selectedTagUuids;
   final TextEditingController _newTagController = TextEditingController();
   final TextEditingController _fontSizeController = TextEditingController();
   double _currentFontSize = 20.0;
@@ -38,15 +40,9 @@ class _HomeworkEditorState extends State<HomeworkEditor> {
   bool _isStrikethrough = false;
 
   // 可选学科列表
-  static const List<String> _availableSubjects = [
-    '数学', '英语', '物理', '化学', '计算机科学', '生物', '历史', '地理', '政治', '语文'
-  ];
+  static const List<String> _availableSubjects = [];
 
-  // 预定义标签
-  static const List<String> _predefinedTags = [
-    '重要', '紧急', '简单', '困难', '小组作业', '个人作业', 
-    '实验', '报告', '演示', '考试', '复习', '预习'
-  ];
+
 
   @override
   void initState() {
@@ -54,7 +50,7 @@ class _HomeworkEditorState extends State<HomeworkEditor> {
     
     _contentController = QuillController.basic();
     _editorFocusNode = FocusNode();
-    _selectedSubject = widget.homework?.subject ?? widget.initialSubject ?? _availableSubjects.first;
+    _selectedSubject = widget.homework?.subjectUuid ?? widget.initialSubject ?? _availableSubjects.first;
     _fontSizeController.text = _currentFontSize.toInt().toString();
     
     _contentController.addListener(_updateFontSizeDisplay);
@@ -71,7 +67,7 @@ class _HomeworkEditorState extends State<HomeworkEditor> {
     }
     
     _selectedDate = widget.homework?.dueDate ?? DateTime.now().add(const Duration(days: 1));
-    _selectedTags = List.from(widget.homework?.tags ?? []);
+    _selectedTagUuids = List.from(widget.homework?.tagUuids ?? []);
   }
 
   @override
@@ -119,24 +115,39 @@ class _HomeworkEditorState extends State<HomeworkEditor> {
     }
   }
 
-  void _addTag(String tag) {
-    if (tag.isNotEmpty && !_selectedTags.contains(tag)) {
-      setState(() {
-        _selectedTags.add(tag);
-      });
+  void _addTagByName(String tagName) {
+    if (tagName.isNotEmpty) {
+      // 查找是否已存在该名称的标签
+      Tag? existingTag = HiveStorageService.instance.getTagByName(tagName);
+      
+      if (existingTag != null) {
+        // 如果标签已存在，添加其UUID到选中列表
+        if (!_selectedTagUuids.contains(existingTag.uuid)) {
+          setState(() {
+            _selectedTagUuids.add(existingTag.uuid);
+          });
+        }
+      } else {
+        // 如果标签不存在，创建新标签
+        final newTag = Tag.create(name: tagName);
+        HiveStorageService.instance.saveTag(newTag);
+        setState(() {
+          _selectedTagUuids.add(newTag.uuid);
+        });
+      }
     }
   }
 
-  void _removeTag(String tag) {
+  void _removeTagByUuid(String tagUuid) {
     setState(() {
-      _selectedTags.remove(tag);
+      _selectedTagUuids.remove(tagUuid);
     });
   }
 
   void _addNewTag() {
-    final newTag = _newTagController.text.trim();
-    if (newTag.isNotEmpty) {
-      _addTag(newTag);
+    final newTagName = _newTagController.text.trim();
+    if (newTagName.isNotEmpty) {
+      _addTagByName(newTagName);
       _newTagController.clear();
     }
   }
@@ -256,13 +267,16 @@ class _HomeworkEditorState extends State<HomeworkEditor> {
     // 保存富文本格式的JSON数据
     final content = jsonEncode(_contentController.document.toDelta().toJson());
     
-    final homework = Homework(
-      id: widget.homework?.id ?? DateTime.now().millisecondsSinceEpoch.toString(),
+    final homework = widget.homework?.copyWith(
       content: content,
       dueDate: _selectedDate,
-      subject: _selectedSubject,
-      tags: _selectedTags,
-      createdAt: widget.homework?.createdAt ?? DateTime.now(),
+      subjectUuid: _selectedSubject,
+      tagUuids: _selectedTagUuids,
+    ) ?? Homework.create(
+      content: content,
+      dueDate: _selectedDate,
+      subjectUuid: _selectedSubject,
+      tagUuids: _selectedTagUuids,
     );
 
     await widget.onSave(homework);
@@ -416,27 +430,30 @@ class _HomeworkEditorState extends State<HomeworkEditor> {
                 const SizedBox(height: 12),
                 
                 // 已选标签
-                if (_selectedTags.isNotEmpty) ...[
+                if (_selectedTagUuids.isNotEmpty) ...[
                   Wrap(
                     spacing: 8,
                     runSpacing: 8,
-                    children: _selectedTags.map((tag) => Chip(
-                      label: Text(tag, style: TextStyle(
-                        fontSize: 13,
-                        color: colorScheme.onSecondaryContainer,
-                      )),
-                      onDeleted: () => _removeTag(tag),
-                      deleteIcon: Icon(Icons.close, 
-                        size: 16, 
-                        color: colorScheme.onSecondaryContainer,
-                      ),
-                      backgroundColor: colorScheme.secondaryContainer,
-                      side: BorderSide.none,
-                      shape: RoundedRectangleBorder(
-                        borderRadius: BorderRadius.circular(8),
-                      ),
-                      materialTapTargetSize: MaterialTapTargetSize.shrinkWrap,
-                    )).toList(),
+                    children: _selectedTagUuids.map((tagUuid) {
+                      final tagName = HiveStorageService.instance.getTagByUuid(tagUuid)?.name ?? '未知标签';
+                      return Chip(
+                        label: Text(tagName, style: TextStyle(
+                          fontSize: 13,
+                          color: colorScheme.onSecondaryContainer,
+                        )),
+                        onDeleted: () => _removeTagByUuid(tagUuid),
+                        deleteIcon: Icon(Icons.close, 
+                          size: 16, 
+                          color: colorScheme.onSecondaryContainer,
+                        ),
+                        backgroundColor: colorScheme.secondaryContainer,
+                        side: BorderSide.none,
+                        shape: RoundedRectangleBorder(
+                          borderRadius: BorderRadius.circular(8),
+                        ),
+                        materialTapTargetSize: MaterialTapTargetSize.shrinkWrap,
+                      );
+                    }).toList(),
                   ),
                   const SizedBox(height: 12),
                 ],
@@ -446,15 +463,15 @@ class _HomeworkEditorState extends State<HomeworkEditor> {
                   spacing: 8,
                   runSpacing: 8,
                   children: [
-                    // 预定义标签
-                    ..._predefinedTags
-                        .where((tag) => !_selectedTags.contains(tag))
+                    // 可用标签（未选中的）
+                    ...HiveStorageService.instance.getAllTags()
+                        .where((tag) => !_selectedTagUuids.contains(tag.uuid))
                         .map((tag) => ActionChip(
-                              label: Text(tag, style: TextStyle(
+                              label: Text(tag.name, style: TextStyle(
                                 fontSize: 13,
                                 color: colorScheme.onSurfaceVariant,
                               )),
-                              onPressed: () => _addTag(tag),
+                              onPressed: () => _addTagByName(tag.name),
                               backgroundColor: colorScheme.surfaceContainerHighest,
                               side: BorderSide.none,
                               shape: RoundedRectangleBorder(

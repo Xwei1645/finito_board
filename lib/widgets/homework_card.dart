@@ -4,6 +4,7 @@ import 'package:flutter_quill/flutter_quill.dart';
 import 'package:intl/intl.dart';
 import '../models/homework.dart';
 import '../services/settings_service.dart';
+import '../services/storage/hive_storage_service.dart';
 
 class HomeworkCard extends StatefulWidget {
   final Homework homework;
@@ -80,7 +81,7 @@ class _HomeworkCardState extends State<HomeworkCard> {
           final deltaJson = jsonDecode(widget.homework.content);
           _contentController.document = Document.fromJson(deltaJson);
         } catch (e) {
-          // 如果解析失败，说明是旧的纯文本格式，直接插入
+          // 如果解析失败，直接插入
           _contentController.document = Document()..insert(0, widget.homework.content);
         }
       } else {
@@ -220,14 +221,14 @@ class _HomeworkCardState extends State<HomeworkCard> {
                   if (_getStatusTag() != null) _getStatusTag()!,
                   
                   // 作业标签
-                  ...widget.homework.tags.map((tag) => Container(
+                  ...HiveStorageService.instance.getTagNamesByUuids(widget.homework.tagUuids).map((tagName) => Container(
                     padding: const EdgeInsets.symmetric(horizontal: 8, vertical: 4),
                     decoration: BoxDecoration(
                       color: colorScheme.secondaryContainer,
                       borderRadius: BorderRadius.circular(8),
                     ),
                     child: Text(
-                      tag,
+                      tagName,
                       style: theme.textTheme.labelSmall?.copyWith(
                         color: colorScheme.onSecondaryContainer,
                         fontWeight: FontWeight.w500,

@@ -7,6 +7,7 @@ import 'package:flutter_quill/flutter_quill.dart';
 import 'package:window_manager/window_manager.dart';
 import 'models/subject.dart';
 import 'models/homework.dart';
+import 'models/tag.dart';
 import 'widgets/homework_card.dart';
 import 'widgets/subject_header.dart';
 import 'widgets/homework_editor.dart';
@@ -186,27 +187,31 @@ class _HomeworkBoardState extends State<HomeworkBoard> with WindowListener {
   Future<void> _loadDataFromHive() async {
     final storageService = HiveStorageService.instance;
     final homeworks = storageService.getAllHomework();
+    final allSubjects = storageService.getAllSubjects();
     
     // 加载界面设置
     final appConfig = storageService.getAppConfig();
     
-    // 按科目分组作业
-    Map<String, List<Homework>> homeworksBySubject = {};
+    // 按科目UUID分组作业
+    Map<String, List<Homework>> homeworksBySubjectUuid = {};
     for (var homework in homeworks) {
-      if (!homeworksBySubject.containsKey(homework.subject)) {
-        homeworksBySubject[homework.subject] = [];
+      if (!homeworksBySubjectUuid.containsKey(homework.subjectUuid)) {
+        homeworksBySubjectUuid[homework.subjectUuid] = [];
       }
-      homeworksBySubject[homework.subject]!.add(homework);
+      homeworksBySubjectUuid[homework.subjectUuid]!.add(homework);
     }
     
-    // 创建Subject对象
+    // 创建Subject对象（包含作业信息用于显示）
     List<Subject> loadedSubjects = [];
-    for (var entry in homeworksBySubject.entries) {
+    for (var subject in allSubjects) {
+      // 创建一个临时的Subject对象用于UI显示，包含作业信息
       loadedSubjects.add(Subject(
-        name: entry.key,
-        homeworks: entry.value,
+        uuid: subject.uuid,
+        name: subject.name,
       ));
     }
+    
+
     
     setState(() {
       subjects = loadedSubjects;
@@ -232,9 +237,9 @@ class _HomeworkBoardState extends State<HomeworkBoard> with WindowListener {
     super.dispose();
   }
 
-  void _selectHomework(String homeworkId) {
+  void _selectHomework(String homeworkUuid) {
     setState(() {
-      _selectedHomeworkId = homeworkId;
+      _selectedHomeworkId = homeworkUuid;
     });
     
     _selectionTimer?.cancel();
@@ -328,36 +333,23 @@ class _HomeworkBoardState extends State<HomeworkBoard> with WindowListener {
 
 
 
-  void _onEditHomework(String homeworkId) {
-    Homework? homeworkToEdit;
-    for (var subject in subjects) {
-      for (var homework in subject.homeworks) {
-        if (homework.id == homeworkId) {
-          homeworkToEdit = homework;
-          break;
-        }
-      }
-      if (homeworkToEdit != null) break;
-    }
+  void _onEditHomework(String homeworkUuid) {
+    final storageService = HiveStorageService.instance;
+    final homeworkToEdit = storageService.getHomeworkByUuid(homeworkUuid);
 
     if (homeworkToEdit != null) {
       _showHomeworkEditor(homeworkToEdit);
     }
   }
 
-  Future<void> _onDeleteHomework(String homeworkId) async {
+  Future<void> _onDeleteHomework(String homeworkUuid) async {
     final storageService = HiveStorageService.instance;
     
     // 从Hive中删除作业
-    await storageService.deleteHomework(homeworkId);
+    await storageService.deleteHomework(homeworkUuid);
     
-    setState(() {
-      for (var subject in subjects) {
-        subject.homeworks.removeWhere((homework) => homework.id == homeworkId);
-      }
-      // 移除没有作业的学科
-      subjects.removeWhere((subject) => subject.homeworks.isEmpty);
-    });
+    // 重新加载数据以更新UI
+    await _loadDataFromHive();
     
     _showCustomSnackBar('作业已删除');
   }
@@ -376,94 +368,55 @@ class _HomeworkBoardState extends State<HomeworkBoard> with WindowListener {
   Future<void> _saveHomework(Homework homework) async {
     final storageService = HiveStorageService.instance;
     
-    // 查找是否已存在该作业（编辑模式）
-    bool found = false;
-    
     // 检查是否为编辑模式
-    try {
-      final existingHomework = storageService.getHomeworkById(homework.id);
-      if (existingHomework != null) {
-        found = true;
-      }
-    } catch (e) {
-      // 作业不存在，是新建模式
-      found = false;
-    }
+    final existingHomework = storageService.getHomeworkByUuid(homework.uuid);
+    final isEdit = existingHomework != null;
     
     // 保存到Hive
     await storageService.saveHomework(homework);
     
-    setState(() {
-      for (var subject in subjects) {
-        for (int i = 0; i < subject.homeworks.length; i++) {
-          if (subject.homeworks[i].id == homework.id) {
-            subject.homeworks[i] = homework;
-            found = true;
-            break;
-          }
-        }
-        if (found) break;
-      }
-
-      // 如果没找到，说明是新建作业
-      if (!found) {
-        // 查找对应学科，如果不存在则创建
-        Subject? targetSubject;
-        for (var subject in subjects) {
-          if (subject.name == homework.subject) {
-            targetSubject = subject;
-            break;
-          }
-        }
-
-        if (targetSubject != null) {
-          targetSubject.homeworks.add(homework);
-        } else {
-          // 创建新学科
-          subjects.add(Subject(
-            name: homework.subject,
-            homeworks: [homework],
-          ));
-        }
-      }
-    });
+    // 重新加载数据以更新UI
+    await _loadDataFromHive();
 
     if (mounted && context.mounted) {
       Navigator.of(context).pop();
     }
     if (mounted) {
-      _showCustomSnackBar(found ? '作业已更新' : '作业已创建');
+      _showCustomSnackBar(isEdit ? '作业已更新' : '作业已创建');
     }
   }
 
 
 
-  // 将所有作业分配到动态列数中 - 改进的分配逻辑
+  // 所有作业分配
   List<List<Widget>> _distributeHomeworksToColumns() {
     List<List<Widget>> columns = List.generate(_columnCount, (index) => <Widget>[]);
     int currentColumn = 0;
+    final storageService = HiveStorageService.instance;
     
     // 为每个学科创建标题和作业卡片，保持在同一列
     for (var subject in subjects) {
-      if (subject.homeworks.isNotEmpty) {
+      final subjectHomeworks = storageService.getHomeworkBySubjectUuid(subject.uuid);
+      
+      if (subjectHomeworks.isNotEmpty) {
         // 添加学科标题到当前列
         columns[currentColumn].add(
           SubjectHeader(
             subjectName: subject.name,
-            homeworkCount: subject.homeworks.length,
+            homeworkCount: subjectHomeworks.length,
           ),
         );
         
         // 添加该学科的所有作业到同一列
-        for (var homework in subject.homeworks) {
+        for (var homework in subjectHomeworks) {
           columns[currentColumn].add(
             HomeworkCard(
-              key: ValueKey('${homework.id}_$_backgroundOpacity'),
+              key: ValueKey('${homework.uuid}_$_backgroundOpacity'),
               homework: homework,
-              isSelected: _selectedHomeworkId == homework.id,
-              onTap: () => _selectHomework(homework.id),
-              onEdit: () => _onEditHomework(homework.id),
-              onDelete: () => _onDeleteHomework(homework.id),
+              isSelected: _selectedHomeworkId == homework.uuid,
+              onTap: () => _selectHomework(homework.uuid),
+              onEdit: () => _onEditHomework(homework.uuid),
+              onDelete: () => _onDeleteHomework(homework.uuid),
             ),
           );
         }
@@ -473,21 +426,62 @@ class _HomeworkBoardState extends State<HomeworkBoard> with WindowListener {
       }
     }
     
+    // 处理无效科目UUID的作业
+    final allHomeworks = storageService.getAllHomework();
+    final allSubjects = storageService.getAllSubjects();
+    final invalidSubjectHomeworks = allHomeworks.where((homework) {
+      return !allSubjects.any((s) => s.uuid == homework.subjectUuid);
+    }).toList();
+    
+    if (invalidSubjectHomeworks.isNotEmpty) {
+      // 添加"未知"科目标题
+      columns[currentColumn].add(
+        SubjectHeader(
+          subjectName: '未知',
+          homeworkCount: invalidSubjectHomeworks.length,
+        ),
+      );
+      
+      // 添加无效科目UUID的作业
+      for (var homework in invalidSubjectHomeworks) {
+        columns[currentColumn].add(
+          HomeworkCard(
+            key: ValueKey('${homework.uuid}_$_backgroundOpacity'),
+            homework: homework,
+            isSelected: _selectedHomeworkId == homework.uuid,
+            onTap: () => _selectHomework(homework.uuid),
+            onEdit: () => _onEditHomework(homework.uuid),
+            onDelete: () => _onDeleteHomework(homework.uuid),
+          ),
+        );
+      }
+    }
+    
     return columns;
   }
 
   @override
   Widget build(BuildContext context) {
     final columns = _distributeHomeworksToColumns();
+    final storageService = HiveStorageService.instance;
     
-    // 检查是否有作业
-    final hasHomework = subjects.any((subject) => subject.homeworks.isNotEmpty);
+    // 检查是否有作业（包括有效科目的作业和无效科目UUID的作业）
+    final hasValidSubjectHomework = subjects.any((subject) => 
+        storageService.getHomeworkBySubjectUuid(subject.uuid).isNotEmpty);
+    
+    final allHomeworks = storageService.getAllHomework();
+    final allSubjects = storageService.getAllSubjects();
+    final hasInvalidSubjectHomework = allHomeworks.any((homework) {
+      return !allSubjects.any((s) => s.uuid == homework.subjectUuid);
+    });
+    
+    final hasHomework = hasValidSubjectHomework || hasInvalidSubjectHomework;
     
     return Scaffold(
       backgroundColor: Colors.transparent,
       body: Stack(
         children: [
-          // 背景容器 - 填满整个窗口
+          // 背景容器
           GestureDetector(
             onTap: () {
               setState(() {
@@ -1055,7 +1049,7 @@ class _HomeworkBoardState extends State<HomeworkBoard> with WindowListener {
       context: context,
       builder: (BuildContext context) {
         return TagManager(
-          tags: SampleData.getAvailableTags(),
+          tags: Tag.getAvailableTags(),
           onTagsChanged: (updatedTags) {
             // 这里可以添加更新标签列表的逻辑
             // 目前只是显示提示信息

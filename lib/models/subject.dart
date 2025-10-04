@@ -1,5 +1,5 @@
 import 'package:hive/hive.dart';
-import 'homework.dart';
+import 'package:uuid/uuid.dart';
 import '../services/storage/hive_storage_service.dart';
 
 part 'subject.g.dart';
@@ -7,15 +7,36 @@ part 'subject.g.dart';
 @HiveType(typeId: 1)
 class Subject {
   @HiveField(0)
-  final String name;
+  final String uuid;
   
   @HiveField(1)
-  final List<Homework> homeworks;
+  final String name;
 
   const Subject({
+    required this.uuid,
     required this.name,
-    required this.homeworks,
   });
+
+  // 工厂构造函数，自动生成UUID
+  factory Subject.create({
+    required String name,
+  }) {
+    return Subject(
+      uuid: const Uuid().v4(),
+      name: name,
+    );
+  }
+
+  // 复制方法
+  Subject copyWith({
+    String? uuid,
+    String? name,
+  }) {
+    return Subject(
+      uuid: uuid ?? this.uuid,
+      name: name ?? this.name,
+    );
+  }
 }
 
 class SampleData {
@@ -23,7 +44,7 @@ class SampleData {
     return [];
   }
   
-  // 获取可用科目列表（从配置中获取，如果为空则返回默认列表）
+  // 获取可用科目列表（从配置中获取，如果为空则返回空列表）
   static List<String> getAvailableSubjects() {
     try {
       final config = HiveStorageService.instance.getAppConfig();
@@ -31,44 +52,11 @@ class SampleData {
         return config.availableSubjects;
       }
     } catch (e) {
-      // 如果获取配置失败，返回默认列表
+      // 如果获取配置失败，返回空列表
     }
     
-    // 默认科目列表
-    return [
-      '数学',
-      '语文',
-      '英语',
-      '物理',
-      '化学',
-      '生物',
-      '历史',
-      '地理',
-      '政治',
-    ];
+    // 返回空列表
+    return [];
   }
-  
-  // 获取可用标签列表（从配置中获取，如果为空则返回默认列表）
-  static List<String> getAvailableTags() {
-    try {
-      final config = HiveStorageService.instance.getAppConfig();
-      if (config.availableTags.isNotEmpty) {
-        return config.availableTags;
-      }
-    } catch (e) {
-      // 如果获取配置失败，返回默认列表
-    }
-    
-    // 默认标签列表
-    return [
-      '重要',
-      '紧急',
-      '复习',
-      '预习',
-      '作业',
-      '考试',
-      '项目',
-      '课外',
-    ];
-  }
+
 }

@@ -17,11 +17,11 @@ class HomeworkAdapter extends TypeAdapter<Homework> {
       for (int i = 0; i < numOfFields; i++) reader.readByte(): reader.read(),
     };
     return Homework(
-      id: fields[0] as String,
+      uuid: fields[0] as String,
       content: fields[1] as String,
       dueDate: fields[2] as DateTime,
-      subject: fields[3] as String,
-      tags: (fields[4] as List).cast<String>(),
+      subjectUuid: fields[3] as String,
+      tagUuids: (fields[4] as List).cast<String>(),
       createdAt: fields[5] as DateTime,
     );
   }
@@ -31,15 +31,15 @@ class HomeworkAdapter extends TypeAdapter<Homework> {
     writer
       ..writeByte(6)
       ..writeByte(0)
-      ..write(obj.id)
+      ..write(obj.uuid)
       ..writeByte(1)
       ..write(obj.content)
       ..writeByte(2)
       ..write(obj.dueDate)
       ..writeByte(3)
-      ..write(obj.subject)
+      ..write(obj.subjectUuid)
       ..writeByte(4)
-      ..write(obj.tags)
+      ..write(obj.tagUuids)
       ..writeByte(5)
       ..write(obj.createdAt);
   }

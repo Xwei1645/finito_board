@@ -19,9 +19,7 @@ class SettingsResult {
 }
 
 class SettingsService {
-  static const String _autoStartKey = 'auto_start_enabled';
   static const String _alwaysOnBottomKey = 'always_on_bottom_enabled';
-  static const String _darkModeKey = 'dark_mode_enabled';
   static const String _backgroundOpacityKey = 'background_opacity';
   
   static SettingsService? _instance;
@@ -35,9 +33,6 @@ class SettingsService {
   Future<void> initialize() async {
     _prefs = await SharedPreferences.getInstance();
     
-    // 迁移SharedPreferences数据到Hive
-    await _migrateToHive();
-    
     // 初始化开机自启设置
     await _initializeLaunchAtStartup();
     
@@ -45,43 +40,7 @@ class SettingsService {
     await _applySettings();
   }
 
-  /// 迁移SharedPreferences数据到Hive
-  Future<void> _migrateToHive() async {
-    try {
-      final storageService = HiveStorageService.instance;
-      
-      // 获取当前配置
-      AppConfig currentConfig = storageService.getAppConfig();
-      
-      // 如果配置为默认值，尝试从SharedPreferences迁移
-      if (currentConfig.theme == 'system' && 
-          currentConfig.language == 'zh_CN' && 
-          !currentConfig.autoStartup && 
-          currentConfig.enableNotifications) {
-        
-        // 迁移设置数据
-        final darkMode = _prefs?.getBool(_darkModeKey) ?? false;
-        final autoStart = _prefs?.getBool(_autoStartKey) ?? false;
-        
-        final migratedConfig = AppConfig(
-          theme: darkMode ? 'dark' : 'light',
-          language: 'zh_CN',
-          autoStartup: autoStart,
-          enableNotifications: true,
-          availableSubjects: [
-            '数学', '语文', '英语', '物理', '化学', '生物', '历史', '地理', '政治'
-          ],
-          availableTags: [
-            '重要', '紧急', '复习', '预习', '作业', '考试', '项目', '课外'
-          ],
-        );
-        
-        await storageService.saveAppConfig(migratedConfig);
-      }
-    } catch (e) {
-      // 迁移失败，使用默认配置
-    }
-  }
+
   
   /// 初始化开机自启配置
   Future<void> _initializeLaunchAtStartup() async {
@@ -109,12 +68,8 @@ class SettingsService {
   
   /// 获取开机自启状态
   bool getAutoStart() {
-    try {
-      final config = HiveStorageService.instance.getAppConfig();
-      return config.autoStartup;
-    } catch (e) {
-      return _prefs?.getBool(_autoStartKey) ?? false;
-    }
+    final config = HiveStorageService.instance.getAppConfig();
+    return config.autoStartup;
   }
   
   /// 检查开机自启的实际状态（从系统获取）
@@ -157,9 +112,6 @@ class SettingsService {
         availableTags: currentConfig.availableTags,
       );
       await storageService.saveAppConfig(updatedConfig);
-      
-      // 保持SharedPreferences兼容性
-      await _prefs?.setBool(_autoStartKey, enabled);
       return const SettingsResult.success();
     } catch (e) {
       final errorMessage = e.toString();
@@ -200,12 +152,8 @@ class SettingsService {
   
   /// 获取明暗模式状态
   bool getDarkMode() {
-    try {
-      final config = HiveStorageService.instance.getAppConfig();
-      return config.theme == 'dark';
-    } catch (e) {
-      return _prefs?.getBool(_darkModeKey) ?? false;
-    }
+    final config = HiveStorageService.instance.getAppConfig();
+    return config.theme == 'dark';
   }
   
   /// 设置明暗模式
@@ -223,9 +171,6 @@ class SettingsService {
         availableTags: currentConfig.availableTags,
       );
       await storageService.saveAppConfig(updatedConfig);
-      
-      // 保持SharedPreferences兼容性
-      await _prefs?.setBool(_darkModeKey, enabled);
       return true;
     } catch (e) {
       return false;
