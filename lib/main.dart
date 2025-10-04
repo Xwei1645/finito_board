@@ -407,35 +407,35 @@ class _HomeworkBoardState extends State<HomeworkBoard> {
     
     return Scaffold(
       backgroundColor: Colors.transparent,
-      body: GestureDetector(
-        onTap: () {
-          setState(() {
-            // 隐藏快捷菜单
-            if (_isQuickMenuVisible) {
-              _isQuickMenuVisible = false;
-            }
-            // 取消选中卡片
-            if (_selectedHomeworkId != null) {
-              _selectedHomeworkId = null;
-              _selectionTimer?.cancel(); // 取消定时器
-            }
-          });
-        },
-        child: Stack(
-          children: [
+      body: Stack(
+        children: [
           // 背景容器 - 填满整个窗口
-          Container(
-            width: double.infinity,
-            height: double.infinity,
-            decoration: BoxDecoration(
-              color: _isFullScreen 
-                  ? Theme.of(context).colorScheme.surface
-                  : Theme.of(context).colorScheme.surface.withValues(alpha: _backgroundOpacity),
-              borderRadius: _isFullScreen 
-                  ? BorderRadius.zero 
-                  : BorderRadius.circular(12),
-            ),
-            child: hasHomework
+          GestureDetector(
+            onTap: () {
+              setState(() {
+                // 隐藏快捷菜单
+                if (_isQuickMenuVisible) {
+                  _isQuickMenuVisible = false;
+                }
+                // 取消选中卡片
+                if (_selectedHomeworkId != null) {
+                  _selectedHomeworkId = null;
+                  _selectionTimer?.cancel(); // 取消定时器
+                }
+              });
+            },
+            child: Container(
+              width: double.infinity,
+              height: double.infinity,
+              decoration: BoxDecoration(
+                color: _isFullScreen 
+                    ? Theme.of(context).colorScheme.surface
+                    : Theme.of(context).colorScheme.surface.withValues(alpha: _backgroundOpacity),
+                borderRadius: _isFullScreen 
+                    ? BorderRadius.zero 
+                    : BorderRadius.circular(12),
+              ),
+              child: hasHomework
                 ? Theme(
                     data: Theme.of(context).copyWith(
                       textTheme: Theme.of(context).textTheme.apply(
@@ -480,6 +480,7 @@ class _HomeworkBoardState extends State<HomeworkBoard> {
                     ),
                     child: const EmptyState(),
                   ),
+            ),
           ),
           // 底部拖动条 - 仅在窗口解锁时显示
           if (!_isWindowLocked && !_isFullScreen)
@@ -503,7 +504,6 @@ class _HomeworkBoardState extends State<HomeworkBoard> {
               child: _buildQuickMenu(),
             ),
         ],
-        ),
       ),
     );
   }
