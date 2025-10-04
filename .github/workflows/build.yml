@@ -13,27 +13,12 @@ jobs:
     steps:
       - name: Clone repository
         uses: actions/checkout@v4
-        with:
-          fetch-depth: 0  # 获取完整的 git 历史记录
 
       - name: Set up Flutter
         uses: subosito/flutter-action@v2
         with:
           flutter-version: '3.35.4'
           channel: stable
-
-      - name: Get commit count
-        id: commit_count
-        run: |
-          $count = git rev-list --count HEAD
-          echo "count=$count" >> $env:GITHUB_OUTPUT
-          echo "Build number will be: $count"
-
-      - name: Update version with build number
-        run: |
-          $version = "0.1.0-dev.1+${{ steps.commit_count.outputs.count }}"
-          echo "Updating version to: $version"
-          (Get-Content pubspec.yaml) -replace 'version: 0.1.0-dev.1', "version: $version" | Set-Content pubspec.yaml
 
       - name: Init flutter env
         run: flutter pub get
