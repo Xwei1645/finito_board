@@ -25,13 +25,15 @@ class AppConfigAdapter extends TypeAdapter<AppConfig> {
       availableTags: (fields[5] as List).cast<String>(),
       scaleFactor: fields[6] as double,
       columnCount: fields[7] as int,
+      alwaysOnBottom: fields[8] as bool,
+      backgroundOpacity: fields[9] as double,
     );
   }
 
   @override
   void write(BinaryWriter writer, AppConfig obj) {
     writer
-      ..writeByte(8)
+      ..writeByte(10)
       ..writeByte(0)
       ..write(obj.theme)
       ..writeByte(1)
@@ -47,7 +49,11 @@ class AppConfigAdapter extends TypeAdapter<AppConfig> {
       ..writeByte(6)
       ..write(obj.scaleFactor)
       ..writeByte(7)
-      ..write(obj.columnCount);
+      ..write(obj.columnCount)
+      ..writeByte(8)
+      ..write(obj.alwaysOnBottom)
+      ..writeByte(9)
+      ..write(obj.backgroundOpacity);
   }
 
   @override

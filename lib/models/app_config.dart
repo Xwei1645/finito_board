@@ -27,6 +27,12 @@ class AppConfig {
   
   @HiveField(7)
   final int columnCount; // 作业列数
+  
+  @HiveField(8)
+  final bool alwaysOnBottom; // 始终置底设置
+  
+  @HiveField(9)
+  final double backgroundOpacity; // 背景不透明度
 
   const AppConfig({
     this.theme = 'system',
@@ -37,6 +43,8 @@ class AppConfig {
     this.availableTags = const [],
     this.scaleFactor = 100.0,
     this.columnCount = 3,
+    this.alwaysOnBottom = false,
+    this.backgroundOpacity = 0.95,
   });
 
   AppConfig copyWith({
@@ -48,6 +56,8 @@ class AppConfig {
     List<String>? availableTags,
     double? scaleFactor,
     int? columnCount,
+    bool? alwaysOnBottom,
+    double? backgroundOpacity,
   }) {
     return AppConfig(
       theme: theme ?? this.theme,
@@ -58,6 +68,8 @@ class AppConfig {
       availableTags: availableTags ?? this.availableTags,
       scaleFactor: scaleFactor ?? this.scaleFactor,
       columnCount: columnCount ?? this.columnCount,
+      alwaysOnBottom: alwaysOnBottom ?? this.alwaysOnBottom,
+      backgroundOpacity: backgroundOpacity ?? this.backgroundOpacity,
     );
   }
 }

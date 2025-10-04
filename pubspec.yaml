@@ -16,7 +16,6 @@ dependencies:
   intl: any
   url_launcher: ^6.2.4
   package_info_plus: ^9.0.0
-  shared_preferences: ^2.2.2
   launch_at_startup: ^0.5.1
   hive: ^2.2.3
   hive_flutter: ^1.1.0
@@ -30,7 +29,7 @@ dev_dependencies:
   flutter_lints: ^6.0.0
   hive_generator: ^2.0.1
   build_runner: ^2.4.7
-  analyzer: ^8.2.0
+  analyzer: 6.4.1
 
 flutter:
   uses-material-design: true

@@ -1,6 +1,5 @@
 import 'dart:io';
 import 'package:flutter/material.dart';
-import 'package:shared_preferences/shared_preferences.dart';
 import 'package:launch_at_startup/launch_at_startup.dart';
 import 'package:window_manager/window_manager.dart';
 import 'package:package_info_plus/package_info_plus.dart';
@@ -19,20 +18,13 @@ class SettingsResult {
 }
 
 class SettingsService {
-  static const String _alwaysOnBottomKey = 'always_on_bottom_enabled';
-  static const String _backgroundOpacityKey = 'background_opacity';
-  
   static SettingsService? _instance;
   static SettingsService get instance => _instance ??= SettingsService._();
   
   SettingsService._();
   
-  SharedPreferences? _prefs;
-  
   /// 初始化设置服务
   Future<void> initialize() async {
-    _prefs = await SharedPreferences.getInstance();
-    
     // 初始化开机自启设置
     await _initializeLaunchAtStartup();
     
@@ -121,7 +113,8 @@ class SettingsService {
   
   /// 获取始终置底状态
   bool getAlwaysOnBottom() {
-    return _prefs?.getBool(_alwaysOnBottomKey) ?? false;
+    final config = HiveStorageService.instance.getAppConfig();
+    return config.alwaysOnBottom;
   }
   
   /// 设置始终置底
@@ -133,7 +126,13 @@ class SettingsService {
         await windowManager.setAlwaysOnBottom(false);
       }
       
-      await _prefs?.setBool(_alwaysOnBottomKey, enabled);
+      // 更新Hive配置
+      final storageService = HiveStorageService.instance;
+      final currentConfig = storageService.getAppConfig();
+      final updatedConfig = currentConfig.copyWith(
+        alwaysOnBottom: enabled,
+      );
+      await storageService.saveAppConfig(updatedConfig);
       return true;
     } catch (e) {
       return false;
@@ -179,7 +178,8 @@ class SettingsService {
   
   /// 获取背景不透明度 (0.0 - 1.0)
   double getBackgroundOpacity() {
-    return _prefs?.getDouble(_backgroundOpacityKey) ?? 0.95;
+    final config = HiveStorageService.instance.getAppConfig();
+    return config.backgroundOpacity;
   }
   
   /// 设置背景不透明度
@@ -187,7 +187,14 @@ class SettingsService {
     try {
       // 确保值在有效范围内
       final clampedOpacity = opacity.clamp(0.0, 1.0);
-      await _prefs?.setDouble(_backgroundOpacityKey, clampedOpacity);
+      
+      // 更新Hive配置
+      final storageService = HiveStorageService.instance;
+      final currentConfig = storageService.getAppConfig();
+      final updatedConfig = currentConfig.copyWith(
+        backgroundOpacity: clampedOpacity,
+      );
+      await storageService.saveAppConfig(updatedConfig);
       return true;
     } catch (e) {
       return false;
