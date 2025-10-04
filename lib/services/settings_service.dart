@@ -138,17 +138,7 @@ class SettingsService {
       return false;
     }
   }
-  
-  /// 检查开机自启是否可用（仅桌面端支持）
-  bool get isAutoStartSupported {
-    return Platform.isWindows || Platform.isMacOS || Platform.isLinux;
-  }
-  
-  /// 检查始终置底是否可用（仅桌面端支持）
-  bool get isAlwaysOnBottomSupported {
-    return Platform.isWindows || Platform.isMacOS || Platform.isLinux;
-  }
-  
+
   /// 获取明暗模式状态
   bool getDarkMode() {
     final config = HiveStorageService.instance.getAppConfig();

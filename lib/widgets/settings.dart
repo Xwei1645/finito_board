@@ -104,24 +104,22 @@ class _SettingsWindowState extends State<SettingsWindow> {
                       )
                     else ...[
                       // 开机自启设置
-                      if (SettingsService.instance.isAutoStartSupported)
-                        _buildSettingItem(
-                          icon: Icons.power_settings_new,
-                          title: '开机自启',
-                          subtitle: '系统启动时自动运行',
-                          value: _autoStartEnabled,
-                          onChanged: _onAutoStartChanged,
-                        ),
+                      _buildSettingItem(
+                        icon: Icons.power_settings_new,
+                        title: '开机自启',
+                        subtitle: '系统启动时自动运行',
+                        value: _autoStartEnabled,
+                        onChanged: _onAutoStartChanged,
+                      ),
                       
                       // 始终置底设置
-                      if (SettingsService.instance.isAlwaysOnBottomSupported)
-                        _buildSettingItem(
-                          icon: Icons.vertical_align_bottom,
-                          title: '始终置底',
-                          subtitle: '始终保窗口在其他窗口下方',
-                          value: _alwaysOnBottomEnabled,
-                          onChanged: _onAlwaysOnBottomChanged,
-                        ),
+                      _buildSettingItem(
+                        icon: Icons.vertical_align_bottom,
+                        title: '始终置底',
+                        subtitle: '始终保窗口在其他窗口下方',
+                        value: _alwaysOnBottomEnabled,
+                        onChanged: _onAlwaysOnBottomChanged,
+                      ),
                       
                       // 明暗模式切换
                       _buildSettingItem(
