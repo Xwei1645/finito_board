@@ -3,6 +3,7 @@ import 'package:flutter/material.dart';
 import 'package:flutter_quill/flutter_quill.dart';
 import 'package:intl/intl.dart';
 import '../models/homework.dart';
+import '../services/settings_service.dart';
 
 class HomeworkCard extends StatefulWidget {
   final Homework homework;
@@ -27,6 +28,7 @@ class HomeworkCard extends StatefulWidget {
 class _HomeworkCardState extends State<HomeworkCard> {
   late QuillController _contentController;
   late FocusNode _editorFocusNode;
+  double _backgroundOpacity = 0.95;
 
   @override
   void initState() {
@@ -34,6 +36,7 @@ class _HomeworkCardState extends State<HomeworkCard> {
     _contentController = QuillController.basic();
     _contentController.readOnly = true;
     _editorFocusNode = FocusNode();
+    _loadSettings();
     if (widget.homework.content.isNotEmpty) {
       try {
         // 尝试解析JSON格式的富文本内容
@@ -44,6 +47,27 @@ class _HomeworkCardState extends State<HomeworkCard> {
         _contentController.document = Document()..insert(0, widget.homework.content);
       }
     }
+  }
+
+  void _loadSettings() {
+    final settingsService = SettingsService.instance;
+    setState(() {
+      _backgroundOpacity = settingsService.getBackgroundOpacity();
+    });
+  }
+
+  Color _getCardBackgroundColor(ColorScheme colorScheme) {
+    Color baseColor;
+    
+    if (widget.isSelected) {
+      baseColor = colorScheme.primaryContainer;
+    } else {
+      baseColor = colorScheme.surface;
+    }
+    
+    // 卡片始终跟随背景半透明度，但略高一些
+    double cardOpacity = (_backgroundOpacity + 0.15).clamp(0.0, 1.0);
+    return baseColor.withValues(alpha: cardOpacity);
   }
 
   @override
@@ -116,9 +140,7 @@ class _HomeworkCardState extends State<HomeworkCard> {
           margin: const EdgeInsets.only(bottom: 8),
           padding: const EdgeInsets.all(16), // MD3 间距
           decoration: BoxDecoration(
-            color: widget.isSelected 
-                ? Colors.grey.shade100
-                : Colors.white,
+            color: _getCardBackgroundColor(colorScheme),
             borderRadius: BorderRadius.circular(12), // 与快捷菜单保持一致的圆角
             boxShadow: [
               BoxShadow(

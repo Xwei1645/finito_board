@@ -5,8 +5,13 @@ import '../services/settings_service.dart';
 
 
 class SettingsWindow extends StatefulWidget {
+  final VoidCallback? onThemeChanged;
+  final VoidCallback? onSettingsChanged;
+  
   const SettingsWindow({
     super.key,
+    this.onThemeChanged,
+    this.onSettingsChanged,
   });
 
   @override
@@ -16,6 +21,8 @@ class SettingsWindow extends StatefulWidget {
 class _SettingsWindowState extends State<SettingsWindow> {
   bool _autoStartEnabled = false;
   bool _alwaysOnBottomEnabled = false;
+  bool _darkModeEnabled = false;
+  double _backgroundOpacity = 0.95;
   bool _isLoading = true;
 
   @override
@@ -29,6 +36,8 @@ class _SettingsWindowState extends State<SettingsWindow> {
     
     // 获取保存的设置
     final savedAlwaysOnBottom = settingsService.getAlwaysOnBottom();
+    final savedDarkMode = settingsService.getDarkMode();
+    final savedBackgroundOpacity = settingsService.getBackgroundOpacity();
     
     // 检查系统中的实际开机自启状态
     final actualAutoStart = await settingsService.checkAutoStartStatus();
@@ -39,6 +48,8 @@ class _SettingsWindowState extends State<SettingsWindow> {
     setState(() {
       _autoStartEnabled = actualAutoStart; // 使用实际状态
       _alwaysOnBottomEnabled = savedAlwaysOnBottom;
+      _darkModeEnabled = savedDarkMode;
+      _backgroundOpacity = savedBackgroundOpacity;
       _isLoading = false;
     });
   }
@@ -111,6 +122,26 @@ class _SettingsWindowState extends State<SettingsWindow> {
                           value: _alwaysOnBottomEnabled,
                           onChanged: _onAlwaysOnBottomChanged,
                         ),
+                      
+                      // 明暗模式切换
+                      _buildSettingItem(
+                        icon: Icons.dark_mode,
+                        title: '深色模式',
+                        subtitle: '切换应用的明暗主题',
+                        value: _darkModeEnabled,
+                        onChanged: _onDarkModeChanged,
+                      ),
+                      
+                      // 背景不透明度调整
+                      _buildOpacitySlider(
+                        icon: Icons.opacity,
+                        title: '背景不透明度',
+                        subtitle: '调整窗口背景的透明度',
+                        value: _backgroundOpacity,
+                        onChanged: _onBackgroundOpacityChanged,
+                      ),
+                      
+
                     ],
                   ],
                 ),
@@ -152,6 +183,87 @@ class _SettingsWindowState extends State<SettingsWindow> {
             ),
           ],
         ),
+      ),
+    );
+  }
+
+  /// 构建不透明度滑块
+  Widget _buildOpacitySlider({
+    required IconData icon,
+    required String title,
+    required String subtitle,
+    required double value,
+    required ValueChanged<double> onChanged,
+  }) {
+    final colorScheme = Theme.of(context).colorScheme;
+    
+    return Container(
+      padding: const EdgeInsets.symmetric(vertical: 12, horizontal: 16),
+      decoration: BoxDecoration(
+        color: colorScheme.surface,
+        borderRadius: BorderRadius.circular(12),
+      ),
+      child: Row(
+        children: [
+          Container(
+            padding: const EdgeInsets.all(8),
+            decoration: BoxDecoration(
+              color: colorScheme.primary.withValues(alpha: 0.1),
+              borderRadius: BorderRadius.circular(8),
+            ),
+            child: Icon(
+              icon,
+              color: colorScheme.primary,
+              size: 20,
+            ),
+          ),
+          const SizedBox(width: 16),
+          Expanded(
+            child: Column(
+              crossAxisAlignment: CrossAxisAlignment.start,
+              children: [
+                Row(
+                  mainAxisAlignment: MainAxisAlignment.spaceBetween,
+                  children: [
+                    Text(
+                      title,
+                      style: TextStyle(
+                        fontSize: 16,
+                        fontWeight: FontWeight.w500,
+                        color: colorScheme.onSurface,
+                      ),
+                    ),
+                    Text(
+                      '${(value * 100).round()}%',
+                      style: TextStyle(
+                        fontSize: 14,
+                        fontWeight: FontWeight.w500,
+                        color: colorScheme.primary,
+                      ),
+                    ),
+                  ],
+                ),
+                const SizedBox(height: 4),
+                Text(
+                  subtitle,
+                  style: TextStyle(
+                    fontSize: 14,
+                    color: colorScheme.onSurface.withValues(alpha: 0.7),
+                  ),
+                ),
+                const SizedBox(height: 8),
+                Slider(
+                  value: value,
+                  min: 0.3,
+                  max: 1.0,
+                  divisions: 14,
+                  onChanged: onChanged,
+                  activeColor: colorScheme.primary,
+                ),
+              ],
+            ),
+          ),
+        ],
       ),
     );
   }
@@ -249,6 +361,37 @@ class _SettingsWindowState extends State<SettingsWindow> {
   }
 
 
+  /// 明暗模式设置变更回调
+  Future<void> _onDarkModeChanged(bool value) async {
+    final settingsService = SettingsService.instance;
+    final success = await settingsService.setDarkMode(value);
+    
+    if (success) {
+      setState(() {
+        _darkModeEnabled = value;
+      });
+      // 通知主应用主题已变更
+      widget.onThemeChanged?.call();
+    } else {
+      // 设置失败，静默处理
+    }
+  }
+
+  /// 背景不透明度设置变更回调
+  Future<void> _onBackgroundOpacityChanged(double value) async {
+    final settingsService = SettingsService.instance;
+    final success = await settingsService.setBackgroundOpacity(value);
+    
+    if (success) {
+      setState(() {
+        _backgroundOpacity = value;
+      });
+      // 通知主应用更新背景设置
+      widget.onSettingsChanged?.call();
+    } else {
+      // 设置失败，静默处理
+    }
+  }
 
   void _showAboutDialog(BuildContext context) async {
     final packageInfo = await PackageInfo.fromPlatform();

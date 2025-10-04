@@ -13,6 +13,7 @@ class SubjectHeader extends StatelessWidget {
   @override
   Widget build(BuildContext context) {
     final theme = Theme.of(context);
+    final colorScheme = theme.colorScheme;
     final textScaleFactor = MediaQuery.textScalerOf(context).scale(1.0);
     
     return Container(
@@ -24,7 +25,7 @@ class SubjectHeader extends StatelessWidget {
             subjectName,
             style: theme.textTheme.titleLarge?.copyWith(
               fontWeight: FontWeight.w600,
-              color: Colors.black87,
+              color: colorScheme.onSurface,
               fontSize: (theme.textTheme.titleLarge?.fontSize ?? 22) * textScaleFactor,
             ),
           ),
@@ -32,14 +33,14 @@ class SubjectHeader extends StatelessWidget {
           Container(
             padding: const EdgeInsets.symmetric(horizontal: 8, vertical: 2),
             decoration: BoxDecoration(
-              color: Colors.blue.withValues(alpha: 0.1),
+              color: colorScheme.primaryContainer.withValues(alpha: 0.3),
               borderRadius: BorderRadius.circular(12),
             ),
             child: Text(
               '$homeworkCount',
               style: theme.textTheme.labelSmall?.copyWith(
                 fontWeight: FontWeight.w500,
-                color: Colors.blue,
+                color: colorScheme.primary,
                 fontSize: (theme.textTheme.labelSmall?.fontSize ?? 11) * textScaleFactor,
               ),
             ),

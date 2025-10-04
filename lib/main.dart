@@ -48,18 +48,52 @@ void main() async {
   runApp(const MyApp());
 }
 
-class MyApp extends StatelessWidget {
+class MyApp extends StatefulWidget {
   const MyApp({super.key});
+
+  @override
+  State<MyApp> createState() => _MyAppState();
+}
+
+class _MyAppState extends State<MyApp> {
+  bool _isDarkMode = false;
+
+  @override
+  void initState() {
+    super.initState();
+    _loadThemeSettings();
+  }
+
+  Future<void> _loadThemeSettings() async {
+    final settingsService = SettingsService.instance;
+    final isDarkMode = settingsService.getDarkMode();
+    
+    setState(() {
+      _isDarkMode = isDarkMode;
+    });
+  }
 
   @override
   Widget build(BuildContext context) {
     return MaterialApp(
       title: 'Finito Board',
       theme: ThemeData(
-        colorScheme: ColorScheme.fromSeed(seedColor: Colors.blue),
+        colorScheme: ColorScheme.fromSeed(
+          seedColor: Colors.blue,
+          brightness: Brightness.light,
+        ),
         useMaterial3: true,
         fontFamily: 'HarmonyOS Sans SC',
       ),
+      darkTheme: ThemeData(
+        colorScheme: ColorScheme.fromSeed(
+          seedColor: Colors.blue,
+          brightness: Brightness.dark,
+        ),
+        useMaterial3: true,
+        fontFamily: 'HarmonyOS Sans SC',
+      ),
+      themeMode: _isDarkMode ? ThemeMode.dark : ThemeMode.light,
       localizationsDelegates: const [
         GlobalMaterialLocalizations.delegate,
         GlobalWidgetsLocalizations.delegate,
@@ -70,23 +104,27 @@ class MyApp extends StatelessWidget {
         Locale('en', 'US'),
         Locale('zh', 'CN'),
       ],
-      home: const MainWindow(),
+      home: MainWindow(onThemeChanged: _loadThemeSettings),
       debugShowCheckedModeBanner: false,
     );
   }
 }
 
 class MainWindow extends StatelessWidget {
-  const MainWindow({super.key});
+  final VoidCallback? onThemeChanged;
+  
+  const MainWindow({super.key, this.onThemeChanged});
 
   @override
   Widget build(BuildContext context) {
-    return const HomeworkBoard();
+    return HomeworkBoard(onThemeChanged: onThemeChanged);
   }
 }
 
 class HomeworkBoard extends StatefulWidget {
-  const HomeworkBoard({super.key});
+  final VoidCallback? onThemeChanged;
+  
+  const HomeworkBoard({super.key, this.onThemeChanged});
 
   @override
   State<HomeworkBoard> createState() => _HomeworkBoardState();
@@ -115,11 +153,24 @@ class _HomeworkBoardState extends State<HomeworkBoard> {
   
   // 拖动状态
   bool _isDragging = false;
+  
+  // 背景不透明度
+  double _backgroundOpacity = 1.0;
+  
+
 
   @override
   void initState() {
     super.initState();
     _distributeHomeworksToColumns();
+    _loadBackgroundSettings();
+  }
+  
+  void _loadBackgroundSettings() {
+    final settingsService = SettingsService.instance;
+    setState(() {
+      _backgroundOpacity = settingsService.getBackgroundOpacity();
+    });
   }
   
   @override
@@ -202,6 +253,12 @@ class _HomeworkBoardState extends State<HomeworkBoard> {
       _showCustomSnackBar('窗口已解锁，可调整大小或按住底部操纵杆拖动窗口');
     }
   }
+
+
+
+
+
+
 
   // 开始拖动窗口
   void _startDragWindow() async {
@@ -323,6 +380,7 @@ class _HomeworkBoardState extends State<HomeworkBoard> {
         for (var homework in subject.homeworks) {
           columns[currentColumn].add(
             HomeworkCard(
+              key: ValueKey('${homework.id}_$_backgroundOpacity'),
               homework: homework,
               isSelected: _selectedHomeworkId == homework.id,
               onTap: () => _selectHomework(homework.id),
@@ -371,8 +429,8 @@ class _HomeworkBoardState extends State<HomeworkBoard> {
             height: double.infinity,
             decoration: BoxDecoration(
               color: _isFullScreen 
-                  ? Colors.white 
-                  : Colors.white.withValues(alpha: 0.92),
+                  ? Theme.of(context).colorScheme.surface
+                  : Theme.of(context).colorScheme.surface.withValues(alpha: _backgroundOpacity),
               borderRadius: _isFullScreen 
                   ? BorderRadius.zero 
                   : BorderRadius.circular(12),
@@ -452,14 +510,16 @@ class _HomeworkBoardState extends State<HomeworkBoard> {
 
   // 构建悬浮工具栏
   Widget _buildFloatingToolbar() {
+    final colorScheme = Theme.of(context).colorScheme;
+    
     return Container(
       padding: const EdgeInsets.symmetric(horizontal: 8, vertical: 6),
       decoration: BoxDecoration(
-        color: Colors.white,
+        color: colorScheme.surface,
         borderRadius: BorderRadius.circular(20),
         boxShadow: [
           BoxShadow(
-            color: Colors.black.withValues(alpha: 0.15),
+            color: colorScheme.shadow.withValues(alpha: 0.15),
             spreadRadius: 1,
             blurRadius: 6,
             offset: const Offset(0, 3),
@@ -471,19 +531,25 @@ class _HomeworkBoardState extends State<HomeworkBoard> {
         children: [
           _buildToolbarButton(
             icon: Icons.add,
-            onPressed: () => _showHomeworkEditor(),
+            onPressed: () {
+              _showHomeworkEditor();
+            },
             tooltip: '新建',
           ),
           const SizedBox(width: 4),
           _buildToolbarButton(
             icon: _isFullScreen ? Icons.fullscreen_exit : Icons.fullscreen,
-            onPressed: _toggleFullScreen,
+            onPressed: () {
+              _toggleFullScreen();
+            },
             tooltip: _isFullScreen ? '退出全屏' : '全屏',
           ),
           const SizedBox(width: 4),
           _buildToolbarButton(
             icon: Icons.menu,
-            onPressed: _toggleQuickMenu,
+            onPressed: () {
+              _toggleQuickMenu();
+            },
             tooltip: '快捷菜单',
           ),
         ],
@@ -497,6 +563,7 @@ class _HomeworkBoardState extends State<HomeworkBoard> {
     required VoidCallback onPressed,
     required String tooltip,
   }) {
+    final colorScheme = Theme.of(context).colorScheme;
     return Tooltip(
       message: tooltip,
       child: Material(
@@ -512,7 +579,7 @@ class _HomeworkBoardState extends State<HomeworkBoard> {
             ),
             child: Icon(
               icon,
-              color: Colors.grey[600],
+              color: colorScheme.onSurface.withValues(alpha: 0.7),
               size: 20,
             ),
           ),
@@ -523,15 +590,16 @@ class _HomeworkBoardState extends State<HomeworkBoard> {
 
   // 构建快捷菜单
   Widget _buildQuickMenu() {
+    final colorScheme = Theme.of(context).colorScheme;
     return Container(
       width: 220,
       padding: const EdgeInsets.all(12),
       decoration: BoxDecoration(
-        color: Colors.white,
+        color: colorScheme.surface.withValues(alpha: (_backgroundOpacity + 0.2).clamp(0.0, 1.0)),
         borderRadius: BorderRadius.circular(12),
         boxShadow: [
           BoxShadow(
-            color: Colors.black.withValues(alpha: 0.15),
+            color: colorScheme.shadow.withValues(alpha: 0.15),
             spreadRadius: 1,
             blurRadius: 8,
             offset: const Offset(0, 4),
@@ -615,7 +683,7 @@ class _HomeworkBoardState extends State<HomeworkBoard> {
                     '界面缩放',
                     style: TextStyle(
                       fontSize: 12,
-                      color: Colors.grey[700],
+                      color: colorScheme.onSurface.withValues(alpha: 0.7),
                     ),
                   ),
                   const Spacer(),
@@ -629,9 +697,10 @@ class _HomeworkBoardState extends State<HomeworkBoard> {
                     child: Text(
                       '${_scaleFactor.toInt()}%',
                       textAlign: TextAlign.center,
-                      style: const TextStyle(
+                      style: TextStyle(
                         fontSize: 12,
                         fontWeight: FontWeight.w500,
+                        color: colorScheme.onSurface,
                       ),
                     ),
                   ),
@@ -650,7 +719,7 @@ class _HomeworkBoardState extends State<HomeworkBoard> {
                     '作业列数',
                     style: TextStyle(
                       fontSize: 12,
-                      color: Colors.grey[700],
+                      color: colorScheme.onSurface.withValues(alpha: 0.7),
                     ),
                   ),
                   const Spacer(),
@@ -664,9 +733,10 @@ class _HomeworkBoardState extends State<HomeworkBoard> {
                     child: Text(
                       '$_columnCount 列',
                       textAlign: TextAlign.center,
-                      style: const TextStyle(
+                      style: TextStyle(
                         fontSize: 12,
                         fontWeight: FontWeight.w500,
+                        color: colorScheme.onSurface,
                       ),
                     ),
                   ),
@@ -698,6 +768,7 @@ class _HomeworkBoardState extends State<HomeworkBoard> {
     required String title,
     required Widget child,
   }) {
+    final colorScheme = Theme.of(context).colorScheme;
     return Column(
       crossAxisAlignment: CrossAxisAlignment.start,
       children: [
@@ -705,7 +776,7 @@ class _HomeworkBoardState extends State<HomeworkBoard> {
           title,
           style: TextStyle(
             fontSize: 14,
-            color: Colors.grey[700],
+            color: colorScheme.onSurface.withValues(alpha: 0.7),
             fontWeight: FontWeight.w600,
           ),
         ),
@@ -722,6 +793,7 @@ class _HomeworkBoardState extends State<HomeworkBoard> {
     required VoidCallback onPressed,
     bool isDestructive = false,
   }) {
+    final colorScheme = Theme.of(context).colorScheme;
     return Material(
       color: Colors.transparent,
       child: InkWell(
@@ -731,7 +803,9 @@ class _HomeworkBoardState extends State<HomeworkBoard> {
           width: double.infinity,
           padding: const EdgeInsets.symmetric(horizontal: 12, vertical: 8),
           decoration: BoxDecoration(
-            color: isDestructive ? Colors.red[50] : Colors.grey[50],
+            color: isDestructive 
+                ? colorScheme.errorContainer.withValues(alpha: 0.3)
+                : colorScheme.surfaceContainerHighest.withValues(alpha: 0.5),
             borderRadius: BorderRadius.circular(8),
           ),
           child: Row(
@@ -739,14 +813,18 @@ class _HomeworkBoardState extends State<HomeworkBoard> {
               Icon(
                 icon,
                 size: 18,
-                color: isDestructive ? Colors.red[600] : Colors.grey[700],
+                color: isDestructive 
+                    ? colorScheme.error 
+                    : colorScheme.onSurface.withValues(alpha: 0.7),
               ),
               const SizedBox(width: 8),
               Text(
                 text,
                 style: TextStyle(
                   fontSize: 14,
-                  color: isDestructive ? Colors.red[700] : Colors.grey[800],
+                  color: isDestructive 
+                      ? colorScheme.error 
+                      : colorScheme.onSurface.withValues(alpha: 0.8),
                   fontWeight: FontWeight.w500,
                 ),
               ),
@@ -762,6 +840,7 @@ class _HomeworkBoardState extends State<HomeworkBoard> {
     required IconData icon,
     required VoidCallback onPressed,
   }) {
+    final colorScheme = Theme.of(context).colorScheme;
     return Material(
       color: Colors.transparent,
       child: InkWell(
@@ -771,13 +850,13 @@ class _HomeworkBoardState extends State<HomeworkBoard> {
           width: 28,
           height: 28,
           decoration: BoxDecoration(
-            color: Colors.grey[100],
+            color: colorScheme.surfaceContainerHighest.withValues(alpha: 0.5),
             borderRadius: BorderRadius.circular(6),
           ),
           child: Icon(
             icon,
             size: 16,
-            color: Colors.grey[700],
+            color: colorScheme.onSurface.withValues(alpha: 0.7),
           ),
         ),
       ),
@@ -811,7 +890,10 @@ class _HomeworkBoardState extends State<HomeworkBoard> {
   void _openSettingsWindow() async {
     await showDialog(
       context: context,
-      builder: (context) => SettingsWindow(),
+      builder: (context) => SettingsWindow(
+        onThemeChanged: widget.onThemeChanged,
+        onSettingsChanged: _loadBackgroundSettings,
+      ),
     );
   }
 
@@ -892,6 +974,7 @@ class _HomeworkBoardState extends State<HomeworkBoard> {
 
   // 构建底部拖动条
   Widget _buildDragBar() {
+    final colorScheme = Theme.of(context).colorScheme;
     return GestureDetector(
       onPanStart: (_) {
         _startDragWindow();
@@ -908,8 +991,8 @@ class _HomeworkBoardState extends State<HomeworkBoard> {
             height: 4,
             decoration: BoxDecoration(
               color: _isDragging
-                  ? Colors.grey[600] // 拖动时变暗
-                  : Colors.grey[400], // 正常状态
+                  ? colorScheme.onSurface.withValues(alpha: 0.6) // 拖动时变暗
+                  : colorScheme.onSurface.withValues(alpha: 0.4), // 正常状态
               borderRadius: BorderRadius.circular(2),
             ),
           ),
