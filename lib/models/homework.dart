@@ -34,31 +34,5 @@ class Homework {
     );
   }
 
-  // 判断是否已过期
-  bool get isOverdue => DateTime.now().isAfter(dueDate);
 
-  // 获取剩余天数
-  int get daysRemaining {
-    final difference = dueDate.difference(DateTime.now()).inDays;
-    return difference < 0 ? 0 : difference;
-  }
-
-  // 格式化截止日期显示
-  String get formattedDueDate {
-    final now = DateTime.now();
-    final today = DateTime(now.year, now.month, now.day);
-    final dueDay = DateTime(dueDate.year, dueDate.month, dueDate.day);
-    
-    final difference = dueDay.difference(today).inDays;
-    
-    if (difference == 0) {
-      return '今天截止';
-    } else if (difference == 1) {
-      return '明天截止';
-    } else if (difference > 1) {
-      return '$difference天后截止';
-    } else {
-      return '已过期';
-    }
-  }
 }

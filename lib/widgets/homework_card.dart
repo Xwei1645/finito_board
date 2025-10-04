@@ -96,6 +96,11 @@ class _HomeworkCardState extends State<HomeworkCard> {
     super.dispose();
   }
 
+  // 判断作业是否已过期
+  bool _isOverdue() {
+    return DateTime.now().isAfter(widget.homework.dueDate);
+  }
+
   // 获取格式化的截止时间
   String _getFormattedDate() {
     final dueDate = widget.homework.dueDate;
@@ -194,7 +199,7 @@ class _HomeworkCardState extends State<HomeworkCard> {
                       Icon(
                         Icons.access_time,
                         size: 16,
-                        color: widget.homework.isOverdue 
+                        color: _isOverdue() 
                             ? colorScheme.error 
                             : colorScheme.onSurfaceVariant,
                       ),
@@ -202,7 +207,7 @@ class _HomeworkCardState extends State<HomeworkCard> {
                       Text(
                         _getFormattedDate(),
                         style: theme.textTheme.bodySmall?.copyWith(
-                        color: widget.homework.isOverdue 
+                        color: _isOverdue() 
                             ? colorScheme.error 
                             : colorScheme.onSurfaceVariant,
                         fontWeight: FontWeight.w500,
