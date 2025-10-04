@@ -16,6 +16,8 @@ dependencies:
   intl: any
   url_launcher: ^6.2.4
   package_info_plus: ^8.0.0
+  shared_preferences: ^2.2.2
+  launch_at_startup: ^0.5.1
 
 dev_dependencies:
   flutter_test:

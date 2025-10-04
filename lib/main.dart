@@ -14,9 +14,14 @@ import 'widgets/empty_state.dart';
 import 'widgets/settings.dart';
 import 'widgets/subject_manager.dart';
 import 'widgets/tag_manager.dart';
+import 'services/settings_service.dart';
+
 
 void main() async {
   WidgetsFlutterBinding.ensureInitialized();
+  
+  // 初始化设置服务
+  await SettingsService.instance.initialize();
   
   if (!kIsWeb && (Platform.isWindows || Platform.isLinux || Platform.isMacOS)) {
     await windowManager.ensureInitialized();
