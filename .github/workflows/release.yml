@@ -75,11 +75,11 @@ jobs:
         uses: softprops/action-gh-release@v1
         with:
           tag_name: ${{ steps.release-type.outputs.tag_name }}
-          name: Release ${{ steps.release-type.outputs.tag_name }}
+          name: ${{ steps.release-type.outputs.tag_name }}
           prerelease: ${{ steps.release-type.outputs.is_prerelease }}
           files: release-assets/*
           body: |
-            ## 🚀 Release ${{ steps.release-type.outputs.tag_name }}
+            ## 🚀 ${{ steps.release-type.outputs.tag_name }}
             
             ---
             
