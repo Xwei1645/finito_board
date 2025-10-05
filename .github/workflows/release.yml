@@ -1,0 +1,88 @@
+name: Release
+
+on:
+  push:
+    tags:
+      - 'v*'
+
+permissions:
+  contents: write
+
+jobs:
+  build:
+    runs-on: windows-latest
+    steps:
+      - name: Clone repository
+        uses: actions/checkout@v4
+
+      - name: Set up Flutter
+        uses: subosito/flutter-action@v2
+        with:
+          flutter-version: '3.35.4'
+          channel: stable
+
+      - name: Init flutter env
+        run: flutter pub get
+
+      - name: Build Windows app
+        run: flutter build windows --release
+
+      - name: Create archive
+        run: |
+          Compress-Archive -Path "build\windows\x64\runner\Release\*" -DestinationPath "finito-board-windows-x64.zip"
+
+      - name: Upload artifact
+        uses: actions/upload-artifact@v4
+        with:
+          name: finito-board-windows-x64
+          path: finito-board-windows-x64.zip
+
+  release:
+    needs: build
+    runs-on: ubuntu-latest
+    steps:
+      - name: Clone repository
+        uses: actions/checkout@v4
+
+      - name: Download all artifacts
+        uses: actions/download-artifact@v4
+        with:
+          path: artifacts
+
+      - name: Determine release type
+        id: release-type
+        run: |
+          TAG_NAME=${GITHUB_REF#refs/tags/}
+          echo "tag_name=$TAG_NAME" >> $GITHUB_OUTPUT
+          
+          if [[ "$TAG_NAME" =~ -dev(\.[0-9]+)?$ ]] || [[ "$TAG_NAME" =~ -beta(\.[0-9]+)?$ ]] || [[ "$TAG_NAME" =~ -alpha(\.[0-9]+)?$ ]] || [[ "$TAG_NAME" =~ -rc(\.[0-9]+)?$ ]]; then
+            echo "is_prerelease=true" >> $GITHUB_OUTPUT
+            echo "Release type: Pre-release"
+          else
+            echo "is_prerelease=false" >> $GITHUB_OUTPUT
+            echo "Release type: Stable release"
+          fi
+
+      - name: Prepare release assets
+        run: |
+          mkdir -p release-assets
+          find artifacts -name "*.zip" | while read file; do
+            cp "$file" release-assets/
+          done
+          ls -la release-assets/
+
+      - name: Create Release
+        uses: softprops/action-gh-release@v1
+        with:
+          tag_name: ${{ steps.release-type.outputs.tag_name }}
+          name: Release ${{ steps.release-type.outputs.tag_name }}
+          prerelease: ${{ steps.release-type.outputs.is_prerelease }}
+          files: release-assets/*
+          body: |
+            ## 🚀 Release ${{ steps.release-type.outputs.tag_name }}
+            
+            ---
+            
+            ${{ steps.release-type.outputs.is_prerelease == 'true' && '⚠️ **This is a pre-release version!**' || '' }}
+        env:
+          GITHUB_TOKEN: ${{ secrets.GITHUB_TOKEN }}
