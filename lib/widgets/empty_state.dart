@@ -33,7 +33,7 @@ class EmptyState extends StatelessWidget {
                 borderRadius: BorderRadius.circular(containerSize / 2),
               ),
               child: Icon(
-                Icons.assignment_outlined,
+                Icons.assignment,
                 size: iconSize,
                 color: colorScheme.primary.withValues(alpha: 0.7),
               ),

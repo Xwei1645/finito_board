@@ -259,7 +259,7 @@ class _SubjectManagerState extends State<SubjectManager> {
                                     const SizedBox(width: 8),
                                     IconButton(
                                       onPressed: _saveEditSubject,
-                                      icon: const Icon(Icons.check_outlined, size: 20),
+                                      icon: const Icon(Icons.check, size: 20),
                                       style: IconButton.styleFrom(
                                         backgroundColor: colorScheme.primary,
                                         foregroundColor: colorScheme.onPrimary,
@@ -269,7 +269,7 @@ class _SubjectManagerState extends State<SubjectManager> {
                                     const SizedBox(width: 4),
                                     IconButton(
                                       onPressed: _cancelEdit,
-                                      icon: const Icon(Icons.close_outlined, size: 20),
+                                      icon: const Icon(Icons.close, size: 20),
                                       style: IconButton.styleFrom(
                                         backgroundColor: colorScheme.surfaceContainerHighest,
                                         minimumSize: const Size(32, 32),
@@ -290,7 +290,7 @@ class _SubjectManagerState extends State<SubjectManager> {
                                     ),
                                     IconButton(
                                       onPressed: () => _startEditSubject(subject),
-                                      icon: const Icon(Icons.edit_outlined, size: 18),
+                                      icon: const Icon(Icons.edit, size: 18),
                                       style: IconButton.styleFrom(
                                         foregroundColor: colorScheme.primary,
                                         backgroundColor: colorScheme.primaryContainer.withValues(alpha: 0.3),
@@ -304,7 +304,7 @@ class _SubjectManagerState extends State<SubjectManager> {
                                     const SizedBox(width: 8),
                                     IconButton(
                                       onPressed: () => _deleteSubject(subject),
-                                      icon: const Icon(Icons.delete_outline, size: 18),
+                                      icon: const Icon(Icons.delete, size: 18),
                                       style: IconButton.styleFrom(
                                         foregroundColor: colorScheme.error,
                                         backgroundColor: colorScheme.errorContainer.withValues(alpha: 0.3),

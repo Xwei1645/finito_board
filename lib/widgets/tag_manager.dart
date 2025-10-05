@@ -323,7 +323,7 @@ class _TagManagerState extends State<TagManager> {
                                       borderRadius: BorderRadius.circular(3),
                                     ),
                                     child: Icon(
-                                      Icons.edit_outlined,
+                                      Icons.edit,
                                       size: 14,
                                       color: colorScheme.onPrimaryContainer,
                                     ),
@@ -339,7 +339,7 @@ class _TagManagerState extends State<TagManager> {
                                       borderRadius: BorderRadius.circular(3),
                                     ),
                                     child: Icon(
-                                      Icons.close_outlined,
+                                      Icons.close,
                                       size: 14,
                                       color: colorScheme.onErrorContainer,
                                     ),

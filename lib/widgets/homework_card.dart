@@ -245,7 +245,7 @@ class _HomeworkCardState extends State<HomeworkCard> {
                   mainAxisAlignment: MainAxisAlignment.end,
                   children: [
                     IconButton( // 改为填充样式的按钮
-                      icon: const Icon(Icons.edit_outlined, size: 18),
+                      icon: const Icon(Icons.edit, size: 18),
                       onPressed: widget.onEdit,
                       tooltip: '编辑',
                       style: IconButton.styleFrom(
@@ -260,7 +260,7 @@ class _HomeworkCardState extends State<HomeworkCard> {
                     ),
                     const SizedBox(width: 8),
                     IconButton( // 改为填充样式的按钮
-                      icon: const Icon(Icons.delete_outline, size: 18),
+                      icon: const Icon(Icons.delete, size: 18),
                       onPressed: widget.onDelete,
                       tooltip: '删除',
                       style: IconButton.styleFrom(
