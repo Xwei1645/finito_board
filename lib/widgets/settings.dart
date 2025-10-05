@@ -1,4 +1,5 @@
 import 'package:flutter/material.dart';
+import 'package:flutter/services.dart';
 import 'package:url_launcher/url_launcher.dart';
 import 'package:package_info_plus/package_info_plus.dart';
 import '../services/settings_service.dart';
@@ -511,15 +512,25 @@ class _SettingsWindowState extends State<SettingsWindow> {
             const SizedBox(height: 8),
             const Text('集中布置作业！'),
             const SizedBox(height: 16),
-            TextButton.icon(
-              onPressed: () async {
-                final uri = Uri.parse('https://github.com/Xwei1645/finito_board');
-                if (await canLaunchUrl(uri)) {
-                  await launchUrl(uri);
-                }
-              },
-              icon: const Icon(Icons.open_in_new),
-              label: const Text('GitHub'),
+            Row(
+              children: [
+                TextButton.icon(
+                  onPressed: () async {
+                    final uri = Uri.parse('https://github.com/Xwei1645/finito_board');
+                    if (await canLaunchUrl(uri)) {
+                      await launchUrl(uri);
+                    }
+                  },
+                  icon: const Icon(Icons.open_in_new),
+                  label: const Text('GitHub'),
+                ),
+                const SizedBox(width: 8),
+                TextButton.icon(
+                  onPressed: () => _showLicenseDialog(context),
+                  icon: const Icon(Icons.description),
+                  label: const Text('开放源代码许可'),
+                ),
+              ],
             ),
           ],
         ),
@@ -536,5 +547,55 @@ class _SettingsWindowState extends State<SettingsWindow> {
         ],
       ),
     );
+  }
+
+  void _showLicenseDialog(BuildContext context) async {
+    try {
+      final licenseText = await rootBundle.loadString('LICENSE');
+      
+      if (!context.mounted) return;
+      
+      showDialog(
+        context: context,
+        builder: (context) => AlertDialog(
+          shape: RoundedRectangleBorder(
+            borderRadius: BorderRadius.circular(16),
+          ),
+          title: const Text('开放源代码许可'),
+          content: SizedBox(
+            width: 500,
+            height: 400,
+            child: SingleChildScrollView(
+              child: SelectableText(
+                licenseText,
+                style: const TextStyle(
+                  fontSize: 14,
+                ),
+              ),
+            ),
+          ),
+          actions: [
+            FilledButton(
+              onPressed: () => Navigator.of(context).pop(),
+              style: FilledButton.styleFrom(
+                shape: RoundedRectangleBorder(
+                  borderRadius: BorderRadius.circular(20),
+                ),
+              ),
+              child: const Text('确定'),
+            ),
+          ],
+        ),
+      );
+    } catch (e) {
+      if (!context.mounted) return;
+      
+      ScaffoldMessenger.of(context).showSnackBar(
+        SnackBar(
+          content: Text('无法加载许可证文件: $e'),
+          backgroundColor: Colors.red,
+        ),
+      );
+    }
   }
 }
