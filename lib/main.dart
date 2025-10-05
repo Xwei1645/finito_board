@@ -182,7 +182,11 @@ class _HomeworkBoardState extends State<HomeworkBoard> with WindowListener {
     windowManager.addListener(this);
     _loadDataFromHive();
     _loadBackgroundSettings();
-    _checkAndShowOOBE();
+    
+    // 确保主窗口完全加载后再检查并显示OOBE
+    WidgetsBinding.instance.addPostFrameCallback((_) {
+      _checkAndShowOOBE();
+    });
   }
 
   Future<void> _loadDataFromHive() async {
@@ -233,25 +237,24 @@ class _HomeworkBoardState extends State<HomeworkBoard> with WindowListener {
 
   /// 检查并显示OOBE对话框
   Future<void> _checkAndShowOOBE() async {
-    // 等待一个短暂的延迟，确保UI已经完全加载
-    await Future.delayed(const Duration(milliseconds: 500));
-    
     final settingsService = SettingsService.instance;
     if (settingsService.isFirstLaunch() && mounted) {
-      showDialog(
-        context: context,
-        barrierDismissible: false,
-        builder: (context) => OOBEDialog(
-          onCompleted: () {
-            // OOBE完成后重新加载主题设置
-            if (widget.onThemeChanged != null) {
-              widget.onThemeChanged!();
-            }
-            _loadBackgroundSettings();
-          },
-          onThemeChanged: widget.onThemeChanged,
-        ),
-      );
+      if (mounted) {
+        showDialog(
+          context: context,
+          barrierDismissible: false,
+          builder: (context) => OOBEDialog(
+            onCompleted: () {
+              // OOBE完成后重新加载主题设置
+              if (widget.onThemeChanged != null) {
+                widget.onThemeChanged!();
+              }
+              _loadBackgroundSettings();
+            },
+            onThemeChanged: widget.onThemeChanged,
+          ),
+        );
+      }
     }
   }
   
