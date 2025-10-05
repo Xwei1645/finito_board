@@ -27,13 +27,14 @@ class AppConfigAdapter extends TypeAdapter<AppConfig> {
       columnCount: fields[7] as int,
       alwaysOnBottom: fields[8] as bool,
       backgroundOpacity: fields[9] as double,
+      firstLaunch: fields[10] as bool,
     );
   }
 
   @override
   void write(BinaryWriter writer, AppConfig obj) {
     writer
-      ..writeByte(10)
+      ..writeByte(11)
       ..writeByte(0)
       ..write(obj.theme)
       ..writeByte(1)
@@ -53,7 +54,9 @@ class AppConfigAdapter extends TypeAdapter<AppConfig> {
       ..writeByte(8)
       ..write(obj.alwaysOnBottom)
       ..writeByte(9)
-      ..write(obj.backgroundOpacity);
+      ..write(obj.backgroundOpacity)
+      ..writeByte(10)
+      ..write(obj.firstLaunch);
   }
 
   @override

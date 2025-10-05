@@ -255,4 +255,123 @@ class SettingsService {
     }
   }
 
+  /// 检查是否是首次启动
+  bool isFirstLaunch() {
+    final config = HiveStorageService.instance.getAppConfig();
+    return config.firstLaunch;
+  }
+
+  /// 标记OOBE已完成
+  Future<bool> markOOBECompleted() async {
+    try {
+      final storageService = HiveStorageService.instance;
+      final currentConfig = storageService.getAppConfig();
+      final updatedConfig = currentConfig.copyWith(
+        firstLaunch: false,
+      );
+      await storageService.saveAppConfig(updatedConfig);
+      return true;
+    } catch (e) {
+      return false;
+    }
+  }
+
+  /// 创建桌面快捷方式
+  Future<SettingsResult> createDesktopShortcut() async {
+    if (!Platform.isWindows) {
+      return const SettingsResult.failure('仅支持Windows平台');
+    }
+
+    try {
+      final packageInfo = await PackageInfo.fromPlatform();
+      final executablePath = Platform.resolvedExecutable;
+      final appName = packageInfo.appName;
+      
+      // 获取桌面路径
+      final result = await Process.run('powershell', [
+        '-Command',
+        '[Environment]::GetFolderPath("Desktop")'
+      ]);
+      
+      if (result.exitCode != 0) {
+        return const SettingsResult.failure('无法获取桌面路径');
+      }
+      
+      final desktopPath = result.stdout.toString().trim();
+      final shortcutPath = '$desktopPath\\$appName.lnk';
+      
+      // 创建快捷方式的PowerShell脚本
+      final script = '''
+\$WshShell = New-Object -comObject WScript.Shell
+\$Shortcut = \$WshShell.CreateShortcut("$shortcutPath")
+\$Shortcut.TargetPath = "$executablePath"
+\$Shortcut.WorkingDirectory = "${executablePath.substring(0, executablePath.lastIndexOf('\\'))}"
+\$Shortcut.Description = "$appName"
+\$Shortcut.Save()
+''';
+      
+      final createResult = await Process.run('powershell', [
+        '-Command',
+        script
+      ]);
+      
+      if (createResult.exitCode == 0) {
+        return const SettingsResult.success();
+      } else {
+        return SettingsResult.failure('创建快捷方式失败: ${createResult.stderr}');
+      }
+    } catch (e) {
+      return SettingsResult.failure('创建桌面快捷方式时发生错误: $e');
+    }
+  }
+
+  /// 创建开始菜单快捷方式
+  Future<SettingsResult> createStartMenuShortcut() async {
+    if (!Platform.isWindows) {
+      return const SettingsResult.failure('仅支持Windows平台');
+    }
+
+    try {
+      final packageInfo = await PackageInfo.fromPlatform();
+      final executablePath = Platform.resolvedExecutable;
+      final appName = packageInfo.appName;
+      
+      // 获取开始菜单程序文件夹路径
+      final result = await Process.run('powershell', [
+        '-Command',
+        '[Environment]::GetFolderPath("Programs")'
+      ]);
+      
+      if (result.exitCode != 0) {
+        return const SettingsResult.failure('无法获取开始菜单路径');
+      }
+      
+      final programsPath = result.stdout.toString().trim();
+      final shortcutPath = '$programsPath\\$appName.lnk';
+      
+      // 创建快捷方式的PowerShell脚本
+      final script = '''
+\$WshShell = New-Object -comObject WScript.Shell
+\$Shortcut = \$WshShell.CreateShortcut("$shortcutPath")
+\$Shortcut.TargetPath = "$executablePath"
+\$Shortcut.WorkingDirectory = "${executablePath.substring(0, executablePath.lastIndexOf('\\'))}"
+\$Shortcut.Description = "$appName"
+\$Shortcut.Save()
+''';
+      
+      final createResult = await Process.run('powershell', [
+        '-Command',
+        script
+      ]);
+      
+      if (createResult.exitCode == 0) {
+        return const SettingsResult.success();
+      } else {
+        return SettingsResult.failure('创建快捷方式失败: ${createResult.stderr}');
+      }
+    } catch (e) {
+      return SettingsResult.failure('创建开始菜单快捷方式时发生错误: $e');
+    }
+  }
+
 }

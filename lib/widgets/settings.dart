@@ -2,6 +2,7 @@ import 'package:flutter/material.dart';
 import 'package:url_launcher/url_launcher.dart';
 import 'package:package_info_plus/package_info_plus.dart';
 import '../services/settings_service.dart';
+import 'oobe_dialog.dart';
 
 
 class SettingsWindow extends StatefulWidget {
@@ -139,6 +140,15 @@ class _SettingsWindowState extends State<SettingsWindow> {
                         onChanged: _onBackgroundOpacityChanged,
                       ),
                       
+                      const SizedBox(height: 16),
+                      
+                      // 打开OOBE选项
+                      _buildActionItem(
+                        icon: Icons.rocket_launch,
+                        title: '打开 OOBE',
+                        subtitle: '重新打开首次使用向导',
+                        onTap: _showOOBEDialog,
+                      ),
 
                     ],
                   ],
@@ -389,6 +399,94 @@ class _SettingsWindowState extends State<SettingsWindow> {
     } else {
       // 设置失败，静默处理
     }
+  }
+
+  void _showOOBEDialog() {
+    showDialog(
+      context: context,
+      barrierDismissible: false,
+      builder: (context) => OOBEDialog(
+        onCompleted: () {
+          // OOBE完成后重新加载设置页面的状态
+          _loadSettings();
+          
+          // 通知主应用主题和设置变更
+          if (widget.onThemeChanged != null) {
+            widget.onThemeChanged!();
+          }
+          if (widget.onSettingsChanged != null) {
+            widget.onSettingsChanged!();
+          }
+        },
+        onThemeChanged: widget.onThemeChanged,
+      ),
+    );
+  }
+
+  Widget _buildActionItem({
+    required IconData icon,
+    required String title,
+    required String subtitle,
+    required VoidCallback onTap,
+  }) {
+    final colorScheme = Theme.of(context).colorScheme;
+    
+    return InkWell(
+      onTap: onTap,
+      borderRadius: BorderRadius.circular(12),
+      child: Container(
+        padding: const EdgeInsets.symmetric(vertical: 12, horizontal: 16),
+        decoration: BoxDecoration(
+          color: colorScheme.surface,
+          borderRadius: BorderRadius.circular(12),
+        ),
+        child: Row(
+          children: [
+            Container(
+              padding: const EdgeInsets.all(8),
+              decoration: BoxDecoration(
+                color: colorScheme.primary.withValues(alpha: 0.1),
+                borderRadius: BorderRadius.circular(8),
+              ),
+              child: Icon(
+                icon,
+                color: colorScheme.primary,
+                size: 20,
+              ),
+            ),
+            const SizedBox(width: 16),
+            Expanded(
+              child: Column(
+                crossAxisAlignment: CrossAxisAlignment.start,
+                children: [
+                  Text(
+                    title,
+                    style: TextStyle(
+                      fontSize: 16,
+                      fontWeight: FontWeight.w500,
+                      color: colorScheme.onSurface,
+                    ),
+                  ),
+                  const SizedBox(height: 4),
+                  Text(
+                    subtitle,
+                    style: TextStyle(
+                      fontSize: 14,
+                      color: colorScheme.onSurface.withValues(alpha: 0.7),
+                    ),
+                  ),
+                ],
+              ),
+            ),
+            Icon(
+              Icons.arrow_forward_ios,
+              size: 16,
+              color: colorScheme.onSurface.withValues(alpha: 0.5),
+            ),
+          ],
+        ),
+      ),
+    );
   }
 
   void _showAboutDialog(BuildContext context) async {

@@ -14,6 +14,7 @@ import 'widgets/empty_state.dart';
 import 'widgets/settings.dart';
 import 'widgets/subject_manager.dart';
 import 'widgets/tag_manager.dart';
+import 'widgets/oobe_dialog.dart';
 import 'services/settings_service.dart';
 import 'services/storage/hive_storage_service.dart';
 
@@ -181,6 +182,7 @@ class _HomeworkBoardState extends State<HomeworkBoard> with WindowListener {
     windowManager.addListener(this);
     _loadDataFromHive();
     _loadBackgroundSettings();
+    _checkAndShowOOBE();
   }
 
   Future<void> _loadDataFromHive() async {
@@ -227,6 +229,30 @@ class _HomeworkBoardState extends State<HomeworkBoard> with WindowListener {
     setState(() {
       _backgroundOpacity = settingsService.getBackgroundOpacity();
     });
+  }
+
+  /// 检查并显示OOBE对话框
+  Future<void> _checkAndShowOOBE() async {
+    // 等待一个短暂的延迟，确保UI已经完全加载
+    await Future.delayed(const Duration(milliseconds: 500));
+    
+    final settingsService = SettingsService.instance;
+    if (settingsService.isFirstLaunch() && mounted) {
+      showDialog(
+        context: context,
+        barrierDismissible: false,
+        builder: (context) => OOBEDialog(
+          onCompleted: () {
+            // OOBE完成后重新加载主题设置
+            if (widget.onThemeChanged != null) {
+              widget.onThemeChanged!();
+            }
+            _loadBackgroundSettings();
+          },
+          onThemeChanged: widget.onThemeChanged,
+        ),
+      );
+    }
   }
   
   @override

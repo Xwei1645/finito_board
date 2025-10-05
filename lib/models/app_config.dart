@@ -33,6 +33,9 @@ class AppConfig {
   
   @HiveField(9)
   final double backgroundOpacity; // 背景不透明度
+  
+  @HiveField(10)
+  final bool firstLaunch; // 是否首次启动
 
   const AppConfig({
     this.theme = 'system',
@@ -45,6 +48,7 @@ class AppConfig {
     this.columnCount = 3,
     this.alwaysOnBottom = false,
     this.backgroundOpacity = 0.95,
+    this.firstLaunch = true,
   });
 
   AppConfig copyWith({
@@ -58,6 +62,7 @@ class AppConfig {
     int? columnCount,
     bool? alwaysOnBottom,
     double? backgroundOpacity,
+    bool? firstLaunch,
   }) {
     return AppConfig(
       theme: theme ?? this.theme,
@@ -70,6 +75,7 @@ class AppConfig {
       columnCount: columnCount ?? this.columnCount,
       alwaysOnBottom: alwaysOnBottom ?? this.alwaysOnBottom,
       backgroundOpacity: backgroundOpacity ?? this.backgroundOpacity,
+      firstLaunch: firstLaunch ?? this.firstLaunch,
     );
   }
 }
