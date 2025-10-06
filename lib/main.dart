@@ -152,6 +152,7 @@ class _HomeworkBoardState extends State<HomeworkBoard> with WindowListener, Tick
 
   String? _selectedHomeworkId;
   Timer? _selectionTimer;
+  Timer? _quickMenuAutoHideTimer;
   
   // 界面缩放倍数（百分比）
   double _scaleFactor = 100.0;
@@ -292,6 +293,7 @@ class _HomeworkBoardState extends State<HomeworkBoard> with WindowListener, Tick
   void dispose() {
     windowManager.removeListener(this);
     _selectionTimer?.cancel();
+    _quickMenuAutoHideTimer?.cancel();
     _quickMenuAnimationController.dispose();
     super.dispose();
   }
@@ -545,6 +547,8 @@ class _HomeworkBoardState extends State<HomeworkBoard> with WindowListener, Tick
             onTap: () {
               // 隐藏快捷菜单
               if (_isQuickMenuVisible) {
+                // 取消自动隐藏定时器
+                _quickMenuAutoHideTimer?.cancel();
                 _quickMenuAnimationController.reverse().then((_) {
                   if (mounted) {
                     setState(() {
@@ -757,7 +761,7 @@ class _HomeworkBoardState extends State<HomeworkBoard> with WindowListener, Tick
           _buildMenuButton(
             icon: Icons.more_horiz,
             text: '更多选项...',
-            onPressed: _openSettingsWindow,
+            onPressed: () => _hideMenuAndExecute(_openSettingsWindow),
           ),
           const SizedBox(height: 12),
           // 窗口控制
@@ -795,9 +799,7 @@ class _HomeworkBoardState extends State<HomeworkBoard> with WindowListener, Tick
                   child: _buildMenuButton(
                     icon: Icons.subject,
                     text: '科目',
-                    onPressed: () {
-                      _showSubjectManager();
-                    },
+                    onPressed: () => _hideMenuAndExecute(_showSubjectManager),
                   ),
                 ),
                 const SizedBox(width: 8),
@@ -805,9 +807,7 @@ class _HomeworkBoardState extends State<HomeworkBoard> with WindowListener, Tick
                   child: _buildMenuButton(
                     icon: Icons.label,
                     text: '标签',
-                    onPressed: () {
-                      _showTagManager();
-                    },
+                    onPressed: () => _hideMenuAndExecute(_showTagManager),
                   ),
                 ),
               ],
@@ -898,7 +898,7 @@ class _HomeworkBoardState extends State<HomeworkBoard> with WindowListener, Tick
           _buildMenuButton(
             icon: Icons.exit_to_app,
             text: '退出...',
-            onPressed: _exitApplication,
+            onPressed: () => _hideMenuAndExecute(_exitApplication),
             isDestructive: true,
           ),
         ],
@@ -1031,7 +1031,8 @@ class _HomeworkBoardState extends State<HomeworkBoard> with WindowListener, Tick
   // 切换快捷菜单显示状态
   void _toggleQuickMenu() {
     if (_isQuickMenuVisible) {
-      // 隐藏菜单：先播放反向动画，然后隐藏
+      // 隐藏菜单：取消自动隐藏定时器，播放反向动画，然后隐藏
+      _quickMenuAutoHideTimer?.cancel();
       _quickMenuAnimationController.reverse().then((_) {
         if (mounted) {
           setState(() {
@@ -1040,15 +1041,41 @@ class _HomeworkBoardState extends State<HomeworkBoard> with WindowListener, Tick
         }
       });
     } else {
-      // 显示菜单：先显示，然后播放正向动画
+      // 显示菜单：先显示，然后播放正向动画，启动10秒自动隐藏定时器
       setState(() {
         _isQuickMenuVisible = true;
       });
       _quickMenuAnimationController.forward();
+      
+      // 启动10秒自动隐藏定时器
+      _quickMenuAutoHideTimer?.cancel(); // 取消之前的定时器
+      _quickMenuAutoHideTimer = Timer(const Duration(seconds: 10), () {
+        if (mounted && _isQuickMenuVisible) {
+          _toggleQuickMenu(); // 自动隐藏菜单
+        }
+      });
     }
   }
 
-
+  // 隐藏快捷菜单并执行操作
+  void _hideMenuAndExecute(VoidCallback action) {
+    if (_isQuickMenuVisible) {
+      // 取消自动隐藏定时器
+      _quickMenuAutoHideTimer?.cancel();
+      _quickMenuAnimationController.reverse().then((_) {
+        if (mounted) {
+          setState(() {
+            _isQuickMenuVisible = false;
+          });
+          // 在菜单隐藏后执行操作
+          action();
+        }
+      });
+    } else {
+      // 如果菜单已经隐藏，直接执行操作
+      action();
+    }
+  }
 
   // 打开设置窗口
   void _openSettingsWindow() async {
