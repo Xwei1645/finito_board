@@ -147,7 +147,7 @@ class HomeworkBoard extends StatefulWidget {
   State<HomeworkBoard> createState() => _HomeworkBoardState();
 }
 
-class _HomeworkBoardState extends State<HomeworkBoard> with WindowListener {
+class _HomeworkBoardState extends State<HomeworkBoard> with WindowListener, TickerProviderStateMixin {
   List<Subject> subjects = [];
 
   String? _selectedHomeworkId;
@@ -174,12 +174,42 @@ class _HomeworkBoardState extends State<HomeworkBoard> with WindowListener {
   // 背景不透明度
   double _backgroundOpacity = 1.0;
   
+  // 快捷菜单动画控制器
+  late AnimationController _quickMenuAnimationController;
+  late Animation<double> _quickMenuOpacityAnimation;
+  late Animation<Offset> _quickMenuSlideAnimation;
+  
 
 
   @override
   void initState() {
     super.initState();
     windowManager.addListener(this);
+    
+    // 初始化快捷菜单动画控制器
+    _quickMenuAnimationController = AnimationController(
+      duration: const Duration(milliseconds: 250),
+      vsync: this,
+    );
+    
+    // 透明度动画（淡入淡出）
+    _quickMenuOpacityAnimation = Tween<double>(
+      begin: 0.0,
+      end: 1.0,
+    ).animate(CurvedAnimation(
+      parent: _quickMenuAnimationController,
+      curve: Curves.easeInOut,
+    ));
+    
+    // 滑动动画（从右下角滑入）
+    _quickMenuSlideAnimation = Tween<Offset>(
+      begin: const Offset(0.3, 0.3),
+      end: Offset.zero,
+    ).animate(CurvedAnimation(
+      parent: _quickMenuAnimationController,
+      curve: Curves.easeOutBack,
+    ));
+    
     _loadDataFromHive();
     _loadBackgroundSettings();
     
@@ -262,6 +292,7 @@ class _HomeworkBoardState extends State<HomeworkBoard> with WindowListener {
   void dispose() {
     windowManager.removeListener(this);
     _selectionTimer?.cancel();
+    _quickMenuAnimationController.dispose();
     super.dispose();
   }
 
@@ -512,17 +543,23 @@ class _HomeworkBoardState extends State<HomeworkBoard> with WindowListener {
           // 背景容器
           GestureDetector(
             onTap: () {
-              setState(() {
-                // 隐藏快捷菜单
-                if (_isQuickMenuVisible) {
-                  _isQuickMenuVisible = false;
-                }
-                // 取消选中卡片
-                if (_selectedHomeworkId != null) {
+              // 隐藏快捷菜单
+              if (_isQuickMenuVisible) {
+                _quickMenuAnimationController.reverse().then((_) {
+                  if (mounted) {
+                    setState(() {
+                      _isQuickMenuVisible = false;
+                    });
+                  }
+                });
+              }
+              // 取消选中卡片
+              if (_selectedHomeworkId != null) {
+                setState(() {
                   _selectedHomeworkId = null;
-                  _selectionTimer?.cancel(); // 取消定时器
-                }
-              });
+                });
+                _selectionTimer?.cancel(); // 取消定时器
+              }
             },
             child: Container(
               width: double.infinity,
@@ -601,7 +638,13 @@ class _HomeworkBoardState extends State<HomeworkBoard> with WindowListener {
             Positioned(
               bottom: 70,
               right: 16,
-              child: _buildQuickMenu(),
+              child: SlideTransition(
+                position: _quickMenuSlideAnimation,
+                child: FadeTransition(
+                  opacity: _quickMenuOpacityAnimation,
+                  child: _buildQuickMenu(),
+                ),
+              ),
             ),
         ],
       ),
@@ -987,9 +1030,22 @@ class _HomeworkBoardState extends State<HomeworkBoard> with WindowListener {
 
   // 切换快捷菜单显示状态
   void _toggleQuickMenu() {
-    setState(() {
-      _isQuickMenuVisible = !_isQuickMenuVisible;
-    });
+    if (_isQuickMenuVisible) {
+      // 隐藏菜单：先播放反向动画，然后隐藏
+      _quickMenuAnimationController.reverse().then((_) {
+        if (mounted) {
+          setState(() {
+            _isQuickMenuVisible = false;
+          });
+        }
+      });
+    } else {
+      // 显示菜单：先显示，然后播放正向动画
+      setState(() {
+        _isQuickMenuVisible = true;
+      });
+      _quickMenuAnimationController.forward();
+    }
   }
 
 
