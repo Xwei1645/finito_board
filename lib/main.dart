@@ -813,7 +813,10 @@ class _HomeworkBoardState extends State<HomeworkBoard> with WindowListener, Tick
                   child: _buildMenuButton(
                     icon: _isWindowLocked ? Icons.lock_open : Icons.lock,
                     text: _isWindowLocked ? '解锁' : '锁定',
-                    onPressed: _toggleWindowLock,
+                    onPressed: () {
+                      _resetQuickMenuTimer();
+                      _toggleWindowLock();
+                    },
                   ),
                 ),
                 const SizedBox(width: 8),
@@ -822,6 +825,7 @@ class _HomeworkBoardState extends State<HomeworkBoard> with WindowListener, Tick
                     icon: Icons.picture_in_picture_alt,
                     text: '收起',
                     onPressed: () {
+                      _resetQuickMenuTimer();
                       // TODO: 实现收起功能
                     },
                   ),
@@ -872,7 +876,10 @@ class _HomeworkBoardState extends State<HomeworkBoard> with WindowListener, Tick
                   const Spacer(),
                   _buildScaleButton(
                     icon: Icons.remove,
-                    onPressed: () => _adjustScale(-10),
+                    onPressed: () {
+                      _resetQuickMenuTimer();
+                      _adjustScale(-10);
+                    },
                   ),
                   const SizedBox(width: 8),
                   SizedBox(
@@ -890,7 +897,10 @@ class _HomeworkBoardState extends State<HomeworkBoard> with WindowListener, Tick
                   const SizedBox(width: 8),
                   _buildScaleButton(
                     icon: Icons.add,
-                    onPressed: () => _adjustScale(10),
+                    onPressed: () {
+                      _resetQuickMenuTimer();
+                      _adjustScale(10);
+                    },
                   ),
                 ],
               ),
@@ -908,7 +918,10 @@ class _HomeworkBoardState extends State<HomeworkBoard> with WindowListener, Tick
                   const Spacer(),
                   _buildScaleButton(
                     icon: Icons.remove,
-                    onPressed: () => _adjustColumnCount(-1),
+                    onPressed: () {
+                      _resetQuickMenuTimer();
+                      _adjustColumnCount(-1);
+                    },
                   ),
                   const SizedBox(width: 8),
                   SizedBox(
@@ -926,7 +939,10 @@ class _HomeworkBoardState extends State<HomeworkBoard> with WindowListener, Tick
                   const SizedBox(width: 8),
                   _buildScaleButton(
                     icon: Icons.add,
-                    onPressed: () => _adjustColumnCount(1),
+                    onPressed: () {
+                      _resetQuickMenuTimer();
+                      _adjustColumnCount(1);
+                    },
                   ),
                 ],
               ),
@@ -1137,6 +1153,18 @@ class _HomeworkBoardState extends State<HomeworkBoard> with WindowListener, Tick
     }
     // 重新启动定时器
     _startToolbarOpacityTimer();
+  }
+
+  // 重置快捷菜单自动隐藏定时器
+  void _resetQuickMenuTimer() {
+    if (_isQuickMenuVisible) {
+      _quickMenuAutoHideTimer?.cancel();
+      _quickMenuAutoHideTimer = Timer(const Duration(seconds: 10), () {
+        if (mounted && _isQuickMenuVisible) {
+          _toggleQuickMenu(); // 自动隐藏菜单
+        }
+      });
+    }
   }
 
   // 打开设置窗口
