@@ -153,6 +153,7 @@ class _HomeworkBoardState extends State<HomeworkBoard> with WindowListener, Tick
   String? _selectedHomeworkId;
   Timer? _selectionTimer;
   Timer? _quickMenuAutoHideTimer;
+  Timer? _toolbarOpacityTimer;
   
   // 界面缩放倍数（百分比）
   double _scaleFactor = 100.0;
@@ -179,6 +180,11 @@ class _HomeworkBoardState extends State<HomeworkBoard> with WindowListener, Tick
   late AnimationController _quickMenuAnimationController;
   late Animation<double> _quickMenuOpacityAnimation;
   late Animation<Offset> _quickMenuSlideAnimation;
+  
+  // 工具栏透明度相关
+  double _toolbarOpacity = 1.0;
+  late AnimationController _toolbarOpacityAnimationController;
+  late Animation<double> _toolbarOpacityAnimation;
   
 
 
@@ -211,12 +217,36 @@ class _HomeworkBoardState extends State<HomeworkBoard> with WindowListener, Tick
       curve: Curves.easeOutBack,
     ));
     
+    // 初始化工具栏透明度动画控制器
+    _toolbarOpacityAnimationController = AnimationController(
+      duration: const Duration(milliseconds: 500),
+      vsync: this,
+    );
+    
+    // 工具栏透明度动画（从1.0到0.3）
+    _toolbarOpacityAnimation = Tween<double>(
+      begin: 1.0,
+      end: 0.3,
+    ).animate(CurvedAnimation(
+      parent: _toolbarOpacityAnimationController,
+      curve: Curves.easeInOut,
+    ));
+    
+    // 监听动画变化更新透明度状态
+    _toolbarOpacityAnimation.addListener(() {
+      setState(() {
+        _toolbarOpacity = _toolbarOpacityAnimation.value;
+      });
+    });
+    
     _loadDataFromHive();
     _loadBackgroundSettings();
     
     // 确保主窗口完全加载后再检查并显示OOBE
     WidgetsBinding.instance.addPostFrameCallback((_) {
       _checkAndShowOOBE();
+      // 启动工具栏透明度定时器
+      _startToolbarOpacityTimer();
     });
   }
 
@@ -294,7 +324,9 @@ class _HomeworkBoardState extends State<HomeworkBoard> with WindowListener, Tick
     windowManager.removeListener(this);
     _selectionTimer?.cancel();
     _quickMenuAutoHideTimer?.cancel();
+    _toolbarOpacityTimer?.cancel();
     _quickMenuAnimationController.dispose();
+    _toolbarOpacityAnimationController.dispose();
     super.dispose();
   }
 
@@ -659,47 +691,50 @@ class _HomeworkBoardState extends State<HomeworkBoard> with WindowListener, Tick
   Widget _buildFloatingToolbar() {
     final colorScheme = Theme.of(context).colorScheme;
     
-    return Container(
-      padding: const EdgeInsets.symmetric(horizontal: 8, vertical: 6),
-      decoration: BoxDecoration(
-        color: colorScheme.surface,
-        borderRadius: BorderRadius.circular(20),
-        boxShadow: [
-          BoxShadow(
-            color: colorScheme.shadow.withValues(alpha: 0.15),
-            spreadRadius: 1,
-            blurRadius: 6,
-            offset: const Offset(0, 3),
-          ),
-        ],
-      ),
-      child: Row(
-        mainAxisSize: MainAxisSize.min,
-        children: [
-          _buildToolbarButton(
-            icon: Icons.add,
-            onPressed: () {
-              _showHomeworkEditor();
-            },
-            tooltip: '新建',
-          ),
-          const SizedBox(width: 4),
-          _buildToolbarButton(
-            icon: _isFullScreen ? Icons.fullscreen_exit : Icons.fullscreen,
-            onPressed: () {
-              _toggleFullScreen();
-            },
-            tooltip: _isFullScreen ? '退出全屏' : '全屏',
-          ),
-          const SizedBox(width: 4),
-          _buildToolbarButton(
-            icon: Icons.menu,
-            onPressed: () {
-              _toggleQuickMenu();
-            },
-            tooltip: '快捷菜单',
-          ),
-        ],
+    return Opacity(
+      opacity: _toolbarOpacity,
+      child: Container(
+        padding: const EdgeInsets.symmetric(horizontal: 8, vertical: 6),
+        decoration: BoxDecoration(
+          color: colorScheme.surface,
+          borderRadius: BorderRadius.circular(20),
+          boxShadow: [
+            BoxShadow(
+              color: colorScheme.shadow.withValues(alpha: 0.15),
+              spreadRadius: 1,
+              blurRadius: 6,
+              offset: const Offset(0, 3),
+            ),
+          ],
+        ),
+        child: Row(
+          mainAxisSize: MainAxisSize.min,
+          children: [
+            _buildToolbarButton(
+              icon: Icons.add,
+              onPressed: () {
+                _showHomeworkEditor();
+              },
+              tooltip: '新建',
+            ),
+            const SizedBox(width: 4),
+            _buildToolbarButton(
+              icon: _isFullScreen ? Icons.fullscreen_exit : Icons.fullscreen,
+              onPressed: () {
+                _toggleFullScreen();
+              },
+              tooltip: _isFullScreen ? '退出全屏' : '全屏',
+            ),
+            const SizedBox(width: 4),
+            _buildToolbarButton(
+              icon: Icons.menu,
+              onPressed: () {
+                _toggleQuickMenu();
+              },
+              tooltip: '快捷菜单',
+            ),
+          ],
+        ),
       ),
     );
   }
@@ -716,7 +751,12 @@ class _HomeworkBoardState extends State<HomeworkBoard> with WindowListener, Tick
       child: Material(
         color: Colors.transparent,
         child: InkWell(
-          onTap: onPressed,
+          onTap: () {
+            // 重置工具栏透明度定时器
+            _resetToolbarOpacity();
+            // 执行原始操作
+            onPressed();
+          },
           borderRadius: BorderRadius.circular(12),
           child: Container(
             width: 36,
@@ -1075,6 +1115,28 @@ class _HomeworkBoardState extends State<HomeworkBoard> with WindowListener, Tick
       // 如果菜单已经隐藏，直接执行操作
       action();
     }
+  }
+
+  // 启动工具栏透明度定时器
+  void _startToolbarOpacityTimer() {
+    _toolbarOpacityTimer?.cancel();
+    _toolbarOpacityTimer = Timer(const Duration(seconds: 20), () {
+      if (mounted) {
+        // 20秒后开始透明度动画
+        _toolbarOpacityAnimationController.forward();
+      }
+    });
+  }
+
+  // 重置工具栏透明度
+  void _resetToolbarOpacity() {
+    _toolbarOpacityTimer?.cancel();
+    if (_toolbarOpacityAnimationController.isCompleted) {
+      // 如果当前是透明状态，恢复到不透明
+      _toolbarOpacityAnimationController.reverse();
+    }
+    // 重新启动定时器
+    _startToolbarOpacityTimer();
   }
 
   // 打开设置窗口
