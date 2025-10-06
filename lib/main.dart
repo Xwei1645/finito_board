@@ -176,6 +176,13 @@ class _HomeworkBoardState extends State<HomeworkBoard> with WindowListener, Tick
   // 背景不透明度
   double _backgroundOpacity = 1.0;
   
+  // 收起状态
+  bool _isCollapsed = false;
+  
+  // 保存收起前的窗口状态
+  Size? _savedWindowSize;
+  Offset? _savedWindowPosition;
+  
   // 快捷菜单动画控制器
   late AnimationController _quickMenuAnimationController;
   late Animation<double> _quickMenuOpacityAnimation;
@@ -405,6 +412,81 @@ class _HomeworkBoardState extends State<HomeworkBoard> with WindowListener, Tick
     }
   }
 
+  // 收起窗口到悬浮球
+  void _collapseWindow() async {
+    if (_isCollapsed) return;
+    
+    // 保存当前窗口状态
+    final currentBounds = await windowManager.getBounds();
+    _savedWindowSize = Size(currentBounds.width, currentBounds.height);
+    _savedWindowPosition = Offset(currentBounds.left, currentBounds.top);
+    
+    setState(() {
+      _isCollapsed = true;
+    });
+    
+    // 设置窗口为小圆形悬浮球
+    const floatingBallSize = 60.0;
+    await windowManager.setSize(const Size(floatingBallSize, floatingBallSize));
+    await windowManager.setAsFrameless();
+    await windowManager.setResizable(false);
+    await windowManager.setAlwaysOnTop(true);
+    
+    // 将悬浮球定位到当前窗口的右下角
+    const margin = 20.0; // 距离边缘的间距
+    final newX = currentBounds.right - floatingBallSize - margin;
+    final newY = currentBounds.bottom - floatingBallSize - margin;
+    await windowManager.setPosition(Offset(newX, newY));
+    
+    // 隐藏快捷菜单
+    if (_isQuickMenuVisible) {
+      _quickMenuAutoHideTimer?.cancel();
+      _quickMenuAnimationController.reverse().then((_) {
+        if (mounted) {
+          setState(() {
+            _isQuickMenuVisible = false;
+          });
+        }
+      });
+    }
+    
+    _showCustomSnackBar('已收起到悬浮球，单击可恢复');
+  }
+
+  // 从悬浮球恢复窗口
+  void _expandWindow() async {
+    if (!_isCollapsed) return;
+    
+    setState(() {
+      _isCollapsed = false;
+    });
+    
+    // 恢复窗口大小和位置
+    if (_savedWindowSize != null && _savedWindowPosition != null) {
+      await windowManager.setBounds(null, 
+        position: _savedWindowPosition,
+        size: _savedWindowSize,
+      );
+    } else {
+      // 如果没有保存的状态，使用默认大小
+      await windowManager.setSize(const Size(1200, 800));
+    }
+    
+    // 恢复窗口属性
+    await windowManager.setAlwaysOnTop(false);
+    
+    // 根据锁定状态设置窗口属性
+    if (_isWindowLocked) {
+      await windowManager.setAsFrameless();
+      await windowManager.setResizable(false);
+    } else {
+      await windowManager.setTitleBarStyle(TitleBarStyle.hidden);
+      await windowManager.setResizable(true);
+    }
+    
+    _showCustomSnackBar('窗口已恢复');
+  }
+
 
 
 
@@ -555,6 +637,11 @@ class _HomeworkBoardState extends State<HomeworkBoard> with WindowListener, Tick
 
   @override
   Widget build(BuildContext context) {
+    // 如果是收起状态，显示悬浮球UI
+    if (_isCollapsed) {
+      return _buildFloatingBall();
+    }
+    
     final columns = _distributeHomeworksToColumns();
     final storageService = HiveStorageService.instance;
     
@@ -683,6 +770,52 @@ class _HomeworkBoardState extends State<HomeworkBoard> with WindowListener, Tick
               ),
             ),
         ],
+      ),
+    );
+  }
+
+  // 构建悬浮球UI
+  Widget _buildFloatingBall() {
+    final colorScheme = Theme.of(context).colorScheme;
+    final storageService = HiveStorageService.instance;
+    
+    // 检查是否有作业
+    final allHomeworks = storageService.getAllHomework();
+    final hasHomework = allHomeworks.isNotEmpty;
+    
+    return Scaffold(
+      backgroundColor: Colors.transparent,
+      body: GestureDetector(
+        onTap: _expandWindow, // 单击恢复窗口
+        onPanStart: (_) {
+          // 开始拖动
+          windowManager.startDragging();
+        },
+        child: Container(
+          width: 60,
+          height: 60,
+          decoration: BoxDecoration(
+            color: colorScheme.surface,
+            shape: BoxShape.circle,
+            boxShadow: [
+              BoxShadow(
+                color: colorScheme.shadow.withValues(alpha: 0.3),
+                spreadRadius: 2,
+                blurRadius: 8,
+                offset: const Offset(0, 4),
+              ),
+            ],
+          ),
+          child: Center(
+            child: Icon(
+              hasHomework ? Icons.assignment : Icons.assignment_outlined,
+              color: hasHomework 
+                  ? colorScheme.primary 
+                  : colorScheme.onSurface.withValues(alpha: 0.6),
+              size: 28,
+            ),
+          ),
+        ),
       ),
     );
   }
@@ -826,7 +959,7 @@ class _HomeworkBoardState extends State<HomeworkBoard> with WindowListener, Tick
                     text: '收起',
                     onPressed: () {
                       _resetQuickMenuTimer();
-                      // TODO: 实现收起功能
+                      _collapseWindow();
                     },
                   ),
                 ),
