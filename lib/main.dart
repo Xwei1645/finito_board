@@ -691,49 +691,61 @@ class _HomeworkBoardState extends State<HomeworkBoard> with WindowListener, Tick
   Widget _buildFloatingToolbar() {
     final colorScheme = Theme.of(context).colorScheme;
     
-    return Opacity(
-      opacity: _toolbarOpacity,
-      child: Container(
-        padding: const EdgeInsets.symmetric(horizontal: 8, vertical: 6),
-        decoration: BoxDecoration(
-          color: colorScheme.surface,
-          borderRadius: BorderRadius.circular(20),
-          boxShadow: [
-            BoxShadow(
-              color: colorScheme.shadow.withValues(alpha: 0.15),
-              spreadRadius: 1,
-              blurRadius: 6,
-              offset: const Offset(0, 3),
-            ),
-          ],
-        ),
-        child: Row(
-          mainAxisSize: MainAxisSize.min,
-          children: [
-            _buildToolbarButton(
-              icon: Icons.add,
-              onPressed: () {
-                _showHomeworkEditor();
-              },
-              tooltip: '新建',
-            ),
-            const SizedBox(width: 4),
-            _buildToolbarButton(
-              icon: _isFullScreen ? Icons.fullscreen_exit : Icons.fullscreen,
-              onPressed: () {
-                _toggleFullScreen();
-              },
-              tooltip: _isFullScreen ? '退出全屏' : '全屏',
-            ),
-            const SizedBox(width: 4),
-            _buildToolbarButton(
-              icon: Icons.menu,
-              onPressed: () {
-                _toggleQuickMenu();
-              },
-              tooltip: '快捷菜单',
-            ),
-          ],
+    double toolbarBackgroundOpacity = (_backgroundOpacity + 0.1).clamp(0.0, 1.0);
+    
+    return MouseRegion(
+      onEnter: (_) {
+        // 鼠标进入工具栏区域
+        _resetToolbarOpacity();
+      },
+      onExit: (_) {
+        // 鼠标离开工具栏区域
+        _startToolbarOpacityTimer();
+      },
+      child: Opacity(
+        opacity: _toolbarOpacity,
+        child: Container(
+          padding: const EdgeInsets.symmetric(horizontal: 8, vertical: 6),
+          decoration: BoxDecoration(
+            color: colorScheme.surface.withValues(alpha: toolbarBackgroundOpacity),
+            borderRadius: BorderRadius.circular(20),
+            boxShadow: [
+              BoxShadow(
+                color: colorScheme.shadow.withValues(alpha: 0.15 * _toolbarOpacity),
+                spreadRadius: 1,
+                blurRadius: 6,
+                offset: const Offset(0, 3),
+              ),
+            ],
+          ),
+          child: Row(
+            mainAxisSize: MainAxisSize.min,
+            children: [
+              _buildToolbarButton(
+                icon: Icons.add,
+                onPressed: () {
+                  _showHomeworkEditor();
+                },
+                tooltip: '新建',
+              ),
+              const SizedBox(width: 4),
+              _buildToolbarButton(
+                icon: _isFullScreen ? Icons.fullscreen_exit : Icons.fullscreen,
+                onPressed: () {
+                  _toggleFullScreen();
+                },
+                tooltip: _isFullScreen ? '退出全屏' : '全屏',
+              ),
+              const SizedBox(width: 4),
+              _buildToolbarButton(
+                icon: Icons.menu,
+                onPressed: () {
+                  _toggleQuickMenu();
+                },
+                tooltip: '快捷菜单',
+              ),
+            ],
+          ),
         ),
       ),
     );
