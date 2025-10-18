@@ -188,6 +188,7 @@ class _HomeworkBoardState extends State<HomeworkBoard> with WindowListener, Tick
   
 
 
+
   @override
   void initState() {
     super.initState();
@@ -365,44 +366,103 @@ class _HomeworkBoardState extends State<HomeworkBoard> with WindowListener, Tick
     );
   }
 
-  void _toggleFullScreen() async {
-    setState(() {
-      _isFullScreen = !_isFullScreen;
-    });
+  // 简化的全屏前窗口锁定状态记录
+  bool _windowLockedBeforeFullScreen = false;
+  
+  /// 切换全屏状态
+  /// 优化后的实现：减少setState调用，简化状态管理，提高性能
+  Future<void> _toggleFullScreen() async {
+    final willEnterFullScreen = !_isFullScreen;
     
-    if (_isFullScreen) {
-      await windowManager.setFullScreen(true);
-      _showCustomSnackBar('已进入全屏模式');
-    } else {
-      await windowManager.setFullScreen(false);
-      _showCustomSnackBar('已退出全屏模式');
+    // 进入全屏前的准备工作
+    if (willEnterFullScreen) {
+      // 记录当前窗口锁定状态
+      _windowLockedBeforeFullScreen = _isWindowLocked;
+      
+      // 如果窗口当前是锁定的，需要先解锁（不显示提示）
+      if (_isWindowLocked) {
+        await _unlockWindowSilently();
+      }
+    }
+  
+    // 一次性更新所有相关状态，减少重绘
+    setState(() {
+      _isFullScreen = willEnterFullScreen;
+      // 进入全屏时，窗口必须是解锁状态
+      if (willEnterFullScreen) {
+        _isWindowLocked = false;
+      }
+    });
+  
+    // 执行窗口管理器的全屏切换
+    await windowManager.setFullScreen(willEnterFullScreen);
+    
+    // 显示状态提示
+    _showCustomSnackBar(willEnterFullScreen ? '已进入全屏模式' : '已退出全屏模式');
+  
+    // 退出全屏后的恢复工作
+    if (!willEnterFullScreen) {
+      // 恢复之前的窗口锁定状态
+      if (_windowLockedBeforeFullScreen) {
+        await _lockWindowSilently();
+        setState(() {
+          _isWindowLocked = true;
+        });
+      } else {
+        // 确保窗口保持解锁状态（不显示提示）
+        await _unlockWindowSilently();
+      }
     }
   }
 
   // 切换窗口锁定状态
-  void _toggleWindowLock() async {
-    setState(() {
-      _isWindowLocked = !_isWindowLocked;
-    });
+  /// 优化：减少setState调用，合并状态更新
+  Future<void> _toggleWindowLock() async {
+    final willLock = !_isWindowLocked;
     
-    if (_isWindowLocked) {
-      // 锁定窗口 - 设置为无边框并禁用调整大小
-      await windowManager.setAsFrameless();
-      await windowManager.setResizable(false);
-      _showCustomSnackBar('窗口已锁定');
+    setState(() {
+      _isWindowLocked = willLock;
+    });
+
+    if (willLock) {
+      await _lockWindow();
     } else {
-      // 解锁窗口 - 恢复边框但隐藏标题栏，允许调整大小
-      await windowManager.setTitleBarStyle(TitleBarStyle.hidden);
-      await windowManager.setResizable(true);
-      // 确保窗口不是全屏状态，这样边缘才能拖拽
-      if (_isFullScreen) {
-        await windowManager.setFullScreen(false);
-        setState(() {
-          _isFullScreen = false;
-        });
-      }
-      _showCustomSnackBar('窗口已解锁，可调整大小或按住底部操纵杆拖动窗口');
+      await _unlockWindow();
     }
+  }
+
+  /// 锁定窗口（显示提示消息）
+  Future<void> _lockWindow() async {
+    await Future.wait([
+      windowManager.setResizable(false),
+      windowManager.setAsFrameless(),
+    ]);
+    _showCustomSnackBar('窗口已锁定');
+  }
+
+  /// 解锁窗口（显示提示消息）
+  Future<void> _unlockWindow() async {
+    await Future.wait([
+      windowManager.setResizable(true),
+      windowManager.setTitleBarStyle(TitleBarStyle.hidden),
+    ]);
+    _showCustomSnackBar('窗口已解锁');
+  }
+
+  /// 静默锁定窗口（不显示提示，用于全屏切换）
+  Future<void> _lockWindowSilently() async {
+    await Future.wait([
+      windowManager.setResizable(false),
+      windowManager.setAsFrameless(),
+    ]);
+  }
+
+  /// 静默解锁窗口（不显示提示，用于全屏切换）
+  Future<void> _unlockWindowSilently() async {
+    await Future.wait([
+      windowManager.setResizable(true),
+      windowManager.setTitleBarStyle(TitleBarStyle.hidden),
+    ]);
   }
 
 
@@ -823,9 +883,9 @@ class _HomeworkBoardState extends State<HomeworkBoard> with WindowListener, Tick
               children: [
                 Expanded(
                   child: _buildMenuButton(
-                    icon: _isWindowLocked ? Icons.lock_open : Icons.lock,
-                    text: _isWindowLocked ? '解锁' : '锁定',
-                    onPressed: () {
+                    icon: (_isFullScreen ? _windowLockedBeforeFullScreen : _isWindowLocked) ? Icons.lock_open : Icons.lock,
+                    text: (_isFullScreen ? _windowLockedBeforeFullScreen : _isWindowLocked) ? '解锁' : '锁定',
+                    onPressed: _isFullScreen ? null : () {
                       _resetQuickMenuTimer();
                       _toggleWindowLock();
                     },
@@ -1001,10 +1061,28 @@ class _HomeworkBoardState extends State<HomeworkBoard> with WindowListener, Tick
   Widget _buildMenuButton({
     required IconData icon,
     required String text,
-    required VoidCallback onPressed,
+    required VoidCallback? onPressed,
     bool isDestructive = false,
   }) {
     final colorScheme = Theme.of(context).colorScheme;
+    final bool isEnabled = onPressed != null;
+
+    Color backgroundColor;
+    Color foregroundColor;
+
+    if (isEnabled) {
+      if (isDestructive) {
+        backgroundColor = colorScheme.errorContainer.withValues(alpha: 0.3);
+        foregroundColor = colorScheme.error;
+      } else {
+        backgroundColor = colorScheme.surfaceContainerHighest.withValues(alpha: 0.5);
+        foregroundColor = colorScheme.onSurface;
+      }
+    } else {
+      backgroundColor = colorScheme.surfaceContainer.withValues(alpha: 0.5);
+      foregroundColor = colorScheme.onSurface.withValues(alpha: 0.38);
+    }
+
     return Material(
       color: Colors.transparent,
       child: InkWell(
@@ -1014,9 +1092,7 @@ class _HomeworkBoardState extends State<HomeworkBoard> with WindowListener, Tick
           width: double.infinity,
           padding: const EdgeInsets.symmetric(horizontal: 12, vertical: 8),
           decoration: BoxDecoration(
-            color: isDestructive 
-                ? colorScheme.errorContainer.withValues(alpha: 0.3)
-                : colorScheme.surfaceContainerHighest.withValues(alpha: 0.5),
+            color: backgroundColor,
             borderRadius: BorderRadius.circular(8),
           ),
           child: Row(
@@ -1024,18 +1100,14 @@ class _HomeworkBoardState extends State<HomeworkBoard> with WindowListener, Tick
               Icon(
                 icon,
                 size: 18,
-                color: isDestructive 
-                    ? colorScheme.error 
-                    : colorScheme.onSurface.withValues(alpha: 0.7),
+                color: foregroundColor,
               ),
               const SizedBox(width: 8),
               Text(
                 text,
                 style: TextStyle(
                   fontSize: 14,
-                  color: isDestructive 
-                      ? colorScheme.error 
-                      : colorScheme.onSurface.withValues(alpha: 0.8),
+                  color: foregroundColor,
                   fontWeight: FontWeight.w500,
                 ),
               ),
