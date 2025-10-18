@@ -1,28 +1,10 @@
-import 'package:hive/hive.dart';
-
-part 'window_state.g.dart';
-
-@HiveType(typeId: 3)
 class WindowState {
-  @HiveField(0)
   final double x; // 窗口X坐标
-  
-  @HiveField(1)
   final double y; // 窗口Y坐标
-  
-  @HiveField(2)
   final double width; // 窗口宽度
-  
-  @HiveField(3)
   final double height; // 窗口高度
-  
-  @HiveField(4)
   final bool isMaximized; // 是否最大化
-  
-  @HiveField(5)
   final bool isMinimized; // 是否最小化
-  
-  @HiveField(6)
   final bool isFullScreen; // 是否全屏
 
   const WindowState({
@@ -52,6 +34,32 @@ class WindowState {
       isMaximized: isMaximized ?? this.isMaximized,
       isMinimized: isMinimized ?? this.isMinimized,
       isFullScreen: isFullScreen ?? this.isFullScreen,
+    );
+  }
+
+  // JSON序列化
+  Map<String, dynamic> toJson() {
+    return {
+      'x': x,
+      'y': y,
+      'width': width,
+      'height': height,
+      'isMaximized': isMaximized,
+      'isMinimized': isMinimized,
+      'isFullScreen': isFullScreen,
+    };
+  }
+
+  // JSON反序列化
+  factory WindowState.fromJson(Map<String, dynamic> json) {
+    return WindowState(
+      x: (json['x'] as num?)?.toDouble() ?? 100,
+      y: (json['y'] as num?)?.toDouble() ?? 100,
+      width: (json['width'] as num?)?.toDouble() ?? 1200,
+      height: (json['height'] as num?)?.toDouble() ?? 800,
+      isMaximized: json['isMaximized'] as bool? ?? false,
+      isMinimized: json['isMinimized'] as bool? ?? false,
+      isFullScreen: json['isFullScreen'] as bool? ?? false,
     );
   }
 }

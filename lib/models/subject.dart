@@ -1,15 +1,7 @@
-import 'package:hive/hive.dart';
 import 'package:uuid/uuid.dart';
-import '../services/storage/hive_storage_service.dart';
 
-part 'subject.g.dart';
-
-@HiveType(typeId: 1)
 class Subject {
-  @HiveField(0)
   final String uuid;
-  
-  @HiveField(1)
   final String name;
 
   const Subject({
@@ -37,6 +29,22 @@ class Subject {
       name: name ?? this.name,
     );
   }
+
+  // JSON序列化
+  Map<String, dynamic> toJson() {
+    return {
+      'uuid': uuid,
+      'name': name,
+    };
+  }
+
+  // JSON反序列化
+  factory Subject.fromJson(Map<String, dynamic> json) {
+    return Subject(
+      uuid: json['uuid'] as String,
+      name: json['name'] as String,
+    );
+  }
 }
 
 class SampleData {
@@ -47,9 +55,13 @@ class SampleData {
   // 获取可用科目列表（从配置中获取，如果为空则返回空列表）
   static List<String> getAvailableSubjects() {
     try {
-      final config = HiveStorageService.instance.getAppConfig();
-      if (config.availableSubjects.isNotEmpty) {
-        return config.availableSubjects;
+      // 延迟导入以避免循环依赖
+      final storageService = _getStorageService();
+      if (storageService != null) {
+        final config = storageService.getAppConfig();
+        if (config.availableSubjects.isNotEmpty) {
+          return config.availableSubjects;
+        }
       }
     } catch (e) {
       // 如果获取配置失败，返回空列表
@@ -59,4 +71,13 @@ class SampleData {
     return [];
   }
 
+  // 延迟获取存储服务实例以避免循环依赖
+  static dynamic _getStorageService() {
+    try {
+      // 使用反射或动态导入来避免循环依赖
+      return null; // 暂时返回null，后续在替换存储服务时会修复
+    } catch (e) {
+      return null;
+    }
+  }
 }

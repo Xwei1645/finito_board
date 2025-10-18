@@ -5,7 +5,7 @@ import 'package:window_manager/window_manager.dart';
 import 'package:package_info_plus/package_info_plus.dart';
 import '../models/app_config.dart';
 import '../models/window_state.dart';
-import 'storage/hive_storage_service.dart';
+import 'storage/json_storage_service.dart';
 
 
 /// 设置操作结果
@@ -60,7 +60,7 @@ class SettingsService {
   
   /// 获取开机自启状态
   bool getAutoStart() {
-    final config = HiveStorageService.instance.getAppConfig();
+    final config = JsonStorageService.instance.getAppConfig();
     return config.autoStartup;
   }
   
@@ -92,8 +92,8 @@ class SettingsService {
         await launchAtStartup.disable();
       }
       
-      // 更新Hive配置
-      final storageService = HiveStorageService.instance;
+      // 更新JSON配置
+      final storageService = JsonStorageService.instance;
       final currentConfig = storageService.getAppConfig();
       final updatedConfig = AppConfig(
         theme: currentConfig.theme,
@@ -113,7 +113,7 @@ class SettingsService {
   
   /// 获取始终置底状态
   bool getAlwaysOnBottom() {
-    final config = HiveStorageService.instance.getAppConfig();
+    final config = JsonStorageService.instance.getAppConfig();
     return config.alwaysOnBottom;
   }
   
@@ -126,8 +126,8 @@ class SettingsService {
         await windowManager.setAlwaysOnBottom(false);
       }
       
-      // 更新Hive配置
-      final storageService = HiveStorageService.instance;
+      // 更新JSON配置
+      final storageService = JsonStorageService.instance;
       final currentConfig = storageService.getAppConfig();
       final updatedConfig = currentConfig.copyWith(
         alwaysOnBottom: enabled,
@@ -141,15 +141,15 @@ class SettingsService {
 
   /// 获取明暗模式状态
   bool getDarkMode() {
-    final config = HiveStorageService.instance.getAppConfig();
+    final config = JsonStorageService.instance.getAppConfig();
     return config.theme == 'dark';
   }
   
   /// 设置明暗模式
   Future<bool> setDarkMode(bool enabled) async {
     try {
-      // 更新Hive配置
-      final storageService = HiveStorageService.instance;
+      // 更新JSON配置
+      final storageService = JsonStorageService.instance;
       final currentConfig = storageService.getAppConfig();
       final updatedConfig = AppConfig(
         theme: enabled ? 'dark' : 'light',
@@ -168,7 +168,7 @@ class SettingsService {
   
   /// 获取背景不透明度 (0.0 - 1.0)
   double getBackgroundOpacity() {
-    final config = HiveStorageService.instance.getAppConfig();
+    final config = JsonStorageService.instance.getAppConfig();
     return config.backgroundOpacity;
   }
   
@@ -178,8 +178,8 @@ class SettingsService {
       // 确保值在有效范围内
       final clampedOpacity = opacity.clamp(0.0, 1.0);
       
-      // 更新Hive配置
-      final storageService = HiveStorageService.instance;
+      // 更新JSON配置
+      final storageService = JsonStorageService.instance;
       final currentConfig = storageService.getAppConfig();
       final updatedConfig = currentConfig.copyWith(
         backgroundOpacity: clampedOpacity,
@@ -212,7 +212,7 @@ class SettingsService {
         isFullScreen: fullscreen,
       );
       
-      await HiveStorageService.instance.saveWindowState(windowState);
+      await JsonStorageService.instance.saveWindowState(windowState);
       return true;
     } catch (e) {
       return false;
@@ -222,7 +222,7 @@ class SettingsService {
   /// 获取窗口状态
   WindowState? getWindowState() {
     try {
-      return HiveStorageService.instance.getWindowState();
+      return JsonStorageService.instance.getWindowState();
     } catch (e) {
       return null;
     }
@@ -257,14 +257,14 @@ class SettingsService {
 
   /// 检查是否是首次启动
   bool isFirstLaunch() {
-    final config = HiveStorageService.instance.getAppConfig();
+    final config = JsonStorageService.instance.getAppConfig();
     return config.firstLaunch;
   }
 
   /// 标记OOBE已完成
   Future<bool> markOOBECompleted() async {
     try {
-      final storageService = HiveStorageService.instance;
+      final storageService = JsonStorageService.instance;
       final currentConfig = storageService.getAppConfig();
       final updatedConfig = currentConfig.copyWith(
         firstLaunch: false,

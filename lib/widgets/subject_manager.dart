@@ -1,7 +1,7 @@
 import 'package:flutter/material.dart';
 import 'package:uuid/uuid.dart';
 import '../models/subject.dart';
-import '../services/storage/hive_storage_service.dart';
+import '../services/storage/json_storage_service.dart';
 
 class SubjectManager extends StatefulWidget {
   final VoidCallback? onSubjectsChanged;
@@ -28,7 +28,7 @@ class _SubjectManagerState extends State<SubjectManager> {
   }
 
   void _loadSubjects() {
-    _subjects = HiveStorageService.instance.getAllSubjects();
+    _subjects = JsonStorageService.instance.getAllSubjects();
   }
 
   @override
@@ -46,7 +46,7 @@ class _SubjectManagerState extends State<SubjectManager> {
         name: newSubjectName,
       );
       
-      await HiveStorageService.instance.saveSubject(newSubject);
+      await JsonStorageService.instance.saveSubject(newSubject);
       
       setState(() {
         _loadSubjects();
@@ -57,7 +57,7 @@ class _SubjectManagerState extends State<SubjectManager> {
   }
 
   void _deleteSubject(Subject subject) async {
-    await HiveStorageService.instance.deleteSubject(subject.uuid);
+    await JsonStorageService.instance.deleteSubject(subject.uuid);
     setState(() {
       _loadSubjects();
     });
@@ -80,7 +80,7 @@ class _SubjectManagerState extends State<SubjectManager> {
         name: newName,
       );
       
-      await HiveStorageService.instance.saveSubject(updatedSubject);
+      await JsonStorageService.instance.saveSubject(updatedSubject);
       
       setState(() {
         _loadSubjects();

@@ -1,40 +1,14 @@
-import 'package:hive/hive.dart';
-
-part 'app_config.g.dart';
-
-@HiveType(typeId: 2)
 class AppConfig {
-  @HiveField(0)
   final String theme; // 主题设置
-  
-  @HiveField(1)
   final String language; // 语言设置
-  
-  @HiveField(2)
   final bool autoStartup; // 开机自启动
-  
-  @HiveField(3)
   final bool enableNotifications; // 通知设置
-  
-  @HiveField(4)
   final List<String> availableSubjects; // 可用科目列表
-  
-  @HiveField(5)
   final List<String> availableTags; // 可用标签列表
-  
-  @HiveField(6)
   final double scaleFactor; // 界面缩放因子
-  
-  @HiveField(7)
   final int columnCount; // 作业列数
-  
-  @HiveField(8)
   final bool alwaysOnBottom; // 始终置底设置
-  
-  @HiveField(9)
   final double backgroundOpacity; // 背景不透明度
-  
-  @HiveField(10)
   final bool firstLaunch; // 是否首次启动
 
   const AppConfig({
@@ -76,6 +50,40 @@ class AppConfig {
       alwaysOnBottom: alwaysOnBottom ?? this.alwaysOnBottom,
       backgroundOpacity: backgroundOpacity ?? this.backgroundOpacity,
       firstLaunch: firstLaunch ?? this.firstLaunch,
+    );
+  }
+
+  // JSON序列化
+  Map<String, dynamic> toJson() {
+    return {
+      'theme': theme,
+      'language': language,
+      'autoStartup': autoStartup,
+      'enableNotifications': enableNotifications,
+      'availableSubjects': availableSubjects,
+      'availableTags': availableTags,
+      'scaleFactor': scaleFactor,
+      'columnCount': columnCount,
+      'alwaysOnBottom': alwaysOnBottom,
+      'backgroundOpacity': backgroundOpacity,
+      'firstLaunch': firstLaunch,
+    };
+  }
+
+  // JSON反序列化
+  factory AppConfig.fromJson(Map<String, dynamic> json) {
+    return AppConfig(
+      theme: json['theme'] as String? ?? 'system',
+      language: json['language'] as String? ?? 'zh_CN',
+      autoStartup: json['autoStartup'] as bool? ?? false,
+      enableNotifications: json['enableNotifications'] as bool? ?? true,
+      availableSubjects: List<String>.from(json['availableSubjects'] as List? ?? []),
+      availableTags: List<String>.from(json['availableTags'] as List? ?? []),
+      scaleFactor: (json['scaleFactor'] as num?)?.toDouble() ?? 100.0,
+      columnCount: json['columnCount'] as int? ?? 3,
+      alwaysOnBottom: json['alwaysOnBottom'] as bool? ?? false,
+      backgroundOpacity: (json['backgroundOpacity'] as num?)?.toDouble() ?? 0.95,
+      firstLaunch: json['firstLaunch'] as bool? ?? true,
     );
   }
 }

@@ -1,7 +1,7 @@
 import 'package:flutter/material.dart';
 import 'package:uuid/uuid.dart';
 import '../models/tag.dart';
-import '../services/storage/hive_storage_service.dart';
+import '../services/storage/json_storage_service.dart';
 
 class TagManager extends StatefulWidget {
   final VoidCallback? onTagsChanged;
@@ -28,7 +28,7 @@ class _TagManagerState extends State<TagManager> {
   }
 
   void _loadTags() {
-    _tags = HiveStorageService.instance.getAllTags();
+    _tags = JsonStorageService.instance.getAllTags();
   }
 
   @override
@@ -46,7 +46,7 @@ class _TagManagerState extends State<TagManager> {
         name: newTagName,
       );
       
-      await HiveStorageService.instance.saveTag(newTag);
+      await JsonStorageService.instance.saveTag(newTag);
       
       setState(() {
         _loadTags();
@@ -57,7 +57,7 @@ class _TagManagerState extends State<TagManager> {
   }
 
   void _deleteTag(Tag tag) async {
-    await HiveStorageService.instance.deleteTag(tag.uuid);
+    await JsonStorageService.instance.deleteTag(tag.uuid);
     setState(() {
       _loadTags();
     });
@@ -80,7 +80,7 @@ class _TagManagerState extends State<TagManager> {
         name: newName,
       );
       
-      await HiveStorageService.instance.saveTag(updatedTag);
+      await JsonStorageService.instance.saveTag(updatedTag);
       
       setState(() {
         _loadTags();

@@ -3,7 +3,7 @@ import 'package:flutter/material.dart';
 import 'package:flutter_quill/flutter_quill.dart';
 import 'package:intl/intl.dart';
 import '../models/homework.dart';
-import '../services/storage/hive_storage_service.dart';
+import '../services/storage/json_storage_service.dart';
 import '../models/tag.dart';
 
 class HomeworkEditor extends StatefulWidget {
@@ -83,7 +83,7 @@ class _HomeworkEditorState extends State<HomeworkEditor> {
   }
 
   void _loadSubjects() {
-    final subjects = HiveStorageService.instance.getAllSubjects();
+    final subjects = JsonStorageService.instance.getAllSubjects();
     setState(() {
       _availableSubjects = subjects.map((subject) => subject.uuid).toList();
       // 如果当前选中的科目为空或不在可用科目列表中，且有可用科目，选择第一个
@@ -94,13 +94,13 @@ class _HomeworkEditorState extends State<HomeworkEditor> {
   }
 
   String _getSubjectName(String subjectUuid) {
-    final subject = HiveStorageService.instance.getSubjectByUuid(subjectUuid);
+    final subject = JsonStorageService.instance.getSubjectByUuid(subjectUuid);
     return subject?.name ?? '未知科目';
   }
 
   List<String> _cleanInvalidTagUuids(List<String> tagUuids) {
     return tagUuids.where((tagUuid) {
-      final tag = HiveStorageService.instance.getTagByUuid(tagUuid);
+      final tag = JsonStorageService.instance.getTagByUuid(tagUuid);
       return tag != null;
     }).toList();
   }
@@ -144,7 +144,7 @@ class _HomeworkEditorState extends State<HomeworkEditor> {
   void _addTagByName(String tagName) {
     if (tagName.isNotEmpty) {
       // 查找是否已存在该名称的标签
-      Tag? existingTag = HiveStorageService.instance.getTagByName(tagName);
+      Tag? existingTag = JsonStorageService.instance.getTagByName(tagName);
       
       if (existingTag != null) {
         // 如果标签已存在，添加其UUID到选中列表
@@ -156,7 +156,7 @@ class _HomeworkEditorState extends State<HomeworkEditor> {
       } else {
         // 如果标签不存在，创建新标签
         final newTag = Tag.create(name: tagName);
-        HiveStorageService.instance.saveTag(newTag);
+        JsonStorageService.instance.saveTag(newTag);
         setState(() {
           _selectedTagUuids.add(newTag.uuid);
         });
@@ -461,9 +461,9 @@ class _HomeworkEditorState extends State<HomeworkEditor> {
                     spacing: 8,
                     runSpacing: 8,
                     children: _selectedTagUuids.where((tagUuid) {
-                      return HiveStorageService.instance.getTagByUuid(tagUuid) != null;
+                      return JsonStorageService.instance.getTagByUuid(tagUuid) != null;
                     }).map((tagUuid) {
-                      final tagName = HiveStorageService.instance.getTagByUuid(tagUuid)!.name;
+                      final tagName = JsonStorageService.instance.getTagByUuid(tagUuid)!.name;
                       return Chip(
                         label: Text(tagName, style: TextStyle(
                           fontSize: 13,
@@ -492,7 +492,7 @@ class _HomeworkEditorState extends State<HomeworkEditor> {
                   runSpacing: 8,
                   children: [
                     // 可用标签（未选中的）
-                    ...HiveStorageService.instance.getAllTags()
+                    ...JsonStorageService.instance.getAllTags()
                         .where((tag) => !_selectedTagUuids.contains(tag.uuid))
                         .map((tag) => ActionChip(
                               label: Text(tag.name, style: TextStyle(

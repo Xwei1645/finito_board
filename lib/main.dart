@@ -16,14 +16,14 @@ import 'widgets/subject_manager.dart';
 import 'widgets/tag_manager.dart';
 import 'widgets/oobe_dialog.dart';
 import 'services/settings_service.dart';
-import 'services/storage/hive_storage_service.dart';
+import 'services/storage/json_storage_service.dart';
 
 
 void main() async {
   WidgetsFlutterBinding.ensureInitialized();
   
-  // 初始化Hive存储服务
-  await HiveStorageService.instance.init();
+  // 初始化JSON存储服务
+  await JsonStorageService.instance.init();
   
   // 初始化设置服务
   await SettingsService.instance.initialize();
@@ -239,7 +239,7 @@ class _HomeworkBoardState extends State<HomeworkBoard> with WindowListener, Tick
       });
     });
     
-    _loadDataFromHive();
+    _loadData();
     _loadBackgroundSettings();
     
     // 确保主窗口完全加载后再检查并显示OOBE
@@ -250,8 +250,8 @@ class _HomeworkBoardState extends State<HomeworkBoard> with WindowListener, Tick
     });
   }
 
-  Future<void> _loadDataFromHive() async {
-    final storageService = HiveStorageService.instance;
+  Future<void> _loadData() async {
+    final storageService = JsonStorageService.instance;
     final homeworks = storageService.getAllHomework();
     final allSubjects = storageService.getAllSubjects();
     
@@ -427,7 +427,7 @@ class _HomeworkBoardState extends State<HomeworkBoard> with WindowListener, Tick
 
 
   void _onEditHomework(String homeworkUuid) {
-    final storageService = HiveStorageService.instance;
+    final storageService = JsonStorageService.instance;
     final homeworkToEdit = storageService.getHomeworkByUuid(homeworkUuid);
 
     if (homeworkToEdit != null) {
@@ -436,13 +436,13 @@ class _HomeworkBoardState extends State<HomeworkBoard> with WindowListener, Tick
   }
 
   Future<void> _onDeleteHomework(String homeworkUuid) async {
-    final storageService = HiveStorageService.instance;
+    final storageService = JsonStorageService.instance;
     
-    // 从Hive中删除作业
+    // 从JSON存储中删除作业
     await storageService.deleteHomework(homeworkUuid);
     
     // 重新加载数据以更新UI
-    await _loadDataFromHive();
+    await _loadData();
     
     _showCustomSnackBar('作业已删除');
   }
@@ -459,17 +459,17 @@ class _HomeworkBoardState extends State<HomeworkBoard> with WindowListener, Tick
   }
 
   Future<void> _saveHomework(Homework homework) async {
-    final storageService = HiveStorageService.instance;
+    final storageService = JsonStorageService.instance;
     
     // 检查是否为编辑模式
     final existingHomework = storageService.getHomeworkByUuid(homework.uuid);
     final isEdit = existingHomework != null;
     
-    // 保存到Hive
+    // 保存到JSON存储
     await storageService.saveHomework(homework);
     
     // 重新加载数据以更新UI
-    await _loadDataFromHive();
+    await _loadData();
 
     if (mounted && context.mounted) {
       Navigator.of(context).pop();
@@ -485,7 +485,7 @@ class _HomeworkBoardState extends State<HomeworkBoard> with WindowListener, Tick
   List<List<Widget>> _distributeHomeworksToColumns() {
     List<List<Widget>> columns = List.generate(_columnCount, (index) => <Widget>[]);
     int currentColumn = 0;
-    final storageService = HiveStorageService.instance;
+    final storageService = JsonStorageService.instance;
     
     // 为每个学科创建标题和作业卡片，保持在同一列
     for (var subject in subjects) {
@@ -556,7 +556,7 @@ class _HomeworkBoardState extends State<HomeworkBoard> with WindowListener, Tick
   @override
   Widget build(BuildContext context) {
     final columns = _distributeHomeworksToColumns();
-    final storageService = HiveStorageService.instance;
+    final storageService = JsonStorageService.instance;
     
     // 检查是否有作业（包括有效科目的作业和无效科目UUID的作业）
     final hasValidSubjectHomework = subjects.any((subject) => 
@@ -1070,7 +1070,7 @@ class _HomeworkBoardState extends State<HomeworkBoard> with WindowListener, Tick
     });
     
     // 保存到持久化存储
-    await HiveStorageService.instance.saveScaleFactor(newScaleFactor);
+    await JsonStorageService.instance.saveScaleFactor(newScaleFactor);
   }
 
   // 调整作业列数
@@ -1081,7 +1081,7 @@ class _HomeworkBoardState extends State<HomeworkBoard> with WindowListener, Tick
     });
     
     // 保存到持久化存储
-    await HiveStorageService.instance.saveColumnCount(newColumnCount);
+    await JsonStorageService.instance.saveColumnCount(newColumnCount);
   }
 
   // 切换快捷菜单显示状态
@@ -1235,7 +1235,7 @@ class _HomeworkBoardState extends State<HomeworkBoard> with WindowListener, Tick
         return SubjectManager(
           onSubjectsChanged: () {
             // 重新加载作业数据以反映科目变化
-            _loadDataFromHive();
+            _loadData();
             _showCustomSnackBar('科目列表已更新');
           },
         );
@@ -1251,7 +1251,7 @@ class _HomeworkBoardState extends State<HomeworkBoard> with WindowListener, Tick
         return TagManager(
           onTagsChanged: () {
             // 重新加载作业数据以反映标签变化
-            _loadDataFromHive();
+            _loadData();
             _showCustomSnackBar('标签列表已更新');
           },
         );

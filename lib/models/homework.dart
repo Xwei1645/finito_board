@@ -1,26 +1,11 @@
-import 'package:hive/hive.dart';
 import 'package:uuid/uuid.dart';
 
-part 'homework.g.dart';
-
-@HiveType(typeId: 0)
 class Homework {
-  @HiveField(0)
   final String uuid;
-  
-  @HiveField(1)
   final String content; // 富文本正文
-  
-  @HiveField(2)
   final DateTime dueDate; // 截止日期
-  
-  @HiveField(3)
   final String subjectUuid; // 学科UUID
-  
-  @HiveField(4)
   final List<String> tagUuids; // 标签UUID列表
-  
-  @HiveField(5)
   final DateTime createdAt;
 
   const Homework({
@@ -69,5 +54,27 @@ class Homework {
     );
   }
 
+  // JSON序列化
+  Map<String, dynamic> toJson() {
+    return {
+      'uuid': uuid,
+      'content': content,
+      'dueDate': dueDate.toIso8601String(),
+      'subjectUuid': subjectUuid,
+      'tagUuids': tagUuids,
+      'createdAt': createdAt.toIso8601String(),
+    };
+  }
 
+  // JSON反序列化
+  factory Homework.fromJson(Map<String, dynamic> json) {
+    return Homework(
+      uuid: json['uuid'] as String,
+      content: json['content'] as String,
+      dueDate: DateTime.parse(json['dueDate'] as String),
+      subjectUuid: json['subjectUuid'] as String,
+      tagUuids: List<String>.from(json['tagUuids'] as List),
+      createdAt: DateTime.parse(json['createdAt'] as String),
+    );
+  }
 }

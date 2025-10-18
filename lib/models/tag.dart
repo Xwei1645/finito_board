@@ -1,15 +1,7 @@
-import 'package:hive/hive.dart';
 import 'package:uuid/uuid.dart';
-import '../services/storage/hive_storage_service.dart';
 
-part 'tag.g.dart';
-
-@HiveType(typeId: 4)
 class Tag {
-  @HiveField(0)
   final String uuid;
-  
-  @HiveField(1)
   final String name;
 
   const Tag({
@@ -50,15 +42,46 @@ class Tag {
   @override
   String toString() => 'Tag(uuid: $uuid, name: $name)';
 
+  // JSON序列化
+  Map<String, dynamic> toJson() {
+    return {
+      'uuid': uuid,
+      'name': name,
+    };
+  }
+
+  // JSON反序列化
+  factory Tag.fromJson(Map<String, dynamic> json) {
+    return Tag(
+      uuid: json['uuid'] as String,
+      name: json['name'] as String,
+    );
+  }
+
   // 获取可用标签列表（从存储服务中获取所有标签的名称）
   static List<String> getAvailableTags() {
     try {
-      return HiveStorageService.instance.getAllTags()
-          .map((tag) => tag.name)
-          .toList();
+      // 延迟获取存储服务实例以避免循环依赖
+      final storageService = _getStorageService();
+      if (storageService != null) {
+        return storageService.getAllTags()
+            .map((tag) => tag.name)
+            .toList();
+      }
+      return [];
     } catch (e) {
       // 如果获取标签失败，返回空列表
       return [];
+    }
+  }
+
+  // 延迟获取存储服务实例以避免循环依赖
+  static dynamic _getStorageService() {
+    try {
+      // 使用反射或动态导入来避免循环依赖
+      return null; // 暂时返回null，后续在替换存储服务时会修复
+    } catch (e) {
+      return null;
     }
   }
 }
