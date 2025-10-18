@@ -1,4 +1,5 @@
 import 'dart:convert';
+import 'package:finito_board/widgets/quill_content.dart';
 import 'package:flutter/material.dart';
 import 'package:flutter_quill/flutter_quill.dart';
 import 'package:intl/intl.dart';
@@ -138,147 +139,150 @@ class _HomeworkCardState extends State<HomeworkCard> {
   Widget build(BuildContext context) {
     final theme = Theme.of(context);
     final colorScheme = theme.colorScheme;
-    
-    return GestureDetector(
-        onTap: widget.onTap,
-        child: AnimatedContainer(
-          duration: const Duration(milliseconds: 200),
-          margin: const EdgeInsets.only(bottom: 8),
-          padding: const EdgeInsets.all(16), // MD3 间距
-          decoration: BoxDecoration(
-            color: _getCardBackgroundColor(colorScheme),
-            borderRadius: BorderRadius.circular(12), // 与快捷菜单保持一致的圆角
-            boxShadow: [
-              BoxShadow(
-                color: widget.isSelected 
-                    ? Colors.grey.withValues(alpha: 0.3) 
-                    : Colors.black.withValues(alpha: 0.08),
-                spreadRadius: widget.isSelected ? 2 : 1,
-                blurRadius: widget.isSelected ? 12 : 6,
-                offset: Offset(0, widget.isSelected ? 4 : 2),
+
+    return SizedBox(
+      width: double.infinity,
+      child: Card(
+        elevation: 0,
+        margin: const EdgeInsets.symmetric(vertical: 8.0),
+        child: GestureDetector(
+            onTap: widget.onTap,
+            child: AnimatedContainer(
+              duration: const Duration(milliseconds: 200),
+              margin: const EdgeInsets.only(bottom: 8),
+              padding: const EdgeInsets.all(16), // MD3 间距
+              decoration: BoxDecoration(
+                color: _getCardBackgroundColor(colorScheme),
+                borderRadius: BorderRadius.circular(12), // 与快捷菜单保持一致的圆角
+                boxShadow: [
+                  BoxShadow(
+                    color: widget.isSelected 
+                        ? Colors.grey.withValues(alpha: 0.3) 
+                        : Colors.black.withValues(alpha: 0.08),
+                    spreadRadius: widget.isSelected ? 2 : 1,
+                    blurRadius: widget.isSelected ? 12 : 6,
+                    offset: Offset(0, widget.isSelected ? 4 : 2),
+                  ),
+                ],
               ),
-            ],
-          ),
-          child: Column(
-            crossAxisAlignment: CrossAxisAlignment.start,
-            children: [
-              // 富文本作业内容
-              widget.homework.content.isNotEmpty
-                  ? GestureDetector(
-                      onTap: widget.onTap,
-                      child: QuillEditor.basic(
-                        controller: _contentController,
-                        config: const QuillEditorConfig(
-                          showCursor: false,
-                          padding: EdgeInsets.zero,
-                        ),
-                        focusNode: _editorFocusNode,
-                      ),
-                    )
-                  : GestureDetector(
-                      onTap: widget.onTap,
-                      child: Text(
-                        '暂无内容',
-                        style: theme.textTheme.bodyMedium?.copyWith(
-                          color: colorScheme.onSurfaceVariant,
-                          fontStyle: FontStyle.italic,
-                        ),
-                      ),
-                    ),
-              const SizedBox(height: 12),
-              
-              // 截止日期和标签
-              Wrap(
-                spacing: 8,
-                runSpacing: 6,
-                crossAxisAlignment: WrapCrossAlignment.center,
+              child: Column(
+                crossAxisAlignment: CrossAxisAlignment.start,
                 children: [
-                  // 截止日期
-                  Row(
-                    mainAxisSize: MainAxisSize.min,
+                  // 富文本作业内容
+                  widget.homework.content.isNotEmpty
+                      ? GestureDetector(
+                          onTap: widget.onTap,
+                          child: QuillContent(
+                            content: widget.homework.content,
+                            textScaler: MediaQuery.textScalerOf(context),
+                          ),
+                        )
+                      : GestureDetector(
+                          onTap: widget.onTap,
+                          child: Text(
+                            '暂无内容',
+                            style: theme.textTheme.bodyMedium?.copyWith(
+                              color: colorScheme.onSurfaceVariant,
+                              fontStyle: FontStyle.italic,
+                            ),
+                          ),
+                        ),
+                  const SizedBox(height: 12),
+                  
+                  // 截止日期和标签
+                  Wrap(
+                    spacing: 8,
+                    runSpacing: 6,
+                    crossAxisAlignment: WrapCrossAlignment.center,
                     children: [
-                      Icon(
-                        Icons.access_time,
-                        size: 16,
-                        color: _isOverdue() 
-                            ? colorScheme.error 
-                            : colorScheme.onSurfaceVariant,
+                      // 截止日期
+                      Row(
+                        mainAxisSize: MainAxisSize.min,
+                        children: [
+                          Icon(
+                            Icons.access_time,
+                            size: 16,
+                            color: _isOverdue() 
+                                ? colorScheme.error 
+                                : colorScheme.onSurfaceVariant,
+                          ),
+                          const SizedBox(width: 6),
+                          Text(
+                            _getFormattedDate(),
+                            style: theme.textTheme.bodySmall?.copyWith(
+                            color: _isOverdue() 
+                                ? colorScheme.error 
+                                : colorScheme.onSurfaceVariant,
+                            fontWeight: FontWeight.w500,
+                          ),
+                          ),
+                        ],
                       ),
-                      const SizedBox(width: 6),
-                      Text(
-                        _getFormattedDate(),
-                        style: theme.textTheme.bodySmall?.copyWith(
-                        color: _isOverdue() 
-                            ? colorScheme.error 
-                            : colorScheme.onSurfaceVariant,
-                        fontWeight: FontWeight.w500,
-                      ),
-                      ),
+                      
+                      // 状态标签
+                      if (_getStatusTag() != null) _getStatusTag()!,
+                      
+                      // 作业标签
+                      ...JsonStorageService.instance.getTagNamesByUuids(widget.homework.tagUuids).map((tagName) => Container(
+                        padding: const EdgeInsets.symmetric(horizontal: 8, vertical: 4),
+                        decoration: BoxDecoration(
+                          color: colorScheme.secondaryContainer,
+                          borderRadius: BorderRadius.circular(8),
+                        ),
+                        child: Text(
+                          tagName,
+                          style: theme.textTheme.labelSmall?.copyWith(
+                            color: colorScheme.onSecondaryContainer,
+                            fontWeight: FontWeight.w500,
+                          ),
+                        ),
+                      )),
                     ],
                   ),
                   
-                  // 状态标签
-                  if (_getStatusTag() != null) _getStatusTag()!,
-                  
-                  // 作业标签
-                  ...JsonStorageService.instance.getTagNamesByUuids(widget.homework.tagUuids).map((tagName) => Container(
-                    padding: const EdgeInsets.symmetric(horizontal: 8, vertical: 4),
-                    decoration: BoxDecoration(
-                      color: colorScheme.secondaryContainer,
-                      borderRadius: BorderRadius.circular(8),
-                    ),
-                    child: Text(
-                      tagName,
-                      style: theme.textTheme.labelSmall?.copyWith(
-                        color: colorScheme.onSecondaryContainer,
-                        fontWeight: FontWeight.w500,
-                      ),
-                    ),
-                  )),
-                ],
-              ),
-              
-              // 编辑和删除按钮
-              if (widget.isSelected) ...[
-                const SizedBox(height: 12),
-                Row(
-                  mainAxisAlignment: MainAxisAlignment.end,
-                  children: [
-                    IconButton( // 改为填充样式的按钮
-                      icon: const Icon(Icons.edit, size: 18),
-                      onPressed: widget.onEdit,
-                      tooltip: '编辑',
-                      style: IconButton.styleFrom(
-                        foregroundColor: colorScheme.primary,
-                        backgroundColor: colorScheme.primaryContainer.withValues(alpha: 0.3),
-                        padding: const EdgeInsets.all(8),
-                        minimumSize: const Size(36, 36),
-                        shape: RoundedRectangleBorder(
-                          borderRadius: BorderRadius.circular(8),
+                  // 编辑和删除按钮
+                  if (widget.isSelected) ...[
+                    const SizedBox(height: 12),
+                    Row(
+                      mainAxisAlignment: MainAxisAlignment.end,
+                      children: [
+                        IconButton( // 改为填充样式的按钮
+                          icon: const Icon(Icons.edit, size: 18),
+                          onPressed: widget.onEdit,
+                          tooltip: '编辑',
+                          style: IconButton.styleFrom(
+                            foregroundColor: colorScheme.primary,
+                            backgroundColor: colorScheme.primaryContainer.withAlpha(77),
+                            padding: const EdgeInsets.all(8),
+                            minimumSize: const Size(36, 36),
+                            shape: RoundedRectangleBorder(
+                              borderRadius: BorderRadius.circular(8),
+                            ),
+                          ),
                         ),
-                      ),
-                    ),
-                    const SizedBox(width: 8),
-                    IconButton( // 改为填充样式的按钮
-                      icon: const Icon(Icons.delete, size: 18),
-                      onPressed: widget.onDelete,
-                      tooltip: '删除',
-                      style: IconButton.styleFrom(
-                        foregroundColor: colorScheme.error,
-                        backgroundColor: colorScheme.errorContainer.withValues(alpha: 0.3),
-                        padding: const EdgeInsets.all(8),
-                        minimumSize: const Size(36, 36),
-                        shape: RoundedRectangleBorder(
-                          borderRadius: BorderRadius.circular(8),
+                        const SizedBox(width: 8),
+                        IconButton( // 改为填充样式的按钮
+                          icon: const Icon(Icons.delete, size: 18),
+                          onPressed: widget.onDelete,
+                          tooltip: '删除',
+                          style: IconButton.styleFrom(
+                            foregroundColor: colorScheme.error,
+                            backgroundColor: colorScheme.errorContainer.withAlpha(77),
+                            padding: const EdgeInsets.all(8),
+                            minimumSize: const Size(36, 36),
+                            shape: RoundedRectangleBorder(
+                              borderRadius: BorderRadius.circular(8),
+                            ),
+                          ),
                         ),
-                      ),
+                      ],
                     ),
                   ],
-                ),
-              ],
-            ],
-          ),
+                ],
+              ),
+            ),
         ),
+      ),
     );
   }
 }

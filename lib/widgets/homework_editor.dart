@@ -38,6 +38,7 @@ class _HomeworkEditorState extends State<HomeworkEditor> {
   bool _isBold = false;
   bool _isItalic = false;
   bool _isStrikethrough = false;
+  bool _isUnderline = false;
 
   // 可选学科列表
   List<String> _availableSubjects = [];
@@ -241,18 +242,21 @@ class _HomeworkEditorState extends State<HomeworkEditor> {
     bool newIsBold = false;
     bool newIsItalic = false;
     bool newIsStrikethrough = false;
+    bool newIsUnderline = false;
     
     if (selection.isCollapsed) {
       // 光标位置，直接检查当前样式
       newIsBold = style.attributes.containsKey(Attribute.bold.key);
       newIsItalic = style.attributes.containsKey(Attribute.italic.key);
       newIsStrikethrough = style.attributes.containsKey(Attribute.strikeThrough.key);
+      newIsUnderline = style.attributes.containsKey(Attribute.underline.key);
     } else {
       // 有选择范围，检查选择范围的格式一致性
       final document = _contentController.document;
       bool allBold = true;
       bool allItalic = true;
       bool allStrikethrough = true;
+      bool allUnderline = true;
       
       // 检查选择范围内是否所有字符都有相同的格式
       for (int i = selection.start; i < selection.end && i < document.length; i++) {
@@ -267,24 +271,30 @@ class _HomeworkEditorState extends State<HomeworkEditor> {
         if (!charStyle.attributes.containsKey(Attribute.strikeThrough.key)) {
           allStrikethrough = false;
         }
+        if (!charStyle.attributes.containsKey(Attribute.underline.key)) {
+          allUnderline = false;
+        }
       }
       
       newIsBold = allBold;
       newIsItalic = allItalic;
       newIsStrikethrough = allStrikethrough;
+      newIsUnderline = allUnderline;
     }
     
     // 只有状态发生变化时才更新UI
     if (newFontSize != _currentFontSize || 
         newIsBold != _isBold || 
         newIsItalic != _isItalic || 
-        newIsStrikethrough != _isStrikethrough) {
+        newIsStrikethrough != _isStrikethrough ||
+        newIsUnderline != _isUnderline) {
       setState(() {
         _currentFontSize = newFontSize;
         _fontSizeController.text = _currentFontSize.toInt().toString();
         _isBold = newIsBold;
         _isItalic = newIsItalic;
         _isStrikethrough = newIsStrikethrough;
+        _isUnderline = newIsUnderline;
       });
     }
   }
