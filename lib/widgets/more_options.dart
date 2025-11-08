@@ -29,6 +29,7 @@ class _MoreOptionsWindowState extends State<MoreOptionsWindow> {
   int _themeMode = 0;
   bool _showInTaskbarEnabled = false;
   double _backgroundOpacity = 0.95;
+  int? _themeColor; // 自定义主题色
   bool _isLoading = true;
 
   int _selectedNavIndex = 0;
@@ -109,6 +110,7 @@ class _MoreOptionsWindowState extends State<MoreOptionsWindow> {
     final savedDarkMode = settingsService.getDarkMode();
     final savedBackgroundOpacity = settingsService.getBackgroundOpacity();
     final savedShowInTaskbar = settingsService.getShowInTaskbar();
+    final savedThemeColor = settingsService.getThemeColor();
 
     final actualAutoStart = await settingsService.checkAutoStartStatus();
 
@@ -118,6 +120,7 @@ class _MoreOptionsWindowState extends State<MoreOptionsWindow> {
       _themeMode = savedDarkMode ? 1 : 0;
       _backgroundOpacity = savedBackgroundOpacity;
       _showInTaskbarEnabled = savedShowInTaskbar;
+      _themeColor = savedThemeColor;
       _isLoading = false;
     });
   }
@@ -254,6 +257,14 @@ class _MoreOptionsWindowState extends State<MoreOptionsWindow> {
             value: _backgroundOpacity,
             onChanged: _onBackgroundOpacityChanged,
           ),
+          const SizedBox(height: 16),
+          _buildThemeColorPicker(
+            icon: Icons.color_lens,
+            title: '主题色',
+            subtitle: '自定义应用的主题色',
+            value: _themeColor,
+            onChanged: _onThemeColorChanged,
+          ),
           const SizedBox(height: 32),
 
           _buildCategoryHeader(3, '高级', colorScheme),
@@ -384,6 +395,92 @@ class _MoreOptionsWindowState extends State<MoreOptionsWindow> {
                   divisions: 14,
                   onChanged: onChanged,
                   activeColor: colorScheme.primary,
+                ),
+              ],
+            ),
+          ),
+        ],
+      ),
+    );
+  }
+
+  Widget _buildThemeColorPicker({
+    required IconData icon,
+    required String title,
+    required String subtitle,
+    required int? value,
+    required ValueChanged<int?> onChanged,
+  }) {
+    final colorScheme = Theme.of(context).colorScheme;
+    final displayColor = value != null ? Color(value) : colorScheme.primary;
+
+    return Container(
+      padding: const EdgeInsets.all(16),
+      decoration: BoxDecoration(
+        color: colorScheme.surface,
+        borderRadius: BorderRadius.circular(12),
+        boxShadow: [
+          BoxShadow(
+            color: Colors.black.withValues(alpha: 0.05),
+            blurRadius: 8,
+            offset: const Offset(0, 2),
+          ),
+        ],
+      ),
+      child: Row(
+        children: [
+          Container(
+            padding: const EdgeInsets.all(12),
+            decoration: BoxDecoration(
+              color: colorScheme.primaryContainer,
+              borderRadius: BorderRadius.circular(12),
+            ),
+            child: Icon(
+              icon,
+              color: colorScheme.onPrimaryContainer,
+              size: 24,
+            ),
+          ),
+          const SizedBox(width: 16),
+          Expanded(
+            child: Column(
+              crossAxisAlignment: CrossAxisAlignment.start,
+              children: [
+                Row(
+                  mainAxisAlignment: MainAxisAlignment.spaceBetween,
+                  children: [
+                    Text(
+                      title,
+                      style: TextStyle(
+                        fontSize: 16,
+                        fontWeight: FontWeight.w500,
+                        color: colorScheme.onSurface,
+                      ),
+                    ),
+                    GestureDetector(
+                      onTap: () => _showColorPickerDialog(onChanged),
+                      child: Container(
+                        width: 32,
+                        height: 32,
+                        decoration: BoxDecoration(
+                          color: displayColor,
+                          borderRadius: BorderRadius.circular(8),
+                          border: Border.all(
+                            color: colorScheme.outline.withValues(alpha: 0.3),
+                            width: 1,
+                          ),
+                        ),
+                      ),
+                    ),
+                  ],
+                ),
+                const SizedBox(height: 4),
+                Text(
+                  subtitle,
+                  style: TextStyle(
+                    fontSize: 13,
+                    color: colorScheme.onSurfaceVariant,
+                  ),
                 ),
               ],
             ),
@@ -701,6 +798,20 @@ class _MoreOptionsWindowState extends State<MoreOptionsWindow> {
     }
   }
 
+  Future<void> _onThemeColorChanged(int? colorValue) async {
+    final settingsService = SettingsService.instance;
+    final success = await settingsService.setThemeColor(colorValue);
+
+    if (success) {
+      setState(() {
+        _themeColor = colorValue;
+      });
+      widget.onThemeChanged?.call();
+    } else {
+      // 设置失败，静默处理
+    }
+  }
+
   Future<void> _onShowInTaskbarChanged(bool value) async {
     final settingsService = SettingsService.instance;
     final success = await settingsService.setShowInTaskbar(value);
@@ -968,5 +1079,191 @@ class _MoreOptionsWindowState extends State<MoreOptionsWindow> {
         ),
       );
     }
+  }
+
+  void _showColorPickerDialog(ValueChanged<int?> onChanged) {
+    final colorScheme = Theme.of(context).colorScheme;
+    Color selectedColor = _themeColor != null ? Color(_themeColor!) : colorScheme.primary;
+
+    showDialog(
+      context: context,
+      builder: (context) => StatefulBuilder(
+        builder: (context, setState) => AlertDialog(
+          title: const Text(
+            '选择主题色',
+            style: TextStyle(fontWeight: FontWeight.bold),
+          ),
+          content: SizedBox(
+            width: 320,
+            child: Column(
+              mainAxisSize: MainAxisSize.min,
+              children: [
+                Container(
+                  width: double.infinity,
+                  height: 60,
+                  decoration: BoxDecoration(
+                    color: selectedColor,
+                    borderRadius: BorderRadius.circular(8),
+                    border: Border.all(
+                      color: colorScheme.outline.withValues(alpha: 0.3),
+                      width: 1,
+                    ),
+                  ),
+                  child: Center(
+                    child: Text(
+                      '#${selectedColor.toARGB32().toRadixString(16).padLeft(8, '0').toUpperCase()}',
+                      style: TextStyle(
+                        color: selectedColor.computeLuminance() > 0.5 ? Colors.black : Colors.white,
+                        fontWeight: FontWeight.bold,
+                      ),
+                    ),
+                  ),
+                ),
+                const SizedBox(height: 16),
+                _buildColorSlider(
+                  label: '红',
+                  value: (selectedColor.r * 255.0).roundToDouble(),
+                  onChanged: (value) {
+                    setState(() {
+                      selectedColor = Color.fromARGB(
+                        (selectedColor.a * 255.0).round(),
+                        value.toInt(),
+                        (selectedColor.g * 255.0).round(),
+                        (selectedColor.b * 255.0).round(),
+                      );
+                    });
+                  },
+                  activeColor: Colors.red,
+                ),
+                _buildColorSlider(
+                  label: '绿',
+                  value: (selectedColor.g * 255.0).roundToDouble(),
+                  onChanged: (value) {
+                    setState(() {
+                      selectedColor = Color.fromARGB(
+                        (selectedColor.a * 255.0).round(),
+                        (selectedColor.r * 255.0).round(),
+                        value.toInt(),
+                        (selectedColor.b * 255.0).round(),
+                      );
+                    });
+                  },
+                  activeColor: Colors.green,
+                ),
+                _buildColorSlider(
+                  label: '蓝',
+                  value: (selectedColor.b * 255.0).roundToDouble(),
+                  onChanged: (value) {
+                    setState(() {
+                      selectedColor = Color.fromARGB(
+                        (selectedColor.a * 255.0).round(),
+                        (selectedColor.r * 255.0).round(),
+                        (selectedColor.g * 255.0).round(),
+                        value.toInt(),
+                      );
+                    });
+                  },
+                  activeColor: Colors.blue,
+                ),
+                const SizedBox(height: 16),
+                Wrap(
+                  spacing: 6,
+                  runSpacing: 6,
+                  children: [
+                    colorScheme.primary,
+                    Colors.red,
+                    Colors.pink,
+                    Colors.purple,
+                    Colors.deepPurple,
+                    Colors.indigo,
+                    Colors.blue,
+                    Colors.lightBlue,
+                    Colors.cyan,
+                    Colors.teal,
+                    Colors.green,
+                    Colors.lightGreen,
+                    Colors.lime,
+                    Colors.yellow,
+                    Colors.amber,
+                    Colors.orange,
+                    Colors.deepOrange,
+                    Colors.brown,
+                    Colors.grey,
+                    Colors.blueGrey,
+                  ].map((color) => GestureDetector(
+                    onTap: () {
+                      setState(() {
+                        selectedColor = color;
+                      });
+                    },
+                    child: Container(
+                      width: 28,
+                      height: 28,
+                      decoration: BoxDecoration(
+                        color: color,
+                        borderRadius: BorderRadius.circular(4),
+                        border: selectedColor.toARGB32() == color.toARGB32()
+                            ? Border.all(color: colorScheme.primary, width: 2)
+                            : Border.all(color: colorScheme.outline.withValues(alpha: 0.3), width: 1),
+                      ),
+                    ),
+                  )).toList(),
+                ),
+              ],
+            ),
+          ),
+          actions: [
+            TextButton(
+              onPressed: () => Navigator.of(context).pop(),
+              child: const Text('取消'),
+            ),
+            FilledButton(
+              onPressed: () {
+                onChanged(selectedColor.toARGB32());
+                Navigator.of(context).pop();
+              },
+              child: const Text('确定'),
+            ),
+          ],
+        ),
+      ),
+    );
+  }
+
+  Widget _buildColorSlider({
+    required String label,
+    required double value,
+    required ValueChanged<double> onChanged,
+    required Color activeColor,
+  }) {
+    return Row(
+      children: [
+        SizedBox(
+          width: 20,
+          child: Text(
+            label,
+            style: const TextStyle(fontWeight: FontWeight.bold),
+          ),
+        ),
+        Expanded(
+          child: Slider(
+            value: value,
+            min: 0,
+            max: 255,
+            divisions: 255,
+            onChanged: onChanged,
+            activeColor: activeColor,
+          ),
+        ),
+        SizedBox(
+          width: 40,
+          child: Text(
+            value.toInt().toString(),
+            textAlign: TextAlign.center,
+            style: const TextStyle(fontSize: 12),
+          ),
+        ),
+      ],
+    );
   }
 }

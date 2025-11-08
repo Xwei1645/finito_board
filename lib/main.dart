@@ -74,6 +74,7 @@ class MyApp extends StatefulWidget {
 
 class _MyAppState extends State<MyApp> {
   bool _isDarkMode = false;
+  int? _themeColor;
 
   @override
   void initState() {
@@ -84,19 +85,23 @@ class _MyAppState extends State<MyApp> {
   Future<void> _loadThemeSettings() async {
     final settingsService = SettingsService.instance;
     final isDarkMode = settingsService.getDarkMode();
+    final themeColor = settingsService.getThemeColor();
     
     setState(() {
       _isDarkMode = isDarkMode;
+      _themeColor = themeColor;
     });
   }
 
   @override
   Widget build(BuildContext context) {
+    final seedColor = _themeColor != null ? Color(_themeColor!) : Colors.blue;
+    
     return MaterialApp(
       title: 'Finito Board',
       theme: ThemeData(
         colorScheme: ColorScheme.fromSeed(
-          seedColor: Colors.blue,
+          seedColor: seedColor,
           brightness: Brightness.light,
         ),
         useMaterial3: true,
@@ -104,7 +109,7 @@ class _MyAppState extends State<MyApp> {
       ),
       darkTheme: ThemeData(
         colorScheme: ColorScheme.fromSeed(
-          seedColor: Colors.blue,
+          seedColor: seedColor,
           brightness: Brightness.dark,
         ),
         useMaterial3: true,

@@ -199,6 +199,7 @@ class SettingsService {
         backgroundOpacity: currentConfig.backgroundOpacity,
         firstLaunch: currentConfig.firstLaunch,
         showInTaskbar: currentConfig.showInTaskbar,
+        themeColor: currentConfig.themeColor,
       );
       await storageService.saveAppConfig(updatedConfig);
       return true;
@@ -224,6 +225,28 @@ class SettingsService {
       final currentConfig = storageService.getAppConfig();
       final updatedConfig = currentConfig.copyWith(
         backgroundOpacity: clampedOpacity,
+      );
+      await storageService.saveAppConfig(updatedConfig);
+      return true;
+    } catch (e) {
+      return false;
+    }
+  }
+
+  /// 获取主题色
+  int? getThemeColor() {
+    final config = JsonStorageService.instance.getAppConfig();
+    return config.themeColor;
+  }
+
+  /// 设置主题色
+  Future<bool> setThemeColor(int? colorValue) async {
+    try {
+      // 更新JSON配置
+      final storageService = JsonStorageService.instance;
+      final currentConfig = storageService.getAppConfig();
+      final updatedConfig = currentConfig.copyWith(
+        themeColor: colorValue,
       );
       await storageService.saveAppConfig(updatedConfig);
       return true;

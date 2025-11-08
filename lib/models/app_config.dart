@@ -9,6 +9,7 @@ class AppConfig {
   final double backgroundOpacity; // 背景不透明度
   final bool firstLaunch; // 是否首次启动
   final bool showInTaskbar; // 是否在任务栏显示
+  final int? themeColor; // 自定义主题色，null表示使用默认色
 
   const AppConfig({
     this.theme = 'light',
@@ -21,6 +22,7 @@ class AppConfig {
     this.backgroundOpacity = 0.95,
     this.firstLaunch = true,
     this.showInTaskbar = false,
+    this.themeColor,
   });
 
   AppConfig copyWith({
@@ -34,6 +36,7 @@ class AppConfig {
     double? backgroundOpacity,
     bool? firstLaunch,
     bool? showInTaskbar,
+    int? themeColor,
   }) {
     return AppConfig(
       theme: theme ?? this.theme,
@@ -46,6 +49,7 @@ class AppConfig {
       backgroundOpacity: backgroundOpacity ?? this.backgroundOpacity,
       firstLaunch: firstLaunch ?? this.firstLaunch,
       showInTaskbar: showInTaskbar ?? this.showInTaskbar,
+      themeColor: themeColor ?? this.themeColor,
     );
   }
 
@@ -62,6 +66,7 @@ class AppConfig {
       'backgroundOpacity': backgroundOpacity,
       'firstLaunch': firstLaunch,
       'showInTaskbar': showInTaskbar,
+      'themeColor': themeColor,
     };
   }
 
@@ -78,6 +83,7 @@ class AppConfig {
       backgroundOpacity: (json['backgroundOpacity'] as num?)?.toDouble() ?? 0.95,
       firstLaunch: json['firstLaunch'] as bool? ?? true,
       showInTaskbar: json['showInTaskbar'] as bool? ?? false,
+      themeColor: json['themeColor'] as int?,
     );
   }
 }
