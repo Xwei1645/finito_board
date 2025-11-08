@@ -1,3 +1,4 @@
+import 'dart:async';
 import 'package:flutter/material.dart';
 import 'package:flutter/services.dart';
 import 'package:url_launcher/url_launcher.dart';
@@ -9,7 +10,7 @@ import 'oobe_dialog.dart';
 class SettingsWindow extends StatefulWidget {
   final VoidCallback? onThemeChanged;
   final VoidCallback? onSettingsChanged;
-  
+
   const SettingsWindow({
     super.key,
     this.onThemeChanged,
@@ -27,28 +28,88 @@ class _SettingsWindowState extends State<SettingsWindow> {
   double _backgroundOpacity = 0.95;
   bool _isLoading = true;
 
+  int _selectedNavIndex = 0;
+  final ScrollController _scrollController = ScrollController();
+  final Map<int, GlobalKey> _categoryKeys = {
+    0: GlobalKey(),
+    1: GlobalKey(),
+    2: GlobalKey(),
+    3: GlobalKey(),
+    4: GlobalKey(),
+  };
+
+  bool _manualSelection = false;
+  Timer? _manualSelectionTimer;
+
   @override
   void initState() {
     super.initState();
     _loadSettings();
+    _scrollController.addListener(_onScroll);
+  }
+
+  @override
+  void dispose() {
+    _scrollController.dispose();
+    _manualSelectionTimer?.cancel();
+    super.dispose();
+  }
+
+  void _onScroll() {
+    if (_manualSelection) return;
+    int newIndex = 0;
+
+    for (var i = _categoryKeys.length - 1; i >= 0; i--) {
+      final key = _categoryKeys[i];
+      if (key?.currentContext != null) {
+        final RenderBox box = key!.currentContext!.findRenderObject() as RenderBox;
+        final position = box.localToGlobal(Offset.zero, ancestor: context.findRenderObject());
+
+        if (position.dy <= 100) {
+          newIndex = i;
+          break;
+        }
+      }
+    }
+
+    if (newIndex != _selectedNavIndex) {
+      setState(() {
+        _selectedNavIndex = newIndex;
+      });
+    }
+  }
+
+  void _scrollToCategory(int index) {
+    final key = _categoryKeys[index];
+    if (key?.currentContext != null) {
+      Scrollable.ensureVisible(
+        key!.currentContext!,
+        duration: const Duration(milliseconds: 500),
+        curve: Curves.easeOutCubic,
+      );
+    }
+
+    setState(() {
+      _selectedNavIndex = index;
+      _manualSelection = true;
+      _manualSelectionTimer?.cancel();
+      _manualSelectionTimer = Timer(const Duration(milliseconds: 700), () {
+        _manualSelection = false;
+      });
+    });
   }
 
   Future<void> _loadSettings() async {
     final settingsService = SettingsService.instance;
-    
-    // 获取保存的设置
+
     final savedAlwaysOnBottom = settingsService.getAlwaysOnBottom();
     final savedDarkMode = settingsService.getDarkMode();
     final savedBackgroundOpacity = settingsService.getBackgroundOpacity();
-    
-    // 检查系统中的实际开机自启状态
+
     final actualAutoStart = await settingsService.checkAutoStartStatus();
-    
-    // 如果保存的状态与实际状态不一致，使用实际状态
-    // (静默处理状态不一致的情况)
-    
+
     setState(() {
-      _autoStartEnabled = actualAutoStart; // 使用实际状态
+      _autoStartEnabled = actualAutoStart;
       _alwaysOnBottomEnabled = savedAlwaysOnBottom;
       _darkModeEnabled = savedDarkMode;
       _backgroundOpacity = savedBackgroundOpacity;
@@ -59,144 +120,172 @@ class _SettingsWindowState extends State<SettingsWindow> {
   @override
   Widget build(BuildContext context) {
     final colorScheme = Theme.of(context).colorScheme;
-    
-    return Dialog(
-      backgroundColor: Colors.transparent,
-      elevation: 0,
-      child: Container(
-        width: 500,
-        height: 600,
-        decoration: BoxDecoration(
-          color: colorScheme.surface,
-          borderRadius: BorderRadius.circular(16),
-        ),
-        padding: const EdgeInsets.all(24),
-        child: Column(
-          crossAxisAlignment: CrossAxisAlignment.start,
-          children: [
-            // 标题栏
-            Row(
-              children: [
-                Icon(
-                  Icons.more_horiz,
-                  color: colorScheme.primary,
-                  size: 24,
-                ),
-                const SizedBox(width: 12),
-                Text(
-                  '更多选项',
-                  style: TextStyle(
-                    fontSize: 20,
-                    fontWeight: FontWeight.w600,
-                    color: colorScheme.onSurface,
-                  ),
-                ),
-              ],
-            ),
-            const SizedBox(height: 24),
-            // 内容区域
-            Expanded(
-              child: SingleChildScrollView(
-                child: Column(
-                  crossAxisAlignment: CrossAxisAlignment.start,
-                  children: [
-                    if (_isLoading)
-                      const Center(
-                        child: CircularProgressIndicator(),
-                      )
-                    else ...[
-                      // 开机自启设置
-                      _buildSettingItem(
-                        icon: Icons.power_settings_new,
-                        title: '开机自启',
-                        subtitle: '系统启动时自动运行',
-                        value: _autoStartEnabled,
-                        onChanged: _onAutoStartChanged,
-                      ),
-                      
-                      // 始终置底设置
-                      _buildSettingItem(
-                        icon: Icons.vertical_align_bottom,
-                        title: '始终置底',
-                        subtitle: '始终保窗口在其他窗口下方',
-                        value: _alwaysOnBottomEnabled,
-                        onChanged: _onAlwaysOnBottomChanged,
-                      ),
-                      
-                      // 明暗模式切换
-                      _buildSettingItem(
-                        icon: Icons.dark_mode,
-                        title: '深色模式',
-                        subtitle: '切换应用的明暗主题',
-                        value: _darkModeEnabled,
-                        onChanged: _onDarkModeChanged,
-                      ),
-                      
-                      // 背景不透明度调整
-                      _buildOpacitySlider(
-                        icon: Icons.opacity,
-                        title: '背景不透明度',
-                        subtitle: '调整窗口背景的透明度',
-                        value: _backgroundOpacity,
-                        onChanged: _onBackgroundOpacityChanged,
-                      ),
-                      
-                      const SizedBox(height: 16),
-                      
-                      // 打开OOBE选项
-                      _buildActionItem(
-                        icon: Icons.rocket_launch,
-                        title: '打开 OOBE',
-                        subtitle: '重新打开首次使用向导',
-                        onTap: _showOOBEDialog,
-                      ),
 
-                    ],
-                  ],
-                ),
-              ),
-            ),
-            const SizedBox(height: 24),
-            // 底部按钮
-            Row(
-              mainAxisAlignment: MainAxisAlignment.spaceBetween,
+    return Scaffold(
+      backgroundColor: colorScheme.surface,
+      appBar: AppBar(
+        title: const Text(
+          '更多选项',
+          style: TextStyle(fontWeight: FontWeight.bold),
+        ),
+        centerTitle: false,
+        elevation: 0,
+        backgroundColor: colorScheme.surface,
+        foregroundColor: colorScheme.onSurface,
+        automaticallyImplyLeading: false,
+      ),
+      body: Row(
+        children: [
+          SizedBox(
+            width: 120,
+            child: Column(
               children: [
-                TextButton.icon(
-                  onPressed: () {
-                    _showAboutDialog(context);
-                  },
-                  icon: Icon(
-                    Icons.info_outlined,
-                    size: 18,
-                    color: colorScheme.primary,
-                  ),
-                  label: Text(
-                    '关于 FinitoBoard',
-                    style: TextStyle(
-                      color: colorScheme.primary,
-                    ),
+                Expanded(
+                  child: NavigationRail(
+                    selectedIndex: _selectedNavIndex,
+                    onDestinationSelected: _scrollToCategory,
+                    labelType: NavigationRailLabelType.all,
+                    groupAlignment: 0.0,
+                    minWidth: 120,
+                    destinations: const [
+                      NavigationRailDestination(
+                        icon: Icon(Icons.power_settings_new_outlined, size: 28),
+                        selectedIcon: Icon(Icons.power_settings_new, size: 28),
+                        label: Text('系统'),
+                        padding: EdgeInsets.symmetric(vertical: 8),
+                      ),
+                      NavigationRailDestination(
+                        icon: Icon(Icons.window_outlined, size: 28),
+                        selectedIcon: Icon(Icons.window, size: 28),
+                        label: Text('窗口'),
+                        padding: EdgeInsets.symmetric(vertical: 8),
+                      ),
+                      NavigationRailDestination(
+                        icon: Icon(Icons.palette_outlined, size: 28),
+                        selectedIcon: Icon(Icons.palette, size: 28),
+                        label: Text('外观'),
+                        padding: EdgeInsets.symmetric(vertical: 8),
+                      ),
+                      NavigationRailDestination(
+                        icon: Icon(Icons.settings_outlined, size: 28),
+                        selectedIcon: Icon(Icons.settings, size: 28),
+                        label: Text('其他'),
+                        padding: EdgeInsets.symmetric(vertical: 8),
+                      ),
+                      NavigationRailDestination(
+                        icon: Icon(Icons.info_outline, size: 28),
+                        selectedIcon: Icon(Icons.info, size: 28),
+                        label: Text('关于'),
+                        padding: EdgeInsets.symmetric(vertical: 8),
+                      ),
+                    ],
                   ),
                 ),
-                FilledButton(
-                  onPressed: () {
-                    Navigator.of(context).pop();
-                  },
-                  style: FilledButton.styleFrom(
-                    shape: RoundedRectangleBorder(
-                      borderRadius: BorderRadius.circular(20),
-                    ),
+                Padding(
+                  padding: const EdgeInsets.only(bottom: 16),
+                  child: IconButton(
+                    onPressed: () => Navigator.of(context).pop(),
+                    icon: const Icon(Icons.arrow_back),
+                    tooltip: '返回',
                   ),
-                  child: const Text('关闭'),
                 ),
               ],
             ),
-          ],
+          ),
+
+          Expanded(
+            child: _isLoading
+                ? const Center(child: CircularProgressIndicator())
+                : _buildSettingsContent(colorScheme),
+          ),
+        ],
+      ),
+    );
+  }
+
+  Widget _buildSettingsContent(ColorScheme colorScheme) {
+    return SingleChildScrollView(
+      controller: _scrollController,
+      padding: const EdgeInsets.all(24),
+      child: Column(
+        crossAxisAlignment: CrossAxisAlignment.start,
+        children: [
+          _buildCategoryHeader(0, '系统', colorScheme),
+          const SizedBox(height: 16),
+          _buildSettingItem(
+            icon: Icons.power_settings_new,
+            title: '开机自启',
+            subtitle: '系统启动时自动运行',
+            value: _autoStartEnabled,
+            onChanged: _onAutoStartChanged,
+          ),
+          const SizedBox(height: 32),
+
+          _buildCategoryHeader(1, '窗口', colorScheme),
+          const SizedBox(height: 16),
+          _buildSettingItem(
+            icon: Icons.vertical_align_bottom,
+            title: '始终置底',
+            subtitle: '始终保窗口在其他窗口下方',
+            value: _alwaysOnBottomEnabled,
+            onChanged: _onAlwaysOnBottomChanged,
+          ),
+          const SizedBox(height: 32),
+
+          _buildCategoryHeader(2, '外观', colorScheme),
+          const SizedBox(height: 16),
+          _buildSettingItem(
+            icon: Icons.dark_mode,
+            title: '深色模式',
+            subtitle: '切换应用的明暗主题',
+            value: _darkModeEnabled,
+            onChanged: _onDarkModeChanged,
+          ),
+          const SizedBox(height: 16),
+          _buildOpacitySlider(
+            icon: Icons.opacity,
+            title: '背景不透明度',
+            subtitle: '调整窗口背景的透明度',
+            value: _backgroundOpacity,
+            onChanged: _onBackgroundOpacityChanged,
+          ),
+          const SizedBox(height: 32),
+
+          _buildCategoryHeader(3, '其他', colorScheme),
+          const SizedBox(height: 16),
+          _buildActionItem(
+            icon: Icons.rocket_launch,
+            title: '打开 OOBE',
+            subtitle: '重新打开首次使用向导',
+            onTap: _showOOBEDialog,
+          ),
+          const SizedBox(height: 32),
+
+          _buildCategoryHeader(4, '关于', colorScheme),
+          const SizedBox(height: 16),
+          _buildAboutCard(colorScheme),
+          const SizedBox(height: 24),
+        ],
+      ),
+    );
+  }
+
+  Widget _buildCategoryHeader(int index, String title, ColorScheme colorScheme) {
+    return Container(
+      key: _categoryKeys[index],
+      padding: const EdgeInsets.only(bottom: 16, top: 8),
+      child: Text(
+        title,
+        style: TextStyle(
+          fontSize: 22,
+          fontWeight: FontWeight.bold,
+          color: colorScheme.onSurface,
+          letterSpacing: 0,
         ),
       ),
     );
   }
 
-  /// 构建不透明度滑块
   Widget _buildOpacitySlider({
     required IconData icon,
     required String title,
@@ -205,25 +294,32 @@ class _SettingsWindowState extends State<SettingsWindow> {
     required ValueChanged<double> onChanged,
   }) {
     final colorScheme = Theme.of(context).colorScheme;
-    
+
     return Container(
-      padding: const EdgeInsets.symmetric(vertical: 12, horizontal: 16),
+      padding: const EdgeInsets.all(16),
       decoration: BoxDecoration(
         color: colorScheme.surface,
         borderRadius: BorderRadius.circular(12),
+        boxShadow: [
+          BoxShadow(
+            color: Colors.black.withValues(alpha: 0.05),
+            blurRadius: 8,
+            offset: const Offset(0, 2),
+          ),
+        ],
       ),
       child: Row(
         children: [
           Container(
-            padding: const EdgeInsets.all(8),
+            padding: const EdgeInsets.all(12),
             decoration: BoxDecoration(
-              color: colorScheme.primary.withValues(alpha: 0.1),
-              borderRadius: BorderRadius.circular(8),
+              color: colorScheme.primaryContainer,
+              borderRadius: BorderRadius.circular(12),
             ),
             child: Icon(
               icon,
-              color: colorScheme.primary,
-              size: 20,
+              color: colorScheme.onPrimaryContainer,
+              size: 24,
             ),
           ),
           const SizedBox(width: 16),
@@ -242,12 +338,19 @@ class _SettingsWindowState extends State<SettingsWindow> {
                         color: colorScheme.onSurface,
                       ),
                     ),
-                    Text(
-                      '${(value * 100).round()}%',
-                      style: TextStyle(
-                        fontSize: 14,
-                        fontWeight: FontWeight.w500,
-                        color: colorScheme.primary,
+                    Container(
+                      padding: const EdgeInsets.symmetric(horizontal: 12, vertical: 4),
+                      decoration: BoxDecoration(
+                        color: colorScheme.primary.withValues(alpha: 0.15),
+                        borderRadius: BorderRadius.circular(12),
+                      ),
+                      child: Text(
+                        '${(value * 100).round()}%',
+                        style: TextStyle(
+                          fontSize: 14,
+                          fontWeight: FontWeight.w600,
+                          color: colorScheme.primary,
+                        ),
                       ),
                     ),
                   ],
@@ -256,8 +359,8 @@ class _SettingsWindowState extends State<SettingsWindow> {
                 Text(
                   subtitle,
                   style: TextStyle(
-                    fontSize: 14,
-                    color: colorScheme.onSurface.withValues(alpha: 0.7),
+                    fontSize: 13,
+                    color: colorScheme.onSurfaceVariant,
                   ),
                 ),
                 const SizedBox(height: 8),
@@ -288,23 +391,30 @@ class _SettingsWindowState extends State<SettingsWindow> {
     final colorScheme = Theme.of(context).colorScheme;
     
     return Container(
-      padding: const EdgeInsets.symmetric(vertical: 12, horizontal: 16),
+      padding: const EdgeInsets.all(16),
       decoration: BoxDecoration(
         color: colorScheme.surface,
         borderRadius: BorderRadius.circular(12),
+        boxShadow: [
+          BoxShadow(
+            color: Colors.black.withValues(alpha: 0.05),
+            blurRadius: 8,
+            offset: const Offset(0, 2),
+          ),
+        ],
       ),
       child: Row(
         children: [
           Container(
-            padding: const EdgeInsets.all(8),
+            padding: const EdgeInsets.all(12),
             decoration: BoxDecoration(
-              color: colorScheme.primary.withValues(alpha: 0.1),
-              borderRadius: BorderRadius.circular(8),
+              color: colorScheme.primaryContainer,
+              borderRadius: BorderRadius.circular(12),
             ),
             child: Icon(
               icon,
-              color: colorScheme.primary,
-              size: 20,
+              color: colorScheme.onPrimaryContainer,
+              size: 24,
             ),
           ),
           const SizedBox(width: 16),
@@ -324,8 +434,8 @@ class _SettingsWindowState extends State<SettingsWindow> {
                 Text(
                   subtitle,
                   style: TextStyle(
-                    fontSize: 14,
-                    color: colorScheme.onSurface.withValues(alpha: 0.7),
+                    fontSize: 13,
+                    color: colorScheme.onSurfaceVariant,
                   ),
                 ),
               ],
@@ -334,7 +444,6 @@ class _SettingsWindowState extends State<SettingsWindow> {
           Switch(
             value: value,
             onChanged: onChanged,
-            activeThumbColor: colorScheme.primary,
           ),
         ],
       ),
@@ -436,23 +545,30 @@ class _SettingsWindowState extends State<SettingsWindow> {
       onTap: onTap,
       borderRadius: BorderRadius.circular(12),
       child: Container(
-        padding: const EdgeInsets.symmetric(vertical: 12, horizontal: 16),
+        padding: const EdgeInsets.all(16),
         decoration: BoxDecoration(
           color: colorScheme.surface,
           borderRadius: BorderRadius.circular(12),
+          boxShadow: [
+            BoxShadow(
+              color: Colors.black.withValues(alpha: 0.05),
+              blurRadius: 8,
+              offset: const Offset(0, 2),
+            ),
+          ],
         ),
         child: Row(
           children: [
             Container(
-              padding: const EdgeInsets.all(8),
+              padding: const EdgeInsets.all(12),
               decoration: BoxDecoration(
-                color: colorScheme.primary.withValues(alpha: 0.1),
-                borderRadius: BorderRadius.circular(8),
+                color: colorScheme.primaryContainer,
+                borderRadius: BorderRadius.circular(12),
               ),
               child: Icon(
                 icon,
-                color: colorScheme.primary,
-                size: 20,
+                color: colorScheme.onPrimaryContainer,
+                size: 24,
               ),
             ),
             const SizedBox(width: 16),
@@ -472,8 +588,8 @@ class _SettingsWindowState extends State<SettingsWindow> {
                   Text(
                     subtitle,
                     style: TextStyle(
-                      fontSize: 14,
-                      color: colorScheme.onSurface.withValues(alpha: 0.7),
+                      fontSize: 13,
+                      color: colorScheme.onSurfaceVariant,
                     ),
                   ),
                 ],
@@ -482,7 +598,7 @@ class _SettingsWindowState extends State<SettingsWindow> {
             Icon(
               Icons.arrow_forward_ios,
               size: 16,
-              color: colorScheme.onSurface.withValues(alpha: 0.5),
+              color: colorScheme.onSurfaceVariant,
             ),
           ],
         ),
@@ -490,62 +606,104 @@ class _SettingsWindowState extends State<SettingsWindow> {
     );
   }
 
-  void _showAboutDialog(BuildContext context) async {
-    final packageInfo = await PackageInfo.fromPlatform();
-    
-    if (!context.mounted) return;
-    
-    showDialog(
-      context: context,
-      builder: (context) => AlertDialog(
-        shape: RoundedRectangleBorder(
-          borderRadius: BorderRadius.circular(16),
-        ),
-        title: const Text('关于 FinitoBoard'),
-        content: Column(
-          mainAxisSize: MainAxisSize.min,
-          crossAxisAlignment: CrossAxisAlignment.start,
-          children: [
-            const Text('FinitoBoard'),
-            const SizedBox(height: 8),
-            Text('版本: ${packageInfo.version}'),
-            const SizedBox(height: 8),
-            const Text('集中布置作业！'),
-            const SizedBox(height: 16),
-            Row(
-              children: [
-                TextButton.icon(
-                  onPressed: () async {
-                    final uri = Uri.parse('https://github.com/Xwei1645/finito_board');
-                    if (await canLaunchUrl(uri)) {
-                      await launchUrl(uri);
-                    }
-                  },
-                  icon: const Icon(Icons.open_in_new),
-                  label: const Text('GitHub'),
-                ),
-                const SizedBox(width: 8),
-                TextButton.icon(
-                  onPressed: () => _showLicenseDialog(context),
-                  icon: const Icon(Icons.description),
-                  label: const Text('开放源代码许可'),
-                ),
-              ],
-            ),
-          ],
-        ),
-        actions: [
-          FilledButton(
-            onPressed: () => Navigator.of(context).pop(),
-            style: FilledButton.styleFrom(
-              shape: RoundedRectangleBorder(
-                borderRadius: BorderRadius.circular(20),
+  // 构建关于卡片 - 大卡片展示应用信息
+  Widget _buildAboutCard(ColorScheme colorScheme) {
+    return FutureBuilder<PackageInfo>(
+      future: PackageInfo.fromPlatform(),
+      builder: (context, snapshot) {
+        final version = snapshot.data?.version ?? '加载中...';
+        
+        return Container(
+          padding: const EdgeInsets.all(24),
+          decoration: BoxDecoration(
+            color: colorScheme.surface,
+            borderRadius: BorderRadius.circular(12),
+            boxShadow: [
+              BoxShadow(
+                color: Colors.black.withValues(alpha: 0.05),
+                blurRadius: 8,
+                offset: const Offset(0, 2),
               ),
-            ),
-            child: const Text('确定'),
+            ],
           ),
-        ],
-      ),
+          child: Column(
+            crossAxisAlignment: CrossAxisAlignment.start,
+            children: [
+              Row(
+                children: [
+                  Container(
+                    padding: const EdgeInsets.all(16),
+                    decoration: BoxDecoration(
+                      color: colorScheme.primaryContainer,
+                      borderRadius: BorderRadius.circular(16),
+                    ),
+                    child: Icon(
+                      Icons.info_outline,
+                      color: colorScheme.onPrimaryContainer,
+                      size: 32,
+                    ),
+                  ),
+                  const SizedBox(width: 16),
+                  Expanded(
+                    child: Column(
+                      crossAxisAlignment: CrossAxisAlignment.start,
+                      children: [
+                        Text(
+                          'FinitoBoard',
+                          style: TextStyle(
+                            fontSize: 24,
+                            fontWeight: FontWeight.w600,
+                            color: colorScheme.onSurface,
+                          ),
+                        ),
+                        const SizedBox(height: 4),
+                        Text(
+                          '版本 $version',
+                          style: TextStyle(
+                            fontSize: 14,
+                            color: colorScheme.onSurfaceVariant,
+                          ),
+                        ),
+                      ],
+                    ),
+                  ),
+                ],
+              ),
+              const SizedBox(height: 16),
+              Text(
+                '集中布置作业！',
+                style: TextStyle(
+                  fontSize: 15,
+                  color: colorScheme.onSurface,
+                  height: 1.5,
+                ),
+              ),
+              const SizedBox(height: 20),
+              Wrap(
+                spacing: 12,
+                runSpacing: 12,
+                children: [
+                  TextButton.icon(
+                    onPressed: () async {
+                      final uri = Uri.parse('https://github.com/Xwei1645/finito_board');
+                      if (await canLaunchUrl(uri)) {
+                        await launchUrl(uri);
+                      }
+                    },
+                    icon: const Icon(Icons.open_in_new, size: 18),
+                    label: const Text('GitHub'),
+                  ),
+                  TextButton.icon(
+                    onPressed: () => _showLicenseDialog(context),
+                    icon: const Icon(Icons.description, size: 18),
+                    label: const Text('开放源代码许可'),
+                  ),
+                ],
+              ),
+            ],
+          ),
+        );
+      },
     );
   }
 
@@ -574,7 +732,22 @@ class _SettingsWindowState extends State<SettingsWindow> {
               ),
             ),
           ),
+          actionsAlignment: MainAxisAlignment.spaceBetween,
           actions: [
+            // 左侧的第三方库按钮
+            TextButton.icon(
+              onPressed: () {
+                Navigator.of(context).pop(); // 关闭当前对话框
+                showLicensePage(
+                  context: context,
+                  applicationName: 'FinitoBoard',
+                  applicationVersion: null, // 会自动从 pubspec.yaml 获取
+                );
+              },
+              icon: const Icon(Icons.extension, size: 18),
+              label: const Text('第三方库'),
+            ),
+            // 右侧的确定按钮
             FilledButton(
               onPressed: () => Navigator.of(context).pop(),
               style: FilledButton.styleFrom(

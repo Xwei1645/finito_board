@@ -1253,11 +1253,12 @@ class _HomeworkBoardState extends State<HomeworkBoard> with WindowListener, Tick
 
   // 打开设置窗口
   void _openSettingsWindow() async {
-    await showDialog(
-      context: context,
-      builder: (context) => SettingsWindow(
-        onThemeChanged: widget.onThemeChanged,
-        onSettingsChanged: _loadBackgroundSettings,
+    await Navigator.of(context).push(
+      MaterialPageRoute(
+        builder: (context) => SettingsWindow(
+          onThemeChanged: widget.onThemeChanged,
+          onSettingsChanged: _loadBackgroundSettings,
+        ),
       ),
     );
   }
