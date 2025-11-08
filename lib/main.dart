@@ -11,7 +11,7 @@ import 'widgets/homework_card.dart';
 import 'widgets/subject_header.dart';
 import 'widgets/homework_editor.dart';
 import 'widgets/empty_state.dart';
-import 'widgets/settings.dart';
+import 'widgets/more_options.dart';
 import 'widgets/subject_manager.dart';
 import 'widgets/tag_manager.dart';
 import 'widgets/oobe_dialog.dart';
@@ -873,7 +873,7 @@ class _HomeworkBoardState extends State<HomeworkBoard> with WindowListener, Tick
           _buildMenuButton(
             icon: Icons.more_horiz,
             text: '更多选项...',
-            onPressed: () => _hideMenuAndExecute(_openSettingsWindow),
+            onPressed: () => _hideMenuAndExecute(_openMoreOptionsWindow),
           ),
           const SizedBox(height: 12),
           // 窗口控制
@@ -1252,10 +1252,10 @@ class _HomeworkBoardState extends State<HomeworkBoard> with WindowListener, Tick
   }
 
   // 打开设置窗口
-  void _openSettingsWindow() async {
+  void _openMoreOptionsWindow() async {
     await Navigator.of(context).push(
       MaterialPageRoute(
-        builder: (context) => SettingsWindow(
+        builder: (context) => MoreOptionsWindow(
           onThemeChanged: widget.onThemeChanged,
           onSettingsChanged: _loadBackgroundSettings,
         ),

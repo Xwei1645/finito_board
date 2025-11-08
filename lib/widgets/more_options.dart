@@ -7,21 +7,21 @@ import '../services/settings_service.dart';
 import 'oobe_dialog.dart';
 
 
-class SettingsWindow extends StatefulWidget {
+class MoreOptionsWindow extends StatefulWidget {
   final VoidCallback? onThemeChanged;
   final VoidCallback? onSettingsChanged;
 
-  const SettingsWindow({
+  const MoreOptionsWindow({
     super.key,
     this.onThemeChanged,
     this.onSettingsChanged,
   });
 
   @override
-  State<SettingsWindow> createState() => _SettingsWindowState();
+  State<MoreOptionsWindow> createState() => _MoreOptionsWindowState();
 }
 
-class _SettingsWindowState extends State<SettingsWindow> {
+class _MoreOptionsWindowState extends State<MoreOptionsWindow> {
   bool _autoStartEnabled = false;
   bool _alwaysOnBottomEnabled = false;
   bool _darkModeEnabled = false;
@@ -380,7 +380,6 @@ class _SettingsWindowState extends State<SettingsWindow> {
     );
   }
 
-  /// 构建设置项
   Widget _buildSettingItem({
     required IconData icon,
     required String title,
@@ -450,7 +449,6 @@ class _SettingsWindowState extends State<SettingsWindow> {
     );
   }
 
-  /// 开机自启设置变更回调
   Future<void> _onAutoStartChanged(bool value) async {
     final settingsService = SettingsService.instance;
     final result = await settingsService.setAutoStart(value);
@@ -464,7 +462,6 @@ class _SettingsWindowState extends State<SettingsWindow> {
     }
   }
 
-  /// 始终置底设置变更回调
   Future<void> _onAlwaysOnBottomChanged(bool value) async {
     final settingsService = SettingsService.instance;
     final success = await settingsService.setAlwaysOnBottom(value);
@@ -479,7 +476,6 @@ class _SettingsWindowState extends State<SettingsWindow> {
   }
 
 
-  /// 明暗模式设置变更回调
   Future<void> _onDarkModeChanged(bool value) async {
     final settingsService = SettingsService.instance;
     final success = await settingsService.setDarkMode(value);
@@ -488,14 +484,12 @@ class _SettingsWindowState extends State<SettingsWindow> {
       setState(() {
         _darkModeEnabled = value;
       });
-      // 通知主应用主题已变更
       widget.onThemeChanged?.call();
     } else {
       // 设置失败，静默处理
     }
   }
 
-  /// 背景不透明度设置变更回调
   Future<void> _onBackgroundOpacityChanged(double value) async {
     final settingsService = SettingsService.instance;
     final success = await settingsService.setBackgroundOpacity(value);
@@ -504,7 +498,6 @@ class _SettingsWindowState extends State<SettingsWindow> {
       setState(() {
         _backgroundOpacity = value;
       });
-      // 通知主应用更新背景设置
       widget.onSettingsChanged?.call();
     } else {
       // 设置失败，静默处理
@@ -517,10 +510,7 @@ class _SettingsWindowState extends State<SettingsWindow> {
       barrierDismissible: false,
       builder: (context) => OOBEDialog(
         onCompleted: () {
-          // OOBE完成后重新加载设置页面的状态
           _loadSettings();
-          
-          // 通知主应用主题和设置变更
           if (widget.onThemeChanged != null) {
             widget.onThemeChanged!();
           }
@@ -606,7 +596,6 @@ class _SettingsWindowState extends State<SettingsWindow> {
     );
   }
 
-  // 构建关于卡片 - 大卡片展示应用信息
   Widget _buildAboutCard(ColorScheme colorScheme) {
     return FutureBuilder<PackageInfo>(
       future: PackageInfo.fromPlatform(),
@@ -734,20 +723,18 @@ class _SettingsWindowState extends State<SettingsWindow> {
           ),
           actionsAlignment: MainAxisAlignment.spaceBetween,
           actions: [
-            // 左侧的第三方库按钮
             TextButton.icon(
               onPressed: () {
-                Navigator.of(context).pop(); // 关闭当前对话框
+                Navigator.of(context).pop();
                 showLicensePage(
                   context: context,
                   applicationName: 'FinitoBoard',
-                  applicationVersion: null, // 会自动从 pubspec.yaml 获取
+                  applicationVersion: null,
                 );
               },
               icon: const Icon(Icons.extension, size: 18),
               label: const Text('第三方库'),
             ),
-            // 右侧的确定按钮
             FilledButton(
               onPressed: () => Navigator.of(context).pop(),
               style: FilledButton.styleFrom(
