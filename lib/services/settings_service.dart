@@ -438,4 +438,48 @@ class SettingsService {
     }
   }
 
+  /// 获取背景图片路径
+  String? getBackgroundImagePath() {
+    final config = JsonStorageService.instance.getAppConfig();
+    return config.backgroundImagePath;
+  }
+
+  /// 设置背景图片路径
+  Future<bool> setBackgroundImagePath(String? path) async {
+    try {
+      // 更新JSON配置
+      final storageService = JsonStorageService.instance;
+      final currentConfig = storageService.getAppConfig();
+      final updatedConfig = currentConfig.copyWith(
+        backgroundImagePath: path,
+      );
+      await storageService.saveAppConfig(updatedConfig);
+      return true;
+    } catch (e) {
+      return false;
+    }
+  }
+
+  /// 获取背景图片显示模式
+  int getBackgroundImageMode() {
+    final config = JsonStorageService.instance.getAppConfig();
+    return config.backgroundImageMode;
+  }
+
+  /// 设置背景图片显示模式: 0=适应, 1=填充, 2=拉伸
+  Future<bool> setBackgroundImageMode(int mode) async {
+    try {
+      // 更新JSON配置
+      final storageService = JsonStorageService.instance;
+      final currentConfig = storageService.getAppConfig();
+      final updatedConfig = currentConfig.copyWith(
+        backgroundImageMode: mode,
+      );
+      await storageService.saveAppConfig(updatedConfig);
+      return true;
+    } catch (e) {
+      return false;
+    }
+  }
+
 }

@@ -10,6 +10,8 @@ class AppConfig {
   final bool firstLaunch; // 是否首次启动
   final bool showInTaskbar; // 是否在任务栏显示
   final int? themeColor; // 自定义主题色，null表示使用默认色
+  final String? backgroundImagePath; // 背景图片路径
+  final int backgroundImageMode; // 背景图片显示模式: 0=适应, 1=填充, 2=拉伸
 
   const AppConfig({
     this.theme = 'light',
@@ -23,6 +25,8 @@ class AppConfig {
     this.firstLaunch = true,
     this.showInTaskbar = false,
     this.themeColor,
+    this.backgroundImagePath,
+    this.backgroundImageMode = 0,
   });
 
   AppConfig copyWith({
@@ -37,6 +41,8 @@ class AppConfig {
     bool? firstLaunch,
     bool? showInTaskbar,
     int? themeColor,
+    String? backgroundImagePath,
+    int? backgroundImageMode,
   }) {
     return AppConfig(
       theme: theme ?? this.theme,
@@ -50,6 +56,8 @@ class AppConfig {
       firstLaunch: firstLaunch ?? this.firstLaunch,
       showInTaskbar: showInTaskbar ?? this.showInTaskbar,
       themeColor: themeColor ?? this.themeColor,
+      backgroundImagePath: backgroundImagePath ?? this.backgroundImagePath,
+      backgroundImageMode: backgroundImageMode ?? this.backgroundImageMode,
     );
   }
 
@@ -67,6 +75,8 @@ class AppConfig {
       'firstLaunch': firstLaunch,
       'showInTaskbar': showInTaskbar,
       'themeColor': themeColor,
+      'backgroundImagePath': backgroundImagePath,
+      'backgroundImageMode': backgroundImageMode,
     };
   }
 
@@ -84,6 +94,8 @@ class AppConfig {
       firstLaunch: json['firstLaunch'] as bool? ?? true,
       showInTaskbar: json['showInTaskbar'] as bool? ?? false,
       themeColor: json['themeColor'] as int?,
+      backgroundImagePath: json['backgroundImagePath'] as String?,
+      backgroundImageMode: json['backgroundImageMode'] as int? ?? 0,
     );
   }
 }

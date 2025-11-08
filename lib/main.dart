@@ -1,5 +1,5 @@
 import 'dart:async';
-import 'dart:io' show Platform;
+import 'dart:io' show Platform, File;
 import 'package:flutter/foundation.dart';
 import 'package:flutter/material.dart';
 import 'package:flutter_localizations/flutter_localizations.dart';
@@ -181,6 +181,10 @@ class _HomeworkBoardState extends State<HomeworkBoard> with WindowListener, Tick
   // 背景不透明度
   double _backgroundOpacity = 1.0;
   
+  // 背景图片相关
+  String? _backgroundImagePath;
+  int _backgroundImageMode = 0;
+  
   // 快捷菜单动画控制器
   late AnimationController _quickMenuAnimationController;
   late Animation<double> _quickMenuOpacityAnimation;
@@ -299,6 +303,8 @@ class _HomeworkBoardState extends State<HomeworkBoard> with WindowListener, Tick
     final settingsService = SettingsService.instance;
     setState(() {
       _backgroundOpacity = settingsService.getBackgroundOpacity();
+      _backgroundImagePath = settingsService.getBackgroundImagePath();
+      _backgroundImageMode = settingsService.getBackgroundImageMode();
     });
   }
 
@@ -669,6 +675,13 @@ class _HomeworkBoardState extends State<HomeworkBoard> with WindowListener, Tick
                 color: _isFullScreen 
                     ? Theme.of(context).colorScheme.surface
                     : Theme.of(context).colorScheme.surface.withValues(alpha: _backgroundOpacity),
+                image: _backgroundImagePath != null && _backgroundImagePath!.isNotEmpty
+                    ? DecorationImage(
+                        image: FileImage(File(_backgroundImagePath!)),
+                        fit: _getBoxFitFromMode(_backgroundImageMode),
+                        opacity: 0.3, // 半透明显示
+                      )
+                    : null,
                 borderRadius: _isFullScreen 
                     ? BorderRadius.zero 
                     : BorderRadius.circular(12),
@@ -1427,6 +1440,19 @@ class _HomeworkBoardState extends State<HomeworkBoard> with WindowListener, Tick
       );
     } catch (e) {
       // 保存失败，静默处理
+    }
+  }
+
+  BoxFit _getBoxFitFromMode(int mode) {
+    switch (mode) {
+      case 0:
+        return BoxFit.contain; // 适应
+      case 1:
+        return BoxFit.cover; // 填充
+      case 2:
+        return BoxFit.fill; // 拉伸
+      default:
+        return BoxFit.contain;
     }
   }
 }

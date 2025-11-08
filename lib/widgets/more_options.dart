@@ -1,8 +1,11 @@
 import 'dart:async';
+import 'dart:io';
 import 'package:flutter/material.dart';
 import 'package:flutter/services.dart';
 import 'package:url_launcher/url_launcher.dart';
 import 'package:package_info_plus/package_info_plus.dart';
+import 'package:file_picker/file_picker.dart';
+import 'package:window_manager/window_manager.dart';
 import '../services/settings_service.dart';
 import 'oobe_dialog.dart';
 
@@ -21,7 +24,7 @@ class MoreOptionsWindow extends StatefulWidget {
   State<MoreOptionsWindow> createState() => _MoreOptionsWindowState();
 }
 
-class _MoreOptionsWindowState extends State<MoreOptionsWindow> {
+class _MoreOptionsWindowState extends State<MoreOptionsWindow> with WindowListener {
   bool _autoStartEnabled = false;
   // 0 = 常规, 1 = 置顶, 2 = 置底
   int _windowLayer = 0;
@@ -30,6 +33,8 @@ class _MoreOptionsWindowState extends State<MoreOptionsWindow> {
   bool _showInTaskbarEnabled = false;
   double _backgroundOpacity = 0.95;
   int? _themeColor; // 自定义主题色
+  String? _backgroundImagePath; // 背景图片路径
+  int _backgroundImageMode = 0; // 背景图片显示模式: 0=适应, 1=填充, 2=拉伸
   bool _isLoading = true;
 
   int _selectedNavIndex = 0;
@@ -50,13 +55,30 @@ class _MoreOptionsWindowState extends State<MoreOptionsWindow> {
     super.initState();
     _loadSettings();
     _scrollController.addListener(_onScroll);
+    // 监听窗口大小变化以便实时更新预览
+    try {
+      windowManager.addListener(this);
+    } catch (e) {
+      // 忽略在不支持的平台上的错误
+    }
   }
 
   @override
   void dispose() {
     _scrollController.dispose();
+    try {
+      windowManager.removeListener(this);
+    } catch (e) {
+      // 忽略
+    }
     _manualSelectionTimer?.cancel();
     super.dispose();
+  }
+
+  @override
+  void onWindowResize() {
+    // 触发 rebuild，以便 FutureBuilder 重新获取窗口尺寸并更新预览
+    if (mounted) setState(() {});
   }
 
   void _onScroll() {
@@ -111,6 +133,8 @@ class _MoreOptionsWindowState extends State<MoreOptionsWindow> {
     final savedBackgroundOpacity = settingsService.getBackgroundOpacity();
     final savedShowInTaskbar = settingsService.getShowInTaskbar();
     final savedThemeColor = settingsService.getThemeColor();
+    final savedBackgroundImagePath = settingsService.getBackgroundImagePath();
+    final savedBackgroundImageMode = settingsService.getBackgroundImageMode();
 
     final actualAutoStart = await settingsService.checkAutoStartStatus();
 
@@ -121,6 +145,8 @@ class _MoreOptionsWindowState extends State<MoreOptionsWindow> {
       _backgroundOpacity = savedBackgroundOpacity;
       _showInTaskbarEnabled = savedShowInTaskbar;
       _themeColor = savedThemeColor;
+      _backgroundImagePath = savedBackgroundImagePath;
+      _backgroundImageMode = savedBackgroundImageMode;
       _isLoading = false;
     });
   }
@@ -264,6 +290,17 @@ class _MoreOptionsWindowState extends State<MoreOptionsWindow> {
             subtitle: '自定义应用的主题色',
             value: _themeColor,
             onChanged: _onThemeColorChanged,
+          ),
+          const SizedBox(height: 16),
+          _buildBackgroundImagePicker(
+            icon: Icons.image,
+            title: '背景图片',
+            subtitle: '选择在主界面背景显示的图片',
+            path: _backgroundImagePath,
+            mode: _backgroundImageMode,
+            onPathChanged: _onBackgroundImagePathChanged,
+            onModeChanged: _onBackgroundImageModeChanged,
+            onClear: _onClearBackgroundImage,
           ),
           const SizedBox(height: 32),
 
@@ -812,6 +849,38 @@ class _MoreOptionsWindowState extends State<MoreOptionsWindow> {
     }
   }
 
+  Future<void> _onBackgroundImagePathChanged(String? path) async {
+    final settingsService = SettingsService.instance;
+    final success = await settingsService.setBackgroundImagePath(path);
+
+    if (success) {
+      setState(() {
+        _backgroundImagePath = path;
+      });
+      widget.onSettingsChanged?.call();
+    } else {
+      // 设置失败，静默处理
+    }
+  }
+
+  Future<void> _onBackgroundImageModeChanged(int mode) async {
+    final settingsService = SettingsService.instance;
+    final success = await settingsService.setBackgroundImageMode(mode);
+
+    if (success) {
+      setState(() {
+        _backgroundImageMode = mode;
+      });
+      widget.onSettingsChanged?.call();
+    } else {
+      // 设置失败，静默处理
+    }
+  }
+
+  Future<void> _onClearBackgroundImage() async {
+    await _onBackgroundImagePathChanged(null);
+  }
+
   Future<void> _onShowInTaskbarChanged(bool value) async {
     final settingsService = SettingsService.instance;
     final success = await settingsService.setShowInTaskbar(value);
@@ -1265,5 +1334,255 @@ class _MoreOptionsWindowState extends State<MoreOptionsWindow> {
         ),
       ],
     );
+  }
+
+  Widget _buildBackgroundImagePicker({
+    required IconData icon,
+    required String title,
+    required String subtitle,
+    required String? path,
+    required int mode,
+    required ValueChanged<String?> onPathChanged,
+    required ValueChanged<int> onModeChanged,
+    required VoidCallback onClear,
+  }) {
+    final colorScheme = Theme.of(context).colorScheme;
+    final hasImage = path != null && path.isNotEmpty;
+
+    return Container(
+      padding: const EdgeInsets.all(16),
+      decoration: BoxDecoration(
+        color: colorScheme.surface,
+        borderRadius: BorderRadius.circular(12),
+        boxShadow: [
+          BoxShadow(
+            color: Colors.black.withValues(alpha: 0.05),
+            blurRadius: 8,
+            offset: const Offset(0, 2),
+          ),
+        ],
+      ),
+      child: Row(
+        children: [
+          // 左侧内容
+          Expanded(
+            flex: 2,
+            child: Column(
+              crossAxisAlignment: CrossAxisAlignment.start,
+              children: [
+                Row(
+                  children: [
+                    Container(
+                      padding: const EdgeInsets.all(12),
+                      decoration: BoxDecoration(
+                        color: colorScheme.primaryContainer,
+                        borderRadius: BorderRadius.circular(12),
+                      ),
+                      child: Icon(
+                        icon,
+                        color: colorScheme.onPrimaryContainer,
+                        size: 24,
+                      ),
+                    ),
+                    const SizedBox(width: 16),
+                    Expanded(
+                      child: Column(
+                        crossAxisAlignment: CrossAxisAlignment.start,
+                        children: [
+                          Text(
+                            title,
+                            style: TextStyle(
+                              fontSize: 16,
+                              fontWeight: FontWeight.w500,
+                              color: colorScheme.onSurface,
+                            ),
+                          ),
+                          const SizedBox(height: 4),
+                          Text(
+                            subtitle,
+                            style: TextStyle(
+                              fontSize: 13,
+                              color: colorScheme.onSurfaceVariant,
+                            ),
+                          ),
+                        ],
+                      ),
+                    ),
+                  ],
+                ),
+                const SizedBox(height: 16),
+                // 按钮行
+                Row(
+                  children: [
+                    Expanded(
+                      child: FilledButton.icon(
+                        onPressed: () async {
+                          final result = await FilePicker.platform.pickFiles(
+                            type: FileType.image,
+                            allowMultiple: false,
+                          );
+                          if (result != null && result.files.isNotEmpty) {
+                            onPathChanged(result.files.first.path);
+                          }
+                        },
+                        icon: const Icon(Icons.folder_open, size: 18),
+                        label: Text(hasImage ? '更换图片' : '选择图片'),
+                      ),
+                    ),
+                    if (hasImage) ...[
+                      const SizedBox(width: 12),
+                      TextButton.icon(
+                        onPressed: onClear,
+                        icon: const Icon(Icons.clear, size: 18),
+                        label: const Text('清空'),
+                      ),
+                    ],
+                  ],
+                ),
+                if (hasImage) ...[
+                  const SizedBox(height: 16),
+                  // 显示模式选择
+                  Row(
+                    children: [
+                      Text(
+                        '显示模式:',
+                        style: TextStyle(
+                          fontSize: 14,
+                          color: colorScheme.onSurfaceVariant,
+                        ),
+                      ),
+                      const SizedBox(width: 12),
+                      Expanded(
+                        child: DropdownButton<int>(
+                          value: mode,
+                          underline: const SizedBox.shrink(),
+                          dropdownColor: colorScheme.surface,
+                          elevation: 1,
+                          borderRadius: BorderRadius.all(Radius.circular(8)),
+                          items: const [
+                            DropdownMenuItem(value: 0, child: Text('适应')),
+                            DropdownMenuItem(value: 1, child: Text('填充')),
+                            DropdownMenuItem(value: 2, child: Text('拉伸')),
+                          ],
+                          onChanged: (v) {
+                            if (v != null) {
+                              onModeChanged(v);
+                            }
+                          },
+                        ),
+                      ),
+                    ],
+                  ),
+                ],
+              ],
+            ),
+          ),
+          const SizedBox(width: 16),
+          // 右侧图片预览
+          Expanded(
+            flex: 1,
+            child: hasImage
+                ? FutureBuilder<Size>(
+                    future: _getWindowSize(),
+                    builder: (context, snapshot) {
+                      final windowSize = snapshot.data ?? const Size(1200, 800);
+                      final aspectRatio = windowSize.width / windowSize.height;
+
+                      // 目标外框高度限制（不一定等于最终内框高度）
+                      const double outerHeight = 120.0;
+                      const double maxInnerWidth = 160.0;
+                      const double minInnerWidth = 80.0;
+
+                      // 计算内框尺寸，使其宽高比等于窗口宽高比
+                      double innerWidth = outerHeight * aspectRatio;
+                      double innerHeight = outerHeight;
+
+                      // 如果宽度越界，则按宽度限制并调整高度以保持比率
+                      if (innerWidth > maxInnerWidth) {
+                        innerWidth = maxInnerWidth;
+                        innerHeight = innerWidth / aspectRatio;
+                      } else if (innerWidth < minInnerWidth) {
+                        innerWidth = minInnerWidth;
+                        innerHeight = innerWidth / aspectRatio;
+                      }
+
+                      return Container(
+                        height: outerHeight,
+                        decoration: BoxDecoration(
+                          borderRadius: BorderRadius.circular(8),
+                        ),
+                        child: Center(
+                          child: ClipRRect(
+                            borderRadius: BorderRadius.circular(6),
+                            child: SizedBox(
+                              width: innerWidth,
+                              height: innerHeight,
+                              child: DecoratedBox(
+                                decoration: BoxDecoration(
+                                  color: Colors.black12,
+                                ),
+                                child: FittedBox(
+                                  fit: BoxFit.fill,
+                                  child: SizedBox(
+                                    width: innerWidth,
+                                    height: innerHeight,
+                                    child: Image.file(
+                                      File(path),
+                                      fit: _getBoxFitFromMode(mode),
+                                    ),
+                                  ),
+                                ),
+                              ),
+                            ),
+                          ),
+                        ),
+                      );
+                    },
+                  )
+                : Container(
+                    height: 120,
+                    decoration: BoxDecoration(
+                      color: colorScheme.surfaceContainerHighest.withValues(alpha: 0.3),
+                      borderRadius: BorderRadius.circular(8),
+                      border: Border.all(
+                        color: colorScheme.outline.withValues(alpha: 0.3),
+                        width: 1,
+                      ),
+                    ),
+                    child: Center(
+                      child: Icon(
+                        Icons.image_not_supported,
+                        size: 48,
+                        color: colorScheme.onSurfaceVariant.withValues(alpha: 0.5),
+                      ),
+                    ),
+                  ),
+          ),
+        ],
+      ),
+    );
+  }
+
+  BoxFit _getBoxFitFromMode(int mode) {
+    switch (mode) {
+      case 0:
+        return BoxFit.contain; // 适应
+      case 1:
+        return BoxFit.cover; // 填充
+      case 2:
+        return BoxFit.fill; // 拉伸
+      default:
+        return BoxFit.contain;
+    }
+  }
+
+  Future<Size> _getWindowSize() async {
+    try {
+      final bounds = await windowManager.getBounds();
+      return Size(bounds.width, bounds.height);
+    } catch (e) {
+      // 如果获取失败，返回默认尺寸
+      return const Size(1200, 800);
+    }
   }
 }
