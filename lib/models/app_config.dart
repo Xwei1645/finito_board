@@ -7,7 +7,7 @@ class AppConfig {
   final List<String> availableTags; // 可用标签列表
   final double scaleFactor; // 界面缩放因子
   final int columnCount; // 作业列数
-  final bool alwaysOnBottom; // 始终置底设置
+  final int windowLevel; // 窗口层级: 0=常规, 1=置顶, 2=置底
   final double backgroundOpacity; // 背景不透明度
   final bool firstLaunch; // 是否首次启动
   final bool showInTaskbar; // 是否在任务栏显示
@@ -21,7 +21,7 @@ class AppConfig {
     this.availableTags = const [],
     this.scaleFactor = 100.0,
     this.columnCount = 3,
-    this.alwaysOnBottom = false,
+    this.windowLevel = 0,
     this.backgroundOpacity = 0.95,
     this.firstLaunch = true,
     this.showInTaskbar = false,
@@ -36,7 +36,7 @@ class AppConfig {
     List<String>? availableTags,
     double? scaleFactor,
     int? columnCount,
-    bool? alwaysOnBottom,
+    int? windowLevel,
     double? backgroundOpacity,
     bool? firstLaunch,
     bool? showInTaskbar,
@@ -50,7 +50,7 @@ class AppConfig {
       availableTags: availableTags ?? this.availableTags,
       scaleFactor: scaleFactor ?? this.scaleFactor,
       columnCount: columnCount ?? this.columnCount,
-      alwaysOnBottom: alwaysOnBottom ?? this.alwaysOnBottom,
+      windowLevel: windowLevel ?? this.windowLevel,
       backgroundOpacity: backgroundOpacity ?? this.backgroundOpacity,
       firstLaunch: firstLaunch ?? this.firstLaunch,
       showInTaskbar: showInTaskbar ?? this.showInTaskbar,
@@ -68,7 +68,7 @@ class AppConfig {
       'availableTags': availableTags,
       'scaleFactor': scaleFactor,
       'columnCount': columnCount,
-      'alwaysOnBottom': alwaysOnBottom,
+      'windowLevel': windowLevel,
       'backgroundOpacity': backgroundOpacity,
       'firstLaunch': firstLaunch,
       'showInTaskbar': showInTaskbar,
@@ -86,7 +86,7 @@ class AppConfig {
       availableTags: List<String>.from(json['availableTags'] as List? ?? []),
       scaleFactor: (json['scaleFactor'] as num?)?.toDouble() ?? 100.0,
       columnCount: json['columnCount'] as int? ?? 3,
-      alwaysOnBottom: json['alwaysOnBottom'] as bool? ?? false,
+      windowLevel: json['windowLevel'] as int? ?? 0,
       backgroundOpacity: (json['backgroundOpacity'] as num?)?.toDouble() ?? 0.95,
       firstLaunch: json['firstLaunch'] as bool? ?? true,
       showInTaskbar: json['showInTaskbar'] as bool? ?? false,

@@ -51,11 +51,9 @@ class SettingsService {
   
   /// 应用已保存的设置
   Future<void> _applySettings() async {
-    // 应用始终置底设置
-    final alwaysOnBottom = getAlwaysOnBottom();
-    if (alwaysOnBottom) {
-      await setAlwaysOnBottom(true);
-    }
+    // 应用窗口层级设置
+    final windowLevel = getWindowLevel();
+    await setWindowLevel(windowLevel);
   }
   
   /// 获取开机自启状态
@@ -111,18 +109,25 @@ class SettingsService {
     }
   }
   
-  /// 获取始终置底状态
-  bool getAlwaysOnBottom() {
+  /// 获取窗口层级状态
+  int getWindowLevel() {
     final config = JsonStorageService.instance.getAppConfig();
-    return config.alwaysOnBottom;
+    return config.windowLevel;
   }
   
-  /// 设置始终置底
-  Future<bool> setAlwaysOnBottom(bool enabled) async {
+  /// 设置窗口层级: 0=常规, 1=置顶, 2=置底
+  Future<bool> setWindowLevel(int level) async {
     try {
-      if (enabled) {
+      if (level == 1) {
+        // 置顶
+        await windowManager.setAlwaysOnTop(true);
+      } else if (level == 2) {
+        // 置底
+        await windowManager.setAlwaysOnTop(false);
         await windowManager.setAlwaysOnBottom(true);
       } else {
+        // 常规
+        await windowManager.setAlwaysOnTop(false);
         await windowManager.setAlwaysOnBottom(false);
       }
       
@@ -130,7 +135,7 @@ class SettingsService {
       final storageService = JsonStorageService.instance;
       final currentConfig = storageService.getAppConfig();
       final updatedConfig = currentConfig.copyWith(
-        alwaysOnBottom: enabled,
+        windowLevel: level,
       );
       await storageService.saveAppConfig(updatedConfig);
       return true;

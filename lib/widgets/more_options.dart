@@ -3,7 +3,6 @@ import 'package:flutter/material.dart';
 import 'package:flutter/services.dart';
 import 'package:url_launcher/url_launcher.dart';
 import 'package:package_info_plus/package_info_plus.dart';
-import 'package:window_manager/window_manager.dart';
 import '../services/settings_service.dart';
 import 'oobe_dialog.dart';
 
@@ -106,7 +105,7 @@ class _MoreOptionsWindowState extends State<MoreOptionsWindow> {
   Future<void> _loadSettings() async {
     final settingsService = SettingsService.instance;
 
-    final savedAlwaysOnBottom = settingsService.getAlwaysOnBottom();
+    final savedWindowLevel = settingsService.getWindowLevel();
     final savedDarkMode = settingsService.getDarkMode();
     final savedBackgroundOpacity = settingsService.getBackgroundOpacity();
     final savedShowInTaskbar = settingsService.getShowInTaskbar();
@@ -115,8 +114,8 @@ class _MoreOptionsWindowState extends State<MoreOptionsWindow> {
 
     setState(() {
       _autoStartEnabled = actualAutoStart;
-  _windowLayer = savedAlwaysOnBottom ? 2 : 0;
-  _themeMode = savedDarkMode ? 1 : 0;
+      _windowLayer = savedWindowLevel;
+      _themeMode = savedDarkMode ? 1 : 0;
       _backgroundOpacity = savedBackgroundOpacity;
       _showInTaskbarEnabled = savedShowInTaskbar;
       _isLoading = false;
@@ -481,30 +480,13 @@ class _MoreOptionsWindowState extends State<MoreOptionsWindow> {
     final settingsService = SettingsService.instance;
 
     try {
-      if (value == 1) {
-        // 置顶
-        await windowManager.setAlwaysOnTop(true);
-        // 取消置底并持久化
-        await settingsService.setAlwaysOnBottom(false);
-      } else if (value == 2) {
-        // 置底
-        await windowManager.setAlwaysOnTop(false);
-        final success = await settingsService.setAlwaysOnBottom(true);
-        if (!success) {
-          // 如果设置失败，不切换状态
-          return;
-        }
-      } else {
-        // 常规
-        await windowManager.setAlwaysOnTop(false);
-        await settingsService.setAlwaysOnBottom(false);
+      final success = await settingsService.setWindowLevel(value);
+      if (success) {
+        setState(() {
+          _windowLayer = value;
+        });
+        widget.onSettingsChanged?.call();
       }
-
-      setState(() {
-        _windowLayer = value;
-      });
-
-      widget.onSettingsChanged?.call();
     } catch (e) {
       // 静默处理异常
     }
