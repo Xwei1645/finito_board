@@ -95,11 +95,15 @@ class SettingsService {
       final currentConfig = storageService.getAppConfig();
       final updatedConfig = AppConfig(
         theme: currentConfig.theme,
-        language: currentConfig.language,
         autoStartup: enabled,
-        enableNotifications: currentConfig.enableNotifications,
         availableSubjects: currentConfig.availableSubjects,
         availableTags: currentConfig.availableTags,
+        scaleFactor: currentConfig.scaleFactor,
+        columnCount: currentConfig.columnCount,
+        windowLevel: currentConfig.windowLevel,
+        backgroundOpacity: currentConfig.backgroundOpacity,
+        firstLaunch: currentConfig.firstLaunch,
+        showInTaskbar: currentConfig.showInTaskbar,
       );
       await storageService.saveAppConfig(updatedConfig);
       return const SettingsResult.success();
@@ -186,11 +190,15 @@ class SettingsService {
       final currentConfig = storageService.getAppConfig();
       final updatedConfig = AppConfig(
         theme: enabled ? 'dark' : 'light',
-        language: currentConfig.language,
         autoStartup: currentConfig.autoStartup,
-        enableNotifications: currentConfig.enableNotifications,
         availableSubjects: currentConfig.availableSubjects,
         availableTags: currentConfig.availableTags,
+        scaleFactor: currentConfig.scaleFactor,
+        columnCount: currentConfig.columnCount,
+        windowLevel: currentConfig.windowLevel,
+        backgroundOpacity: currentConfig.backgroundOpacity,
+        firstLaunch: currentConfig.firstLaunch,
+        showInTaskbar: currentConfig.showInTaskbar,
       );
       await storageService.saveAppConfig(updatedConfig);
       return true;
