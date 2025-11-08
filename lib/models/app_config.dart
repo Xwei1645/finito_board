@@ -10,6 +10,7 @@ class AppConfig {
   final bool alwaysOnBottom; // 始终置底设置
   final double backgroundOpacity; // 背景不透明度
   final bool firstLaunch; // 是否首次启动
+  final bool showInTaskbar; // 是否在任务栏显示
 
   const AppConfig({
     this.theme = 'system',
@@ -23,6 +24,7 @@ class AppConfig {
     this.alwaysOnBottom = false,
     this.backgroundOpacity = 0.95,
     this.firstLaunch = true,
+    this.showInTaskbar = false,
   });
 
   AppConfig copyWith({
@@ -37,6 +39,7 @@ class AppConfig {
     bool? alwaysOnBottom,
     double? backgroundOpacity,
     bool? firstLaunch,
+    bool? showInTaskbar,
   }) {
     return AppConfig(
       theme: theme ?? this.theme,
@@ -50,6 +53,7 @@ class AppConfig {
       alwaysOnBottom: alwaysOnBottom ?? this.alwaysOnBottom,
       backgroundOpacity: backgroundOpacity ?? this.backgroundOpacity,
       firstLaunch: firstLaunch ?? this.firstLaunch,
+      showInTaskbar: showInTaskbar ?? this.showInTaskbar,
     );
   }
 
@@ -67,6 +71,7 @@ class AppConfig {
       'alwaysOnBottom': alwaysOnBottom,
       'backgroundOpacity': backgroundOpacity,
       'firstLaunch': firstLaunch,
+      'showInTaskbar': showInTaskbar,
     };
   }
 
@@ -84,6 +89,7 @@ class AppConfig {
       alwaysOnBottom: json['alwaysOnBottom'] as bool? ?? false,
       backgroundOpacity: (json['backgroundOpacity'] as num?)?.toDouble() ?? 0.95,
       firstLaunch: json['firstLaunch'] as bool? ?? true,
+      showInTaskbar: json['showInTaskbar'] as bool? ?? false,
     );
   }
 }

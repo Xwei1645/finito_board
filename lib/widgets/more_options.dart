@@ -3,6 +3,7 @@ import 'package:flutter/material.dart';
 import 'package:flutter/services.dart';
 import 'package:url_launcher/url_launcher.dart';
 import 'package:package_info_plus/package_info_plus.dart';
+import 'package:window_manager/window_manager.dart';
 import '../services/settings_service.dart';
 import 'oobe_dialog.dart';
 
@@ -23,8 +24,11 @@ class MoreOptionsWindow extends StatefulWidget {
 
 class _MoreOptionsWindowState extends State<MoreOptionsWindow> {
   bool _autoStartEnabled = false;
-  bool _alwaysOnBottomEnabled = false;
-  bool _darkModeEnabled = false;
+  // 0 = 常规, 1 = 置顶, 2 = 置底
+  int _windowLayer = 0;
+  // 0 = 亮色, 1 = 暗色
+  int _themeMode = 0;
+  bool _showInTaskbarEnabled = false;
   double _backgroundOpacity = 0.95;
   bool _isLoading = true;
 
@@ -105,14 +109,16 @@ class _MoreOptionsWindowState extends State<MoreOptionsWindow> {
     final savedAlwaysOnBottom = settingsService.getAlwaysOnBottom();
     final savedDarkMode = settingsService.getDarkMode();
     final savedBackgroundOpacity = settingsService.getBackgroundOpacity();
+    final savedShowInTaskbar = settingsService.getShowInTaskbar();
 
     final actualAutoStart = await settingsService.checkAutoStartStatus();
 
     setState(() {
       _autoStartEnabled = actualAutoStart;
-      _alwaysOnBottomEnabled = savedAlwaysOnBottom;
-      _darkModeEnabled = savedDarkMode;
+  _windowLayer = savedAlwaysOnBottom ? 2 : 0;
+  _themeMode = savedDarkMode ? 1 : 0;
       _backgroundOpacity = savedBackgroundOpacity;
+      _showInTaskbarEnabled = savedShowInTaskbar;
       _isLoading = false;
     });
   }
@@ -149,17 +155,17 @@ class _MoreOptionsWindowState extends State<MoreOptionsWindow> {
                     minWidth: 120,
                     destinations: const [
                       NavigationRailDestination(
-                        icon: Icon(Icons.power_settings_new_outlined, size: 28),
-                        selectedIcon: Icon(Icons.power_settings_new, size: 28),
+                        icon: Icon(Icons.build_outlined, size: 28),
+                        selectedIcon: Icon(Icons.build, size: 28),
                         label: Text('系统'),
                         padding: EdgeInsets.symmetric(vertical: 8),
                       ),
-                      NavigationRailDestination(
-                        icon: Icon(Icons.window_outlined, size: 28),
-                        selectedIcon: Icon(Icons.window, size: 28),
-                        label: Text('窗口'),
-                        padding: EdgeInsets.symmetric(vertical: 8),
-                      ),
+                                  NavigationRailDestination(
+                                    icon: Icon(Icons.desktop_windows_outlined, size: 28),
+                                    selectedIcon: Icon(Icons.desktop_windows, size: 28),
+                                    label: Text('显示'),
+                                    padding: EdgeInsets.symmetric(vertical: 8),
+                                  ),
                       NavigationRailDestination(
                         icon: Icon(Icons.palette_outlined, size: 28),
                         selectedIcon: Icon(Icons.palette, size: 28),
@@ -169,7 +175,7 @@ class _MoreOptionsWindowState extends State<MoreOptionsWindow> {
                       NavigationRailDestination(
                         icon: Icon(Icons.settings_outlined, size: 28),
                         selectedIcon: Icon(Icons.settings, size: 28),
-                        label: Text('其他'),
+                        label: Text('高级'),
                         padding: EdgeInsets.symmetric(vertical: 8),
                       ),
                       NavigationRailDestination(
@@ -221,25 +227,25 @@ class _MoreOptionsWindowState extends State<MoreOptionsWindow> {
           ),
           const SizedBox(height: 32),
 
-          _buildCategoryHeader(1, '窗口', colorScheme),
+          _buildCategoryHeader(1, '显示', colorScheme),
           const SizedBox(height: 16),
-          _buildSettingItem(
-            icon: Icons.vertical_align_bottom,
-            title: '始终置底',
-            subtitle: '始终保窗口在其他窗口下方',
-            value: _alwaysOnBottomEnabled,
-            onChanged: _onAlwaysOnBottomChanged,
+          _buildWindowLayerItem(
+            icon: Icons.layers,
+            title: '窗口层级',
+            subtitle: '设置窗口的显示层级',
+            value: _windowLayer,
+            onChanged: _onWindowLayerChanged,
           ),
           const SizedBox(height: 32),
 
           _buildCategoryHeader(2, '外观', colorScheme),
           const SizedBox(height: 16),
-          _buildSettingItem(
-            icon: Icons.dark_mode,
-            title: '深色模式',
-            subtitle: '切换应用的明暗主题',
-            value: _darkModeEnabled,
-            onChanged: _onDarkModeChanged,
+          _buildThemeModeItem(
+            icon: Icons.brightness_6,
+            title: '明暗主题',
+            subtitle: '选择应用的主题',
+            value: _themeMode,
+            onChanged: _onThemeModeChanged,
           ),
           const SizedBox(height: 16),
           _buildOpacitySlider(
@@ -251,7 +257,15 @@ class _MoreOptionsWindowState extends State<MoreOptionsWindow> {
           ),
           const SizedBox(height: 32),
 
-          _buildCategoryHeader(3, '其他', colorScheme),
+          _buildCategoryHeader(3, '高级', colorScheme),
+          const SizedBox(height: 16),
+          _buildSettingItem(
+            icon: Icons.task,
+            title: '在任务栏显示',
+            subtitle: '在任务栏中显示应用图标',
+            value: _showInTaskbarEnabled,
+            onChanged: _onShowInTaskbarChanged,
+          ),
           const SizedBox(height: 16),
           _buildActionItem(
             icon: Icons.rocket_launch,
@@ -462,33 +476,234 @@ class _MoreOptionsWindowState extends State<MoreOptionsWindow> {
     }
   }
 
-  Future<void> _onAlwaysOnBottomChanged(bool value) async {
+  // 窗口层级变化处理：0=常规,1=置顶,2=置底
+  Future<void> _onWindowLayerChanged(int value) async {
     final settingsService = SettingsService.instance;
-    final success = await settingsService.setAlwaysOnBottom(value);
-    
-    if (success) {
+
+    try {
+      if (value == 1) {
+        // 置顶
+        await windowManager.setAlwaysOnTop(true);
+        // 取消置底并持久化
+        await settingsService.setAlwaysOnBottom(false);
+      } else if (value == 2) {
+        // 置底
+        await windowManager.setAlwaysOnTop(false);
+        final success = await settingsService.setAlwaysOnBottom(true);
+        if (!success) {
+          // 如果设置失败，不切换状态
+          return;
+        }
+      } else {
+        // 常规
+        await windowManager.setAlwaysOnTop(false);
+        await settingsService.setAlwaysOnBottom(false);
+      }
+
       setState(() {
-        _alwaysOnBottomEnabled = value;
+        _windowLayer = value;
       });
-    } else {
-      // 设置失败，静默处理
+
+      widget.onSettingsChanged?.call();
+    } catch (e) {
+      // 静默处理异常
     }
   }
 
+  Widget _buildWindowLayerItem({
+    required IconData icon,
+    required String title,
+    required String subtitle,
+    required int value,
+    required ValueChanged<int> onChanged,
+  }) {
+    final colorScheme = Theme.of(context).colorScheme;
 
-  Future<void> _onDarkModeChanged(bool value) async {
+    return Container(
+      padding: const EdgeInsets.all(16),
+      decoration: BoxDecoration(
+        color: colorScheme.surface,
+        borderRadius: BorderRadius.circular(12),
+        boxShadow: [
+          BoxShadow(
+            color: Colors.black.withValues(alpha: 0.05),
+            blurRadius: 8,
+            offset: const Offset(0, 2),
+          ),
+        ],
+      ),
+      child: Row(
+        children: [
+          Container(
+            padding: const EdgeInsets.all(12),
+            decoration: BoxDecoration(
+              color: colorScheme.primaryContainer,
+              borderRadius: BorderRadius.circular(12),
+            ),
+            child: Icon(
+              icon,
+              color: colorScheme.onPrimaryContainer,
+              size: 24,
+            ),
+          ),
+          const SizedBox(width: 16),
+          Expanded(
+            child: Column(
+              crossAxisAlignment: CrossAxisAlignment.start,
+              children: [
+                Text(
+                  title,
+                  style: TextStyle(
+                    fontSize: 16,
+                    fontWeight: FontWeight.w500,
+                    color: colorScheme.onSurface,
+                  ),
+                ),
+                const SizedBox(height: 4),
+                Text(
+                  subtitle,
+                  style: TextStyle(
+                    fontSize: 13,
+                    color: colorScheme.onSurfaceVariant,
+                  ),
+                ),
+              ],
+            ),
+          ),
+          Container(
+            padding: const EdgeInsets.symmetric(horizontal: 12, vertical: 6),
+            decoration: BoxDecoration(
+              color: colorScheme.primary.withValues(alpha: 0.06),
+              borderRadius: BorderRadius.circular(12),
+            ),
+            child: DropdownButton<int>(
+              value: value,
+              underline: const SizedBox.shrink(),
+              dropdownColor: colorScheme.surface,
+              elevation: 1,
+              borderRadius: BorderRadius.all(Radius.circular(12)),
+              items: const [
+                DropdownMenuItem(value: 1, child: Text('置顶')),
+                DropdownMenuItem(value: 0, child: Text('常规')),
+                DropdownMenuItem(value: 2, child: Text('置底')),
+              ],
+              onChanged: (v) {
+                if (v == null) return;
+                onChanged(v);
+              },
+            ),
+          ),
+        ],
+      ),
+    );
+  }
+
+
+  // 主题选择：0=亮色,1=暗色
+  Future<void> _onThemeModeChanged(int value) async {
     final settingsService = SettingsService.instance;
-    final success = await settingsService.setDarkMode(value);
-    
-    if (success) {
-      setState(() {
-        _darkModeEnabled = value;
-      });
-      widget.onThemeChanged?.call();
-    } else {
-      // 设置失败，静默处理
+    try {
+      final success = await settingsService.setDarkMode(value == 1);
+      if (success) {
+        setState(() {
+          _themeMode = value;
+        });
+        widget.onThemeChanged?.call();
+      }
+    } catch (e) {
+      // 静默处理
     }
   }
+
+  Widget _buildThemeModeItem({
+    required IconData icon,
+    required String title,
+    required String subtitle,
+    required int value,
+    required ValueChanged<int> onChanged,
+  }) {
+    final colorScheme = Theme.of(context).colorScheme;
+
+    return Container(
+      padding: const EdgeInsets.all(16),
+      decoration: BoxDecoration(
+        color: colorScheme.surface,
+        borderRadius: BorderRadius.circular(12),
+        boxShadow: [
+          BoxShadow(
+            color: Colors.black.withValues(alpha: 0.05),
+            blurRadius: 8,
+            offset: const Offset(0, 2),
+          ),
+        ],
+      ),
+      child: Row(
+        children: [
+          Container(
+            padding: const EdgeInsets.all(12),
+            decoration: BoxDecoration(
+              color: colorScheme.primaryContainer,
+              borderRadius: BorderRadius.circular(12),
+            ),
+            child: Icon(
+              icon,
+              color: colorScheme.onPrimaryContainer,
+              size: 24,
+            ),
+          ),
+          const SizedBox(width: 16),
+          Expanded(
+            child: Column(
+              crossAxisAlignment: CrossAxisAlignment.start,
+              children: [
+                Text(
+                  title,
+                  style: TextStyle(
+                    fontSize: 16,
+                    fontWeight: FontWeight.w500,
+                    color: colorScheme.onSurface,
+                  ),
+                ),
+                const SizedBox(height: 4),
+                Text(
+                  subtitle,
+                  style: TextStyle(
+                    fontSize: 13,
+                    color: colorScheme.onSurfaceVariant,
+                  ),
+                ),
+              ],
+            ),
+          ),
+          Container(
+            padding: const EdgeInsets.symmetric(horizontal: 12, vertical: 6),
+            decoration: BoxDecoration(
+              color: colorScheme.primary.withValues(alpha: 0.06),
+              borderRadius: BorderRadius.circular(12),
+            ),
+            child: DropdownButton<int>(
+              value: value,
+              underline: const SizedBox.shrink(),
+              dropdownColor: colorScheme.surface,
+              elevation: 1,
+              borderRadius: BorderRadius.all(Radius.circular(12)),
+              items: const [
+                DropdownMenuItem(value: 0, child: Text('亮色')),
+                DropdownMenuItem(value: 1, child: Text('暗色')),
+              ],
+              onChanged: (v) {
+                if (v == null) return;
+                onChanged(v);
+              },
+            ),
+          ),
+        ],
+      ),
+    );
+  }
+
+
+  // 已由 _onThemeModeChanged 处理主题切换
 
   Future<void> _onBackgroundOpacityChanged(double value) async {
     final settingsService = SettingsService.instance;
@@ -497,6 +712,20 @@ class _MoreOptionsWindowState extends State<MoreOptionsWindow> {
     if (success) {
       setState(() {
         _backgroundOpacity = value;
+      });
+      widget.onSettingsChanged?.call();
+    } else {
+      // 设置失败，静默处理
+    }
+  }
+
+  Future<void> _onShowInTaskbarChanged(bool value) async {
+    final settingsService = SettingsService.instance;
+    final success = await settingsService.setShowInTaskbar(value);
+    
+    if (success) {
+      setState(() {
+        _showInTaskbarEnabled = value;
       });
       widget.onSettingsChanged?.call();
     } else {

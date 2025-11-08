@@ -139,6 +139,34 @@ class SettingsService {
     }
   }
 
+  /// 获取在任务栏显示状态
+  bool getShowInTaskbar() {
+    final config = JsonStorageService.instance.getAppConfig();
+    return config.showInTaskbar;
+  }
+
+  /// 设置在任务栏显示
+  Future<bool> setShowInTaskbar(bool enabled) async {
+    try {
+      if (enabled) {
+        await windowManager.setSkipTaskbar(false);
+      } else {
+        await windowManager.setSkipTaskbar(true);
+      }
+
+      // 更新JSON配置
+      final storageService = JsonStorageService.instance;
+      final currentConfig = storageService.getAppConfig();
+      final updatedConfig = currentConfig.copyWith(
+        showInTaskbar: enabled,
+      );
+      await storageService.saveAppConfig(updatedConfig);
+      return true;
+    } catch (e) {
+      return false;
+    }
+  }
+
   /// 获取明暗模式状态
   bool getDarkMode() {
     final config = JsonStorageService.instance.getAppConfig();

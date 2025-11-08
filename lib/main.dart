@@ -41,7 +41,7 @@ void main() async {
       size: windowSize,
       center: savedWindowState == null,
       backgroundColor: Colors.transparent,
-      skipTaskbar: true,
+      skipTaskbar: !SettingsService.instance.getShowInTaskbar(),
       titleBarStyle: TitleBarStyle.hidden,
       windowButtonVisibility: false,
     );
