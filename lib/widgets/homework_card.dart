@@ -1,5 +1,4 @@
 import 'dart:convert';
-import 'package:finito_board/widgets/quill_content.dart';
 import 'package:flutter/material.dart';
 import 'package:flutter_quill/flutter_quill.dart';
 import 'package:intl/intl.dart';
@@ -29,15 +28,12 @@ class HomeworkCard extends StatefulWidget {
 
 class _HomeworkCardState extends State<HomeworkCard> {
   late QuillController _contentController;
-  late FocusNode _editorFocusNode;
   double _backgroundOpacity = 0.95;
 
   @override
   void initState() {
     super.initState();
     _contentController = QuillController.basic();
-    _contentController.readOnly = true;
-    _editorFocusNode = FocusNode();
     _loadSettings();
     if (widget.homework.content.isNotEmpty) {
       try {
@@ -94,7 +90,6 @@ class _HomeworkCardState extends State<HomeworkCard> {
   @override
   void dispose() {
     _contentController.dispose();
-    _editorFocusNode.dispose();
     super.dispose();
   }
 
@@ -139,42 +134,43 @@ class _HomeworkCardState extends State<HomeworkCard> {
   Widget build(BuildContext context) {
     final theme = Theme.of(context);
     final colorScheme = theme.colorScheme;
+    final textColor = colorScheme.onSurface;
 
-    return SizedBox(
-      width: double.infinity,
-      child: Card(
-        elevation: 0,
+    return GestureDetector(
+      onTap: widget.onTap,
+      child: AnimatedContainer(
+        duration: const Duration(milliseconds: 200),
+        width: double.infinity,
         margin: const EdgeInsets.symmetric(vertical: 8.0),
-        child: GestureDetector(
-            onTap: widget.onTap,
-            child: AnimatedContainer(
-              duration: const Duration(milliseconds: 200),
-              margin: const EdgeInsets.only(bottom: 8),
-              padding: const EdgeInsets.all(16), // MD3 间距
-              decoration: BoxDecoration(
-                color: _getCardBackgroundColor(colorScheme),
-                borderRadius: BorderRadius.circular(12), // 与快捷菜单保持一致的圆角
-                boxShadow: [
-                  BoxShadow(
-                    color: widget.isSelected 
-                        ? Colors.grey.withValues(alpha: 0.3) 
-                        : Colors.black.withValues(alpha: 0.08),
-                    spreadRadius: widget.isSelected ? 2 : 1,
-                    blurRadius: widget.isSelected ? 12 : 6,
-                    offset: Offset(0, widget.isSelected ? 4 : 2),
-                  ),
-                ],
-              ),
-              child: Column(
+        padding: const EdgeInsets.all(16), // MD3 间距
+        decoration: BoxDecoration(
+          color: _getCardBackgroundColor(colorScheme),
+          borderRadius: BorderRadius.circular(12), // 与快捷菜单保持一致的圆角
+        ),
+        child: Column(
                 crossAxisAlignment: CrossAxisAlignment.start,
                 children: [
                   // 富文本作业内容
                   widget.homework.content.isNotEmpty
                       ? GestureDetector(
                           onTap: widget.onTap,
-                          child: QuillContent(
-                            content: widget.homework.content,
-                            textScaler: MediaQuery.textScalerOf(context),
+                          child: IgnorePointer(
+                            child: QuillEditor.basic(
+                              controller: _contentController,
+                              config: QuillEditorConfig(
+                                padding: EdgeInsets.zero,
+                                scrollable: false,
+                                customStyles: DefaultStyles(
+                                  paragraph: DefaultTextBlockStyle(
+                                    TextStyle(fontSize: 20, color: textColor),
+                                    const HorizontalSpacing(0, 0),
+                                    const VerticalSpacing(0, 0),
+                                    const VerticalSpacing(0, 0),
+                                    null,
+                                  ),
+                                ),
+                              ),
+                            ),
                           ),
                         )
                       : GestureDetector(
@@ -187,7 +183,7 @@ class _HomeworkCardState extends State<HomeworkCard> {
                             ),
                           ),
                         ),
-                  const SizedBox(height: 12),
+                  const SizedBox(height: 8),
                   
                   // 截止日期和标签
                   Wrap(
@@ -280,8 +276,6 @@ class _HomeworkCardState extends State<HomeworkCard> {
                   ],
                 ],
               ),
-            ),
-        ),
       ),
     );
   }

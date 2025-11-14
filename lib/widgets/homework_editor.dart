@@ -322,6 +322,7 @@ class _HomeworkEditorState extends State<HomeworkEditor> {
   Widget build(BuildContext context) {
     final theme = Theme.of(context);
     final colorScheme = theme.colorScheme;
+    final textColor = colorScheme.onSurface;
     
     return Dialog(
       backgroundColor: Colors.transparent,
@@ -765,6 +766,15 @@ class _HomeworkEditorState extends State<HomeworkEditor> {
                      autoFocus: false,
                      showCursor: true,
                      placeholder: '请输入作业内容...',
+                     customStyles: DefaultStyles(
+                       paragraph: DefaultTextBlockStyle(
+                         TextStyle(fontSize: 20, color: textColor),
+                         const HorizontalSpacing(0, 0),
+                         const VerticalSpacing(0, 0),
+                         const VerticalSpacing(0, 0),
+                         null,
+                       ),
+                     ),
                    ),
                  ),
               ),

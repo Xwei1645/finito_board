@@ -27,7 +27,8 @@ class QuillContent extends StatelessWidget {
       final spans = <TextSpan>[];
       for (final op in delta) {
         if (op is Map && op.containsKey('insert')) {
-          final text = op['insert'] as String;
+          final text = (op['insert'] as String).replaceAll(RegExp(r'\n$'), '');
+          if (text.isEmpty) continue;
           final attributes = op['attributes'] as Map<String, dynamic>?;
 
           TextStyle style = defaultTextStyle;
