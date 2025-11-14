@@ -1339,7 +1339,6 @@ class _HomeworkBoardState extends State<HomeworkBoard> with WindowListener, Tick
           onSubjectsChanged: () {
             // 重新加载作业数据以反映科目变化
             _loadData();
-            _showCustomSnackBar('科目列表已更新');
           },
         );
       },
