@@ -482,4 +482,26 @@ class SettingsService {
     }
   }
 
+  /// 获取背景图片混合比例
+  double getBackgroundImageOpacity() {
+    final config = JsonStorageService.instance.getAppConfig();
+    return config.backgroundImageOpacity;
+  }
+
+  /// 设置背景图片混合比例: 0.0-1.0
+  Future<bool> setBackgroundImageOpacity(double opacity) async {
+    try {
+      // 更新JSON配置
+      final storageService = JsonStorageService.instance;
+      final currentConfig = storageService.getAppConfig();
+      final updatedConfig = currentConfig.copyWith(
+        backgroundImageOpacity: opacity,
+      );
+      await storageService.saveAppConfig(updatedConfig);
+      return true;
+    } catch (e) {
+      return false;
+    }
+  }
+
 }

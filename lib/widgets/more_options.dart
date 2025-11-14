@@ -35,6 +35,7 @@ class _MoreOptionsWindowState extends State<MoreOptionsWindow> with WindowListen
   int? _themeColor; // 自定义主题色
   String? _backgroundImagePath; // 背景图片路径
   int _backgroundImageMode = 0; // 背景图片显示模式: 0=适应, 1=填充, 2=拉伸
+  double _backgroundImageOpacity = 1.0; // 背景图片混合比例
   bool _isLoading = true;
 
   int _selectedNavIndex = 0;
@@ -91,7 +92,7 @@ class _MoreOptionsWindowState extends State<MoreOptionsWindow> with WindowListen
         final RenderBox box = key!.currentContext!.findRenderObject() as RenderBox;
         final position = box.localToGlobal(Offset.zero, ancestor: context.findRenderObject());
 
-        if (position.dy <= 100) {
+        if (position.dy <= 120) {
           newIndex = i;
           break;
         }
@@ -135,6 +136,7 @@ class _MoreOptionsWindowState extends State<MoreOptionsWindow> with WindowListen
     final savedThemeColor = settingsService.getThemeColor();
     final savedBackgroundImagePath = settingsService.getBackgroundImagePath();
     final savedBackgroundImageMode = settingsService.getBackgroundImageMode();
+    final savedBackgroundImageOpacity = settingsService.getBackgroundImageOpacity();
 
     final actualAutoStart = await settingsService.checkAutoStartStatus();
 
@@ -147,6 +149,7 @@ class _MoreOptionsWindowState extends State<MoreOptionsWindow> with WindowListen
       _themeColor = savedThemeColor;
       _backgroundImagePath = savedBackgroundImagePath;
       _backgroundImageMode = savedBackgroundImageMode;
+      _backgroundImageOpacity = savedBackgroundImageOpacity;
       _isLoading = false;
     });
   }
@@ -877,6 +880,20 @@ class _MoreOptionsWindowState extends State<MoreOptionsWindow> with WindowListen
     }
   }
 
+  Future<void> _onBackgroundImageOpacityChanged(double value) async {
+    final settingsService = SettingsService.instance;
+    final success = await settingsService.setBackgroundImageOpacity(value);
+
+    if (success) {
+      setState(() {
+        _backgroundImageOpacity = value;
+      });
+      widget.onSettingsChanged?.call();
+    } else {
+      // 设置失败，静默处理
+    }
+  }
+
   Future<void> _onClearBackgroundImage() async {
     await _onBackgroundImagePathChanged(null);
   }
@@ -1366,7 +1383,7 @@ class _MoreOptionsWindowState extends State<MoreOptionsWindow> with WindowListen
         children: [
           // 左侧内容
           Expanded(
-            flex: 2,
+            flex: 3,
             child: Column(
               crossAxisAlignment: CrossAxisAlignment.start,
               children: [
@@ -1441,34 +1458,80 @@ class _MoreOptionsWindowState extends State<MoreOptionsWindow> with WindowListen
                 ),
                 if (hasImage) ...[
                   const SizedBox(height: 16),
-                  // 显示模式选择
                   Row(
                     children: [
-                      Text(
-                        '显示模式:',
-                        style: TextStyle(
-                          fontSize: 14,
-                          color: colorScheme.onSurfaceVariant,
+                      Expanded(
+                        flex: 3,
+                        child: Row(
+                          children: [
+                            Text(
+                              '显示模式:',
+                              style: TextStyle(
+                                fontSize: 14,
+                                color: colorScheme.onSurfaceVariant,
+                              ),
+                            ),
+                            const SizedBox(width: 12),
+                            Expanded(
+                              child: DropdownButton<int>(
+                                value: mode,
+                                underline: const SizedBox.shrink(),
+                                dropdownColor: colorScheme.surface,
+                                elevation: 1,
+                                borderRadius: BorderRadius.all(Radius.circular(8)),
+                                items: const [
+                                  DropdownMenuItem(value: 0, child: Text('适应')),
+                                  DropdownMenuItem(value: 1, child: Text('填充')),
+                                  DropdownMenuItem(value: 2, child: Text('拉伸')),
+                                ],
+                                onChanged: (v) {
+                                  if (v != null) {
+                                    onModeChanged(v);
+                                  }
+                                },
+                              ),
+                            ),
+                          ],
                         ),
                       ),
-                      const SizedBox(width: 12),
+                      const SizedBox(width: 24),
                       Expanded(
-                        child: DropdownButton<int>(
-                          value: mode,
-                          underline: const SizedBox.shrink(),
-                          dropdownColor: colorScheme.surface,
-                          elevation: 1,
-                          borderRadius: BorderRadius.all(Radius.circular(8)),
-                          items: const [
-                            DropdownMenuItem(value: 0, child: Text('适应')),
-                            DropdownMenuItem(value: 1, child: Text('填充')),
-                            DropdownMenuItem(value: 2, child: Text('拉伸')),
+                        flex: 8,
+                        child: Row(
+                          children: [
+                            Text(
+                              '混合比例:',
+                              style: TextStyle(
+                                fontSize: 14,
+                                color: colorScheme.onSurfaceVariant,
+                              ),
+                            ),
+                            const SizedBox(width: 12),
+                            Expanded(
+                              child: Slider(
+                                value: _backgroundImageOpacity,
+                                min: 0.0,
+                                max: 1.0,
+                                divisions: 100,
+                                onChanged: (value) {
+                                  setState(() {
+                                    _backgroundImageOpacity = value;
+                                  });
+                                  _onBackgroundImageOpacityChanged(value);
+                                },
+                                activeColor: colorScheme.primary,
+                              ),
+                            ),
+                            const SizedBox(width: 12),
+                            Text(
+                              '${(_backgroundImageOpacity * 100).round()}%',
+                              style: TextStyle(
+                                fontSize: 14,
+                                fontWeight: FontWeight.w600,
+                                color: colorScheme.primary,
+                              ),
+                            ),
                           ],
-                          onChanged: (v) {
-                            if (v != null) {
-                              onModeChanged(v);
-                            }
-                          },
                         ),
                       ),
                     ],
@@ -1488,54 +1551,58 @@ class _MoreOptionsWindowState extends State<MoreOptionsWindow> with WindowListen
                       final windowSize = snapshot.data ?? const Size(1200, 800);
                       final aspectRatio = windowSize.width / windowSize.height;
 
-                      // 目标外框高度限制（不一定等于最终内框高度）
-                      const double outerHeight = 120.0;
-                      const double maxInnerWidth = 160.0;
-                      const double minInnerWidth = 80.0;
+                      return LayoutBuilder(
+                        builder: (context, constraints) {
+                          final availableHeight = constraints.maxHeight;
+                          final availableWidth = constraints.maxWidth;
 
-                      // 计算内框尺寸，使其宽高比等于窗口宽高比
-                      double innerWidth = outerHeight * aspectRatio;
-                      double innerHeight = outerHeight;
+                          // 计算内框尺寸，使其宽高比等于窗口宽高比，填满可用空间但留间隙
+                          double innerWidth = availableWidth - 16; // 留左右间隙
+                          double innerHeight = availableHeight - 16; // 留上下间隙
 
-                      // 如果宽度越界，则按宽度限制并调整高度以保持比率
-                      if (innerWidth > maxInnerWidth) {
-                        innerWidth = maxInnerWidth;
-                        innerHeight = innerWidth / aspectRatio;
-                      } else if (innerWidth < minInnerWidth) {
-                        innerWidth = minInnerWidth;
-                        innerHeight = innerWidth / aspectRatio;
-                      }
+                          // 调整尺寸以保持宽高比
+                          if (innerWidth / innerHeight > aspectRatio) {
+                            innerWidth = innerHeight * aspectRatio;
+                          } else {
+                            innerHeight = innerWidth / aspectRatio;
+                          }
 
-                      return Container(
-                        height: outerHeight,
-                        decoration: BoxDecoration(
-                          borderRadius: BorderRadius.circular(8),
-                        ),
-                        child: Center(
-                          child: ClipRRect(
-                            borderRadius: BorderRadius.circular(6),
-                            child: SizedBox(
-                              width: innerWidth,
-                              height: innerHeight,
-                              child: DecoratedBox(
-                                decoration: BoxDecoration(
-                                  color: Colors.black12,
-                                ),
-                                child: FittedBox(
-                                  fit: BoxFit.fill,
-                                  child: SizedBox(
-                                    width: innerWidth,
-                                    height: innerHeight,
-                                    child: Image.file(
-                                      File(path),
-                                      fit: _getBoxFitFromMode(mode),
-                                    ),
+                          return Container(
+                            decoration: BoxDecoration(
+                              borderRadius: BorderRadius.circular(8),
+                            ),
+                            child: Center(
+                              child: ClipRRect(
+                                borderRadius: BorderRadius.circular(6),
+                                child: SizedBox(
+                                  width: innerWidth,
+                                  height: innerHeight,
+                                  child: Stack(
+                                    children: [
+                                      Container(
+                                        color: colorScheme.surface, // 底色
+                                      ),
+                                      Opacity(
+                                        opacity: _backgroundImageOpacity,
+                                        child: FittedBox(
+                                          fit: BoxFit.fill,
+                                          child: SizedBox(
+                                            width: innerWidth,
+                                            height: innerHeight,
+                                            child: Image.file(
+                                              File(path),
+                                              fit: _getBoxFitFromMode(mode),
+                                            ),
+                                          ),
+                                        ),
+                                      ),
+                                    ],
                                   ),
                                 ),
                               ),
                             ),
-                          ),
-                        ),
+                          );
+                        },
                       );
                     },
                   )

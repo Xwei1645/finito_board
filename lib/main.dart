@@ -184,6 +184,7 @@ class _HomeworkBoardState extends State<HomeworkBoard> with WindowListener, Tick
   // 背景图片相关
   String? _backgroundImagePath;
   int _backgroundImageMode = 0;
+  double _backgroundImageOpacity = 1.0;
   
   // 快捷菜单动画控制器
   late AnimationController _quickMenuAnimationController;
@@ -305,6 +306,7 @@ class _HomeworkBoardState extends State<HomeworkBoard> with WindowListener, Tick
       _backgroundOpacity = settingsService.getBackgroundOpacity();
       _backgroundImagePath = settingsService.getBackgroundImagePath();
       _backgroundImageMode = settingsService.getBackgroundImageMode();
+      _backgroundImageOpacity = settingsService.getBackgroundImageOpacity();
     });
   }
 
@@ -668,24 +670,24 @@ class _HomeworkBoardState extends State<HomeworkBoard> with WindowListener, Tick
                 _selectionTimer?.cancel(); // 取消定时器
               }
             },
-            child: Container(
-              width: double.infinity,
-              height: double.infinity,
-              decoration: BoxDecoration(
-                color: _isFullScreen 
-                    ? Theme.of(context).colorScheme.surface
-                    : Theme.of(context).colorScheme.surface.withValues(alpha: _backgroundOpacity),
-                image: _backgroundImagePath != null && _backgroundImagePath!.isNotEmpty
-                    ? DecorationImage(
-                        image: FileImage(File(_backgroundImagePath!)),
-                        fit: _getBoxFitFromMode(_backgroundImageMode),
-                        opacity: 0.3, // 半透明显示
-                      )
-                    : null,
-                borderRadius: _isFullScreen 
-                    ? BorderRadius.zero 
-                    : BorderRadius.circular(12),
-              ),
+            child: Opacity(
+              opacity: _isFullScreen ? 1.0 : _backgroundOpacity,
+              child: Container(
+                width: double.infinity,
+                height: double.infinity,
+                decoration: BoxDecoration(
+                  color: Theme.of(context).colorScheme.surface,
+                  image: _backgroundImagePath != null && _backgroundImagePath!.isNotEmpty
+                      ? DecorationImage(
+                          image: FileImage(File(_backgroundImagePath!)),
+                          fit: _getBoxFitFromMode(_backgroundImageMode),
+                          opacity: _backgroundImageOpacity,
+                        )
+                      : null,
+                  borderRadius: _isFullScreen 
+                      ? BorderRadius.zero 
+                      : BorderRadius.circular(12),
+                ),
               child: hasHomework
                 ? Theme(
                     data: Theme.of(context).copyWith(
@@ -731,6 +733,7 @@ class _HomeworkBoardState extends State<HomeworkBoard> with WindowListener, Tick
                     ),
                     child: const EmptyState(),
                   ),
+              ),
             ),
           ),
           // 底部拖动条 - 仅在窗口解锁时显示

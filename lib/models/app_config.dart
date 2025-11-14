@@ -12,6 +12,7 @@ class AppConfig {
   final int? themeColor; // 自定义主题色，null表示使用默认色
   final String? backgroundImagePath; // 背景图片路径
   final int backgroundImageMode; // 背景图片显示模式: 0=适应, 1=填充, 2=拉伸
+  final double backgroundImageOpacity; // 背景图片混合比例: 0.0-1.0
 
   const AppConfig({
     this.theme = 'light',
@@ -27,6 +28,7 @@ class AppConfig {
     this.themeColor,
     this.backgroundImagePath,
     this.backgroundImageMode = 0,
+    this.backgroundImageOpacity = 1.0,
   });
 
   AppConfig copyWith({
@@ -43,6 +45,7 @@ class AppConfig {
     int? themeColor,
     String? backgroundImagePath,
     int? backgroundImageMode,
+    double? backgroundImageOpacity,
   }) {
     return AppConfig(
       theme: theme ?? this.theme,
@@ -58,6 +61,7 @@ class AppConfig {
       themeColor: themeColor ?? this.themeColor,
       backgroundImagePath: backgroundImagePath ?? this.backgroundImagePath,
       backgroundImageMode: backgroundImageMode ?? this.backgroundImageMode,
+      backgroundImageOpacity: backgroundImageOpacity ?? this.backgroundImageOpacity,
     );
   }
 
@@ -77,6 +81,7 @@ class AppConfig {
       'themeColor': themeColor,
       'backgroundImagePath': backgroundImagePath,
       'backgroundImageMode': backgroundImageMode,
+      'backgroundImageOpacity': backgroundImageOpacity,
     };
   }
 
@@ -96,6 +101,7 @@ class AppConfig {
       themeColor: json['themeColor'] as int?,
       backgroundImagePath: json['backgroundImagePath'] as String?,
       backgroundImageMode: json['backgroundImageMode'] as int? ?? 0,
+      backgroundImageOpacity: (json['backgroundImageOpacity'] as num?)?.toDouble() ?? 1.0,
     );
   }
 }
