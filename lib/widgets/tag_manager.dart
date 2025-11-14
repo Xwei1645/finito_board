@@ -107,13 +107,18 @@ class _TagManagerState extends State<TagManager> {
       shape: RoundedRectangleBorder(
         borderRadius: BorderRadius.circular(16),
       ),
-      child: Container(
-        width: 450,
-        padding: const EdgeInsets.all(24),
-        child: Column(
-          mainAxisSize: MainAxisSize.min,
-          crossAxisAlignment: CrossAxisAlignment.start,
-          children: [
+      child: ConstrainedBox(
+        constraints: BoxConstraints(
+          maxHeight: MediaQuery.of(context).size.height * 0.8,
+          maxWidth: 450,
+        ),
+        child: Container(
+          width: 450,
+          padding: const EdgeInsets.all(24),
+          child: Column(
+            mainAxisSize: MainAxisSize.min,
+            crossAxisAlignment: CrossAxisAlignment.start,
+            children: [
             // 标题
             Row(
               children: [
@@ -209,9 +214,10 @@ class _TagManagerState extends State<TagManager> {
             ),
             const SizedBox(height: 12),
             
-            Container(
-              constraints: const BoxConstraints(maxHeight: 350),
-              child: _tags.isEmpty
+            Flexible(
+              child: Container(
+                constraints: const BoxConstraints(maxHeight: 350),
+                child: _tags.isEmpty
                   ? Container(
                       padding: const EdgeInsets.all(32),
                       child: Center(
@@ -351,6 +357,7 @@ class _TagManagerState extends State<TagManager> {
                         }).toList(),
                       ),
                     ),
+              ),
             ),
             const SizedBox(height: 24),
 
@@ -365,6 +372,7 @@ class _TagManagerState extends State<TagManager> {
               ],
             ),
           ],
+        ),
         ),
       ),
     );

@@ -107,13 +107,18 @@ class _SubjectManagerState extends State<SubjectManager> {
       shape: RoundedRectangleBorder(
         borderRadius: BorderRadius.circular(16),
       ),
-      child: Container(
-        width: 400,
-        padding: const EdgeInsets.all(24),
-        child: Column(
-          mainAxisSize: MainAxisSize.min,
-          crossAxisAlignment: CrossAxisAlignment.start,
-          children: [
+      child: ConstrainedBox(
+        constraints: BoxConstraints(
+          maxHeight: MediaQuery.of(context).size.height * 0.8,
+          maxWidth: 400,
+        ),
+        child: Container(
+          width: 400,
+          padding: const EdgeInsets.all(24),
+          child: Column(
+            mainAxisSize: MainAxisSize.min,
+            crossAxisAlignment: CrossAxisAlignment.start,
+            children: [
             // 标题
             Row(
               children: [
@@ -209,9 +214,10 @@ class _SubjectManagerState extends State<SubjectManager> {
             ),
             const SizedBox(height: 12),
             
-            Container(
-              constraints: const BoxConstraints(maxHeight: 300),
-              child: _subjects.isEmpty
+            Flexible(
+              child: Container(
+                constraints: const BoxConstraints(maxHeight: 300),
+                child: _subjects.isEmpty
                   ? Container(
                       padding: const EdgeInsets.all(32),
                       child: Center(
@@ -320,6 +326,7 @@ class _SubjectManagerState extends State<SubjectManager> {
                         );
                       },
                     ),
+              ),
             ),
             const SizedBox(height: 24),
 
@@ -339,6 +346,7 @@ class _SubjectManagerState extends State<SubjectManager> {
               ],
             ),
           ],
+        ),
         ),
       ),
     );
