@@ -1110,13 +1110,28 @@ class _MoreOptionsWindowState extends State<MoreOptionsWindow> with WindowListen
       
       if (!context.mounted) return;
       
+      final colorScheme = Theme.of(context).colorScheme;
+      
       showDialog(
         context: context,
         builder: (context) => AlertDialog(
           shape: RoundedRectangleBorder(
             borderRadius: BorderRadius.circular(16),
           ),
-          title: const Text('开放源代码许可'),
+          title: Row(
+            children: [
+              Icon(
+                Icons.description,
+                color: colorScheme.primary,
+                size: 24,
+              ),
+              const SizedBox(width: 12),
+              const Text(
+                '开放源代码许可',
+                style: TextStyle(fontWeight: FontWeight.bold),
+              ),
+            ],
+          ),
           content: SizedBox(
             width: 500,
             height: 400,
