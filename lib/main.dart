@@ -56,6 +56,7 @@ void main() async {
       }
       
       // 初始状态设置为锁定（无边框，不可调整大小）
+      // 初始化时先设置为无边框，再禁用调整大小
       await windowManager.setAsFrameless();
       await windowManager.setHasShadow(false);
       await windowManager.setResizable(false);
@@ -445,37 +446,35 @@ class _HomeworkBoardState extends State<HomeworkBoard> with WindowListener, Tick
   }
 
   /// 锁定窗口（显示提示消息）
+  /// 锁定时：禁用窗口大小调整，设置为无边框模式
   Future<void> _lockWindow() async {
-    await Future.wait([
-      windowManager.setResizable(false),
-      windowManager.setAsFrameless(),
-    ]);
+    // 先禁用窗口大小调整
+    await windowManager.setResizable(false);
+    // 然后设置为无边框模式
+    await windowManager.setAsFrameless();
     _showCustomSnackBar('窗口已锁定');
   }
 
   /// 解锁窗口（显示提示消息）
+  /// 解锁时：启用窗口大小调整，保持隐藏标题栏但显示边框以支持四边拖动
   Future<void> _unlockWindow() async {
-    await Future.wait([
-      windowManager.setResizable(true),
-      windowManager.setTitleBarStyle(TitleBarStyle.hidden),
-    ]);
-    _showCustomSnackBar('窗口已解锁');
+    // 先设置标题栏样式为隐藏（这会恢复窗口边框）
+    await windowManager.setTitleBarStyle(TitleBarStyle.hidden);
+    // 然后启用窗口大小调整，允许从四边拖动调整大小
+    await windowManager.setResizable(true);
+    _showCustomSnackBar('窗口已解锁，可从四边调整大小');
   }
 
   /// 静默锁定窗口（不显示提示，用于全屏切换）
   Future<void> _lockWindowSilently() async {
-    await Future.wait([
-      windowManager.setResizable(false),
-      windowManager.setAsFrameless(),
-    ]);
+    await windowManager.setResizable(false);
+    await windowManager.setAsFrameless();
   }
 
   /// 静默解锁窗口（不显示提示，用于全屏切换）
   Future<void> _unlockWindowSilently() async {
-    await Future.wait([
-      windowManager.setResizable(true),
-      windowManager.setTitleBarStyle(TitleBarStyle.hidden),
-    ]);
+    await windowManager.setTitleBarStyle(TitleBarStyle.hidden);
+    await windowManager.setResizable(true);
   }
 
 
