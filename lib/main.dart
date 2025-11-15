@@ -56,7 +56,7 @@ void main() async {
       }
       
       // 初始状态设置为锁定（无边框，不可调整大小）
-      // 顺序很重要：先设置为无边框，再禁用调整大小
+      // 初始化时先设置为无边框，再禁用调整大小
       await windowManager.setAsFrameless();
       await windowManager.setHasShadow(false);
       await windowManager.setResizable(false);
