@@ -15,6 +15,8 @@ import 'widgets/more_options.dart';
 import 'widgets/subject_manager.dart';
 import 'widgets/tag_manager.dart';
 import 'widgets/oobe_dialog.dart';
+import 'widgets/floating_toolbar.dart';
+import 'widgets/quick_menu.dart';
 import 'services/settings_service.dart';
 import 'services/storage/json_storage_service.dart';
 
@@ -745,7 +747,17 @@ class _HomeworkBoardState extends State<HomeworkBoard> with WindowListener, Tick
           Positioned(
             bottom: 16,
             right: 16,
-            child: _buildFloatingToolbar(),
+            child: FloatingToolbar(
+              opacity: _toolbarOpacity,
+              backgroundOpacity: _backgroundOpacity,
+              isFullScreen: _isFullScreen,
+              onNewHomework: _showHomeworkEditor,
+              onToggleFullScreen: _toggleFullScreen,
+              onOpenQuickMenu: _toggleQuickMenu,
+              onMouseEnter: _resetToolbarOpacity,
+              onMouseExit: _startToolbarOpacityTimer,
+              onButtonPressed: _resetToolbarOpacity,
+            ),
           ),
           // 快捷菜单
           if (_isQuickMenuVisible)
@@ -756,410 +768,26 @@ class _HomeworkBoardState extends State<HomeworkBoard> with WindowListener, Tick
                 position: _quickMenuSlideAnimation,
                 child: FadeTransition(
                   opacity: _quickMenuOpacityAnimation,
-                  child: _buildQuickMenu(),
+                  child: QuickMenu(
+                    backgroundOpacity: _backgroundOpacity,
+                    isFullScreen: _isFullScreen,
+                    isWindowLocked: _isWindowLocked,
+                    windowLockedBeforeFullScreen: _windowLockedBeforeFullScreen,
+                    scaleFactor: _scaleFactor,
+                    columnCount: _columnCount,
+                    onOpenMoreOptions: () => _hideMenuAndExecute(_openMoreOptionsWindow),
+                    onToggleWindowLock: _toggleWindowLock,
+                    onShowSubjectManager: () => _hideMenuAndExecute(_showSubjectManager),
+                    onShowTagManager: () => _hideMenuAndExecute(_showTagManager),
+                    onAdjustScale: _adjustScale,
+                    onAdjustColumnCount: _adjustColumnCount,
+                    onExitApplication: () => _hideMenuAndExecute(_exitApplication),
+                    onResetMenuTimer: _resetQuickMenuTimer,
+                  ),
                 ),
               ),
             ),
         ],
-      ),
-    );
-  }
-
-  // 构建悬浮工具栏
-  Widget _buildFloatingToolbar() {
-    final colorScheme = Theme.of(context).colorScheme;
-    
-    double toolbarBackgroundOpacity = (_backgroundOpacity + 0.1).clamp(0.0, 1.0);
-    
-    return MouseRegion(
-      onEnter: (_) {
-        // 鼠标进入工具栏区域
-        _resetToolbarOpacity();
-      },
-      onExit: (_) {
-        // 鼠标离开工具栏区域
-        _startToolbarOpacityTimer();
-      },
-      child: Opacity(
-        opacity: _toolbarOpacity,
-        child: Container(
-          padding: const EdgeInsets.symmetric(horizontal: 8, vertical: 6),
-          decoration: BoxDecoration(
-            color: colorScheme.surface.withValues(alpha: toolbarBackgroundOpacity),
-            borderRadius: BorderRadius.circular(20),
-            boxShadow: [
-              BoxShadow(
-                color: colorScheme.shadow.withValues(alpha: 0.15 * _toolbarOpacity),
-                spreadRadius: 1,
-                blurRadius: 6,
-                offset: const Offset(0, 3),
-              ),
-            ],
-          ),
-          child: Row(
-            mainAxisSize: MainAxisSize.min,
-            children: [
-              _buildToolbarButton(
-                icon: Icons.add,
-                onPressed: () {
-                  _showHomeworkEditor();
-                },
-                tooltip: '新建',
-              ),
-              const SizedBox(width: 4),
-              _buildToolbarButton(
-                icon: _isFullScreen ? Icons.fullscreen_exit : Icons.fullscreen,
-                onPressed: () {
-                  _toggleFullScreen();
-                },
-                tooltip: _isFullScreen ? '退出全屏' : '全屏',
-              ),
-              const SizedBox(width: 4),
-              _buildToolbarButton(
-                icon: Icons.menu,
-                onPressed: () {
-                  _toggleQuickMenu();
-                },
-                tooltip: '快捷菜单',
-              ),
-            ],
-          ),
-        ),
-      ),
-    );
-  }
-
-  // 构建工具栏按钮
-  Widget _buildToolbarButton({
-    required IconData icon,
-    required VoidCallback onPressed,
-    required String tooltip,
-  }) {
-    final colorScheme = Theme.of(context).colorScheme;
-    return Tooltip(
-      message: tooltip,
-      child: Material(
-        color: Colors.transparent,
-        child: InkWell(
-          onTap: () {
-            // 重置工具栏透明度定时器
-            _resetToolbarOpacity();
-            // 执行原始操作
-            onPressed();
-          },
-          borderRadius: BorderRadius.circular(12),
-          child: Container(
-            width: 36,
-            height: 36,
-            decoration: BoxDecoration(
-              borderRadius: BorderRadius.circular(12),
-            ),
-            child: Icon(
-              icon,
-              color: colorScheme.onSurface.withValues(alpha: 0.7),
-              size: 20,
-            ),
-          ),
-        ),
-      ),
-    );
-  }
-
-  // 构建快捷菜单
-  Widget _buildQuickMenu() {
-    final colorScheme = Theme.of(context).colorScheme;
-    return Container(
-      width: 220,
-      padding: const EdgeInsets.all(12),
-      decoration: BoxDecoration(
-        color: colorScheme.surface.withValues(alpha: (_backgroundOpacity + 0.2).clamp(0.0, 1.0)),
-        borderRadius: BorderRadius.circular(12),
-        boxShadow: [
-          BoxShadow(
-            color: colorScheme.shadow.withValues(alpha: 0.15),
-            spreadRadius: 1,
-            blurRadius: 8,
-            offset: const Offset(0, 4),
-          ),
-        ],
-      ),
-      child: Column(
-        mainAxisSize: MainAxisSize.min,
-        crossAxisAlignment: CrossAxisAlignment.start,
-        children: [
-          // 更多选项
-          _buildMenuButton(
-            icon: Icons.more_horiz,
-            text: '更多选项...',
-            onPressed: () => _hideMenuAndExecute(_openMoreOptionsWindow),
-          ),
-          const SizedBox(height: 12),
-          // 窗口控制
-          _buildMenuSection(
-            title: '窗口控制',
-            child: Row(
-              children: [
-                Expanded(
-                  child: _buildMenuButton(
-                    icon: (_isFullScreen ? _windowLockedBeforeFullScreen : _isWindowLocked) ? Icons.lock_open : Icons.lock,
-                    text: (_isFullScreen ? _windowLockedBeforeFullScreen : _isWindowLocked) ? '解锁' : '锁定',
-                    onPressed: _isFullScreen ? null : () {
-                      _resetQuickMenuTimer();
-                      _toggleWindowLock();
-                    },
-                  ),
-                ),
-                const SizedBox(width: 8),
-                Expanded(
-                  child: _buildMenuButton(
-                    icon: Icons.picture_in_picture_alt,
-                    text: '收起',
-                    onPressed: () {
-                      _resetQuickMenuTimer();
-                      // TODO: 实现收起功能
-                    },
-                  ),
-                ),
-              ],
-            ),
-          ),
-          const SizedBox(height: 12),
-          // 编辑选项
-          _buildMenuSection(
-            title: '编辑...',
-            child: Row(
-              children: [
-                Expanded(
-                  child: _buildMenuButton(
-                    icon: Icons.subject,
-                    text: '科目',
-                    onPressed: () => _hideMenuAndExecute(_showSubjectManager),
-                  ),
-                ),
-                const SizedBox(width: 8),
-                Expanded(
-                  child: _buildMenuButton(
-                    icon: Icons.label,
-                    text: '标签',
-                    onPressed: () => _hideMenuAndExecute(_showTagManager),
-                  ),
-                ),
-              ],
-            ),
-          ),
-          const SizedBox(height: 12),
-          // 界面设置
-          _buildMenuSection(
-            title: '界面设置',
-            child: Column(
-              children: [
-              // 界面缩放
-              Row(
-                children: [
-                  Text(
-                    '界面缩放',
-                    style: TextStyle(
-                      fontSize: 12,
-                      color: colorScheme.onSurface.withValues(alpha: 0.7),
-                    ),
-                  ),
-                  const Spacer(),
-                  _buildScaleButton(
-                    icon: Icons.remove,
-                    onPressed: () {
-                      _resetQuickMenuTimer();
-                      _adjustScale(-10);
-                    },
-                  ),
-                  const SizedBox(width: 8),
-                  SizedBox(
-                    width: 50,
-                    child: Text(
-                      '${_scaleFactor.toInt()}%',
-                      textAlign: TextAlign.center,
-                      style: TextStyle(
-                        fontSize: 12,
-                        fontWeight: FontWeight.w500,
-                        color: colorScheme.onSurface,
-                      ),
-                    ),
-                  ),
-                  const SizedBox(width: 8),
-                  _buildScaleButton(
-                    icon: Icons.add,
-                    onPressed: () {
-                      _resetQuickMenuTimer();
-                      _adjustScale(10);
-                    },
-                  ),
-                ],
-              ),
-              const SizedBox(height: 8),
-              // 作业列数
-              Row(
-                children: [
-                  Text(
-                    '作业列数',
-                    style: TextStyle(
-                      fontSize: 12,
-                      color: colorScheme.onSurface.withValues(alpha: 0.7),
-                    ),
-                  ),
-                  const Spacer(),
-                  _buildScaleButton(
-                    icon: Icons.remove,
-                    onPressed: () {
-                      _resetQuickMenuTimer();
-                      _adjustColumnCount(-1);
-                    },
-                  ),
-                  const SizedBox(width: 8),
-                  SizedBox(
-                    width: 50,
-                    child: Text(
-                      '$_columnCount 列',
-                      textAlign: TextAlign.center,
-                      style: TextStyle(
-                        fontSize: 12,
-                        fontWeight: FontWeight.w500,
-                        color: colorScheme.onSurface,
-                      ),
-                    ),
-                  ),
-                  const SizedBox(width: 8),
-                  _buildScaleButton(
-                    icon: Icons.add,
-                    onPressed: () {
-                      _resetQuickMenuTimer();
-                      _adjustColumnCount(1);
-                    },
-                  ),
-                ],
-              ),
-            ],
-            ),
-          ),
-          const SizedBox(height: 12),
-          // 退出选项
-          _buildMenuButton(
-            icon: Icons.exit_to_app,
-            text: '退出...',
-            onPressed: () => _hideMenuAndExecute(_exitApplication),
-            isDestructive: true,
-          ),
-        ],
-      ),
-    );
-  }
-
-  // 构建菜单区块
-  Widget _buildMenuSection({
-    required String title,
-    required Widget child,
-  }) {
-    final colorScheme = Theme.of(context).colorScheme;
-    return Column(
-      crossAxisAlignment: CrossAxisAlignment.start,
-      children: [
-        Text(
-          title,
-          style: TextStyle(
-            fontSize: 14,
-            color: colorScheme.onSurface.withValues(alpha: 0.7),
-            fontWeight: FontWeight.w600,
-          ),
-        ),
-        const SizedBox(height: 6),
-        child,
-      ],
-    );
-  }
-
-  // 构建菜单按钮
-  Widget _buildMenuButton({
-    required IconData icon,
-    required String text,
-    required VoidCallback? onPressed,
-    bool isDestructive = false,
-  }) {
-    final colorScheme = Theme.of(context).colorScheme;
-    final bool isEnabled = onPressed != null;
-
-    Color backgroundColor;
-    Color foregroundColor;
-
-    if (isEnabled) {
-      if (isDestructive) {
-        backgroundColor = colorScheme.errorContainer.withValues(alpha: 0.3);
-        foregroundColor = colorScheme.error;
-      } else {
-        backgroundColor = colorScheme.surfaceContainerHighest.withValues(alpha: 0.5);
-        foregroundColor = colorScheme.onSurface;
-      }
-    } else {
-      backgroundColor = colorScheme.surfaceContainer.withValues(alpha: 0.5);
-      foregroundColor = colorScheme.onSurface.withValues(alpha: 0.38);
-    }
-
-    return Material(
-      color: Colors.transparent,
-      child: InkWell(
-        onTap: onPressed,
-        borderRadius: BorderRadius.circular(8),
-        child: Container(
-          width: double.infinity,
-          padding: const EdgeInsets.symmetric(horizontal: 12, vertical: 8),
-          decoration: BoxDecoration(
-            color: backgroundColor,
-            borderRadius: BorderRadius.circular(8),
-          ),
-          child: Row(
-            children: [
-              Icon(
-                icon,
-                size: 18,
-                color: foregroundColor,
-              ),
-              const SizedBox(width: 8),
-              Text(
-                text,
-                style: TextStyle(
-                  fontSize: 14,
-                  color: foregroundColor,
-                  fontWeight: FontWeight.w500,
-                ),
-              ),
-            ],
-          ),
-        ),
-      ),
-    );
-  }
-
-  // 构建缩放按钮
-  Widget _buildScaleButton({
-    required IconData icon,
-    required VoidCallback onPressed,
-  }) {
-    final colorScheme = Theme.of(context).colorScheme;
-    return Material(
-      color: Colors.transparent,
-      child: InkWell(
-        onTap: onPressed,
-        borderRadius: BorderRadius.circular(6),
-        child: Container(
-          width: 28,
-          height: 28,
-          decoration: BoxDecoration(
-            color: colorScheme.surfaceContainerHighest.withValues(alpha: 0.5),
-            borderRadius: BorderRadius.circular(6),
-          ),
-          child: Icon(
-            icon,
-            size: 16,
-            color: colorScheme.onSurface.withValues(alpha: 0.7),
-          ),
-        ),
       ),
     );
   }
