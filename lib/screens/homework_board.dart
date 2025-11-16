@@ -8,7 +8,7 @@ import '../widgets/homework_card.dart';
 import '../widgets/subject_header.dart';
 import '../widgets/homework_editor.dart';
 import '../widgets/empty_state.dart';
-import '../widgets/more_options.dart';
+import 'more_options.dart';
 import '../widgets/subject_manager.dart';
 import '../widgets/tag_manager.dart';
 import '../widgets/oobe_dialog.dart';
