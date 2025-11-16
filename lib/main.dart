@@ -15,7 +15,7 @@ import 'widgets/more_options.dart';
 import 'widgets/subject_manager.dart';
 import 'widgets/tag_manager.dart';
 import 'widgets/oobe_dialog.dart';
-import 'widgets/floating_toolbar.dart';
+import 'widgets/toolbar.dart';
 import 'widgets/quick_menu.dart';
 import 'services/settings_service.dart';
 import 'services/storage/json_storage_service.dart';
@@ -743,11 +743,11 @@ class _HomeworkBoardState extends State<HomeworkBoard> with WindowListener, Tick
               right: 0,
               child: _buildDragBar(),
             ),
-          // 悬浮工具栏 - 吸附在窗口右下角边缘
+          // 工具栏 - 吸附在窗口右下角边缘
           Positioned(
             bottom: 16,
             right: 16,
-            child: FloatingToolbar(
+            child: Toolbar(
               opacity: _toolbarOpacity,
               backgroundOpacity: _backgroundOpacity,
               isFullScreen: _isFullScreen,

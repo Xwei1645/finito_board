@@ -1,9 +1,9 @@
 import 'package:flutter/material.dart';
 
-/// 悬浮工具栏组件
+/// 工具栏组件
 /// 
 /// 显示在窗口右下角，包含新建作业、全屏切换和快捷菜单按钮
-class FloatingToolbar extends StatelessWidget {
+class Toolbar extends StatelessWidget {
   /// 工具栏透明度（0.0-1.0）
   final double opacity;
   
@@ -31,7 +31,7 @@ class FloatingToolbar extends StatelessWidget {
   /// 工具栏按钮点击回调（用于重置透明度定时器）
   final VoidCallback onButtonPressed;
 
-  const FloatingToolbar({
+  const Toolbar({
     super.key,
     required this.opacity,
     required this.backgroundOpacity,
