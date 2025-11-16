@@ -7,7 +7,7 @@ import 'package:package_info_plus/package_info_plus.dart';
 import 'package:file_picker/file_picker.dart';
 import 'package:window_manager/window_manager.dart';
 import '../services/settings_service.dart';
-import 'oobe_dialog.dart';
+import '../widgets/oobe_dialog.dart';
 
 
 class MoreOptionsWindow extends StatefulWidget {
