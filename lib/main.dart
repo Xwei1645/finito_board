@@ -90,7 +90,7 @@ class _MyAppState extends State<MyApp> {
     final seedColor = _themeColor != null ? Color(_themeColor!) : Colors.blue;
     
     return MaterialApp(
-      title: 'Finito Board',
+      title: 'FinitoBoard',
       theme: ThemeData(
         colorScheme: ColorScheme.fromSeed(
           seedColor: seedColor,
