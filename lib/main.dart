@@ -462,7 +462,7 @@ class _HomeworkBoardState extends State<HomeworkBoard> with WindowListener, Tick
       await windowManager.setTitleBarStyle(TitleBarStyle.hidden);
     }
     await windowManager.setResizable(true);
-    _showCustomSnackBar('窗口已解锁，可从四边调整大小');
+    _showCustomSnackBar('窗口已解锁，可调整窗口大小或按住底部操纵杆移动窗口');
   }
 
   // 静默锁定窗口（不显示提示，用于全屏切换）
