@@ -30,9 +30,8 @@ class JsonStorageService {
 
   /// 初始化JSON存储服务
   Future<void> init() async {
-    // 获取exe文件所在目录
-    final exeDir = p.dirname(Platform.resolvedExecutable);
-    _dataDir = p.join(exeDir, 'data');
+    final appDir = p.dirname(Platform.resolvedExecutable);
+    _dataDir = p.join(appDir, 'data');
     
     // 确保data目录存在
     final dataDirEntity = Directory(_dataDir);
