@@ -89,37 +89,40 @@ class _MyAppState extends State<MyApp> {
   Widget build(BuildContext context) {
     final seedColor = _themeColor != null ? Color(_themeColor!) : Colors.blue;
     
-    return MaterialApp(
-      title: 'FinitoBoard',
-      theme: ThemeData(
-        colorScheme: ColorScheme.fromSeed(
-          seedColor: seedColor,
-          brightness: Brightness.light,
+    return ClipRRect(
+      borderRadius: BorderRadius.circular(12),
+      child: MaterialApp(
+        title: 'FinitoBoard',
+        theme: ThemeData(
+          colorScheme: ColorScheme.fromSeed(
+            seedColor: seedColor,
+            brightness: Brightness.light,
+          ),
+          useMaterial3: true,
+          fontFamily: 'HarmonyOS Sans SC',
         ),
-        useMaterial3: true,
-        fontFamily: 'HarmonyOS Sans SC',
-      ),
-      darkTheme: ThemeData(
-        colorScheme: ColorScheme.fromSeed(
-          seedColor: seedColor,
-          brightness: Brightness.dark,
+        darkTheme: ThemeData(
+          colorScheme: ColorScheme.fromSeed(
+            seedColor: seedColor,
+            brightness: Brightness.dark,
+          ),
+          useMaterial3: true,
+          fontFamily: 'HarmonyOS Sans SC',
         ),
-        useMaterial3: true,
-        fontFamily: 'HarmonyOS Sans SC',
+        themeMode: _isDarkMode ? ThemeMode.dark : ThemeMode.light,
+        localizationsDelegates: const [
+          GlobalMaterialLocalizations.delegate,
+          GlobalWidgetsLocalizations.delegate,
+          GlobalCupertinoLocalizations.delegate,
+          FlutterQuillLocalizations.delegate,
+        ],
+        supportedLocales: const [
+          Locale('en', 'US'),
+          Locale('zh', 'CN'),
+        ],
+        home: MainWindow(onThemeChanged: _loadThemeSettings),
+        debugShowCheckedModeBanner: false,
       ),
-      themeMode: _isDarkMode ? ThemeMode.dark : ThemeMode.light,
-      localizationsDelegates: const [
-        GlobalMaterialLocalizations.delegate,
-        GlobalWidgetsLocalizations.delegate,
-        GlobalCupertinoLocalizations.delegate,
-        FlutterQuillLocalizations.delegate,
-      ],
-      supportedLocales: const [
-        Locale('en', 'US'),
-        Locale('zh', 'CN'),
-      ],
-      home: MainWindow(onThemeChanged: _loadThemeSettings),
-      debugShowCheckedModeBanner: false,
     );
   }
 }
