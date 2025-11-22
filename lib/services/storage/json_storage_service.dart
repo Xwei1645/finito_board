@@ -93,11 +93,22 @@ class JsonStorageService {
     }
   }
 
-  /// 通用的JSON文件写入方法（带重试机制）
+  /// 通用的JSON文件写入方法
   Future<void> _writeJsonFile(String fileName, Map<String, dynamic> data, {int retries = 3}) async {
     for (int i = 0; i < retries; i++) {
       try {
         final file = File(p.join(_dataDir, fileName));
+        final bakFile = File(p.join(_dataDir, '$fileName.bak'));
+        
+        // 如果目标文件存在，先创建.bak备份
+        if (await file.exists()) {
+          try {
+            await file.copy(bakFile.path);
+          } catch (e) {
+            // 备份失败不影响主流程
+          }
+        }
+        
         final jsonString = json.encode(data);
         await file.writeAsString(jsonString);
         return; // 写入成功
