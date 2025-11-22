@@ -15,7 +15,6 @@ class JsonStorageService {
   static const String _configFileName = 'config.json';
   static const String _windowStateFileName = 'window_state.json';
   static const String _tagFileName = 'tag.json';
-  static const String _storageConfigFileName = 'storage_config.json';
 
   late String _dataDir;
   
@@ -25,7 +24,6 @@ class JsonStorageService {
   AppConfig? _configCache;
   WindowState? _windowStateCache;
   final Map<String, Tag> _tagCache = {};
-  StorageConfig? _storageConfigCache;
   
   // 防抖定时器
   Timer? _windowStateDebounceTimer;
@@ -36,7 +34,6 @@ class JsonStorageService {
   bool _configDirty = false;
   bool _windowStateDirty = false;
   bool _tagDirty = false;
-  bool _storageConfigDirty = false;
   
   // 写入队列定时器
   Timer? _flushTimer;
@@ -52,17 +49,21 @@ class JsonStorageService {
 
   /// 初始化JSON存储服务
   Future<void> init() async {
-    final appDir = p.dirname(Platform.resolvedExecutable);
-    _dataDir = p.join(appDir, 'data');
-    
-    // 确保data目录存在
-    final dataDirEntity = Directory(_dataDir);
-    if (!await dataDirEntity.exists()) {
-      await dataDirEntity.create(recursive: true);
+    try {
+      final appDir = p.dirname(Platform.resolvedExecutable);
+      _dataDir = p.join(appDir, 'data');
+      
+      // 确保data目录存在
+      final dataDirEntity = Directory(_dataDir);
+      if (!await dataDirEntity.exists()) {
+        await dataDirEntity.create(recursive: true);
+      }
+      
+      // 加载所有数据到缓存
+      await _loadAllData();
+    } catch (e) {
+      rethrow;
     }
-    
-    // 加载所有数据到缓存
-    await _loadAllData();
   }
 
   /// 加载所有数据到内存缓存
@@ -72,23 +73,45 @@ class JsonStorageService {
     await _loadConfigData();
     await _loadWindowStateData();
     await _loadTagData();
-    await _loadStorageConfigData();
   }
 
   /// 通用的JSON文件读取方法
   Future<Map<String, dynamic>?> _readJsonFile(String fileName) async {
     try {
       final file = File(p.join(_dataDir, fileName));
+      
+      // 检查文件是否存在
       if (!await file.exists()) {
         return null;
       }
+      
+      // 读取文件内容
       final content = await file.readAsString();
+      
+      // 检查内容是否为空
       if (content.trim().isEmpty) {
         return null;
       }
-      return json.decode(content) as Map<String, dynamic>;
+      
+      // 尝试解析JSON
+      try {
+        final decoded = json.decode(content);
+        if (decoded is! Map<String, dynamic>) {
+          return null;
+        }
+        return decoded;
+      } on FormatException {
+        // 尝试备份损坏的文件
+        try {
+          final bakFile = File(p.join(_dataDir, '$fileName.corrupted'));
+          await file.copy(bakFile.path);
+        } catch (_) {
+          // 备份失败不影响主流程
+        }
+        return null;
+      }
     } catch (e) {
-      // 静默处理读取错误，返回null
+      // 处理其他读取错误（如权限问题）
       return null;
     }
   }
@@ -109,12 +132,29 @@ class JsonStorageService {
           }
         }
         
-        final jsonString = json.encode(data);
+        // 尝试编码为JSON字符串
+        String jsonString;
+        try {
+          jsonString = json.encode(data);
+        } catch (e) {
+          rethrow;
+        }
+        
+        // 写入文件
         await file.writeAsString(jsonString);
         return; // 写入成功
       } catch (e) {
         if (i == retries - 1) {
-          // 最后一次重试失败，抛出错误
+          // 最后一次重试失败，尝试恢复备份
+          try {
+            final file = File(p.join(_dataDir, fileName));
+            final bakFile = File(p.join(_dataDir, '$fileName.bak'));
+            if (await bakFile.exists()) {
+              await bakFile.copy(file.path);
+            }
+          } catch (restoreError) {
+            // 恢复失败
+          }
           rethrow;
         }
         // 等待后重试
@@ -125,18 +165,24 @@ class JsonStorageService {
 
   /// 加载作业数据
   Future<void> _loadHomeworkData() async {
-    final data = await _readJsonFile(_homeworkFileName);
-    _homeworkCache.clear();
-    if (data != null && data['homework'] is List) {
-      final homeworkList = data['homework'] as List;
-      for (final item in homeworkList) {
-        try {
-          final homework = Homework.fromJson(item);
-          _homeworkCache[homework.uuid] = homework;
-        } catch (e) {
-          // 跳过无效的作业数据
+    try {
+      final data = await _readJsonFile(_homeworkFileName);
+      _homeworkCache.clear();
+      if (data != null && data['homework'] is List) {
+        final homeworkList = data['homework'] as List;
+        for (final item in homeworkList) {
+          try {
+            if (item is Map<String, dynamic>) {
+              final homework = Homework.fromJson(item);
+              _homeworkCache[homework.uuid] = homework;
+            }
+          } catch (e) {
+            // 跳过无效项
+          }
         }
       }
+    } catch (e) {
+      _homeworkCache.clear();
     }
   }
 
@@ -162,18 +208,24 @@ class JsonStorageService {
 
   /// 加载科目数据
   Future<void> _loadSubjectData() async {
-    final data = await _readJsonFile(_subjectFileName);
-    _subjectCache.clear();
-    if (data != null && data['subjects'] is List) {
-      final subjectList = data['subjects'] as List;
-      for (final item in subjectList) {
-        try {
-          final subject = Subject.fromJson(item);
-          _subjectCache[subject.uuid] = subject;
-        } catch (e) {
-          // 跳过无效的科目数据
+    try {
+      final data = await _readJsonFile(_subjectFileName);
+      _subjectCache.clear();
+      if (data != null && data['subjects'] is List) {
+        final subjectList = data['subjects'] as List;
+        for (final item in subjectList) {
+          try {
+            if (item is Map<String, dynamic>) {
+              final subject = Subject.fromJson(item);
+              _subjectCache[subject.uuid] = subject;
+            }
+          } catch (e) {
+            // 跳过无效项
+          }
         }
       }
+    } catch (e) {
+      _subjectCache.clear();
     }
   }
 
@@ -199,15 +251,22 @@ class JsonStorageService {
 
   /// 加载配置数据
   Future<void> _loadConfigData() async {
-    final data = await _readJsonFile(_configFileName);
-    if (data != null && data['config'] != null) {
-      try {
-        _configCache = AppConfig.fromJson(data['config']);
-      } catch (e) {
-        // 使用默认配置
+    try {
+      final data = await _readJsonFile(_configFileName);
+      if (data != null && data['config'] != null) {
+        try {
+          if (data['config'] is Map<String, dynamic>) {
+            _configCache = AppConfig.fromJson(data['config']);
+          } else {
+            _configCache = const AppConfig();
+          }
+        } catch (e) {
+          _configCache = const AppConfig();
+        }
+      } else {
         _configCache = const AppConfig();
       }
-    } else {
+    } catch (e) {
       _configCache = const AppConfig();
     }
   }
@@ -234,15 +293,22 @@ class JsonStorageService {
 
   /// 加载窗口状态数据
   Future<void> _loadWindowStateData() async {
-    final data = await _readJsonFile(_windowStateFileName);
-    if (data != null && data['windowState'] != null) {
-      try {
-        _windowStateCache = WindowState.fromJson(data['windowState']);
-      } catch (e) {
-        // 使用默认窗口状态
+    try {
+      final data = await _readJsonFile(_windowStateFileName);
+      if (data != null && data['windowState'] != null) {
+        try {
+          if (data['windowState'] is Map<String, dynamic>) {
+            _windowStateCache = WindowState.fromJson(data['windowState']);
+          } else {
+            _windowStateCache = const WindowState();
+          }
+        } catch (e) {
+          _windowStateCache = const WindowState();
+        }
+      } else {
         _windowStateCache = const WindowState();
       }
-    } else {
+    } catch (e) {
       _windowStateCache = const WindowState();
     }
   }
@@ -275,18 +341,24 @@ class JsonStorageService {
 
   /// 加载标签数据
   Future<void> _loadTagData() async {
-    final data = await _readJsonFile(_tagFileName);
-    _tagCache.clear();
-    if (data != null && data['tags'] is List) {
-      final tagList = data['tags'] as List;
-      for (final item in tagList) {
-        try {
-          final tag = Tag.fromJson(item);
-          _tagCache[tag.uuid] = tag;
-        } catch (e) {
-          // 跳过无效的标签数据
+    try {
+      final data = await _readJsonFile(_tagFileName);
+      _tagCache.clear();
+      if (data != null && data['tags'] is List) {
+        final tagList = data['tags'] as List;
+        for (final item in tagList) {
+          try {
+            if (item is Map<String, dynamic>) {
+              final tag = Tag.fromJson(item);
+              _tagCache[tag.uuid] = tag;
+            }
+          } catch (e) {
+            // 跳过无效项
+          }
         }
       }
+    } catch (e) {
+      _tagCache.clear();
     }
   }
 
@@ -310,41 +382,6 @@ class JsonStorageService {
     _tagDirty = false;
   }
 
-  /// 加载存储配置数据
-  Future<void> _loadStorageConfigData() async {
-    final data = await _readJsonFile(_storageConfigFileName);
-    if (data != null && data['storageConfig'] != null) {
-      try {
-        _storageConfigCache = StorageConfig.fromJson(data['storageConfig']);
-      } catch (e) {
-        // 使用默认存储配置
-        _storageConfigCache = const StorageConfig();
-      }
-    } else {
-      _storageConfigCache = const StorageConfig();
-    }
-  }
-
-  /// 保存存储配置数据
-  Future<void> _saveStorageConfigData({bool immediate = false}) async {
-    _storageConfigDirty = true;
-    if (immediate) {
-      await _flushStorageConfigData();
-    } else {
-      _scheduleFlush();
-    }
-  }
-  
-  /// 立即写入存储配置数据
-  Future<void> _flushStorageConfigData() async {
-    if (!_storageConfigDirty) return;
-    final data = {
-      'storageConfig': _storageConfigCache?.toJson() ?? const StorageConfig().toJson(),
-    };
-    await _writeJsonFile(_storageConfigFileName, data);
-    _storageConfigDirty = false;
-  }
-  
   /// 调度批量写入
   void _scheduleFlush() {
     _flushTimer?.cancel();
@@ -371,9 +408,6 @@ class JsonStorageService {
     }
     if (_tagDirty) {
       futures.add(_flushTagData());
-    }
-    if (_storageConfigDirty) {
-      futures.add(_flushStorageConfigData());
     }
     
     if (futures.isNotEmpty) {
@@ -590,15 +624,43 @@ class JsonStorageService {
 
   // ==================== 存储配置管理 ====================
   
-  /// 获取存储配置
+  /// 获取存储配置（从 AppConfig 中提取）
   StorageConfig getStorageConfig() {
-    return _storageConfigCache ?? const StorageConfig();
+    final config = _configCache ?? const AppConfig();
+    return StorageConfig(
+      snapshotEnabled: config.snapshotEnabled,
+      snapshotOnEdit: config.snapshotOnEdit,
+      snapshotOnStartup: config.snapshotOnStartup,
+      snapshotOnExit: config.snapshotOnExit,
+      limitSnapshotCount: config.limitSnapshotCount,
+      maxSnapshotCount: config.maxSnapshotCount,
+      autoBackupEnabled: config.autoBackupEnabled,
+      backupOnStartup: config.backupOnStartup,
+      backupOnConfigChange: config.backupOnConfigChange,
+      backupOnExit: config.backupOnExit,
+      limitBackupCount: config.limitBackupCount,
+      maxAutoBackupCount: config.maxAutoBackupCount,
+    );
   }
 
-  /// 保存存储配置
+  /// 保存存储配置（更新到 AppConfig 中）
   Future<void> saveStorageConfig(StorageConfig config) async {
-    _storageConfigCache = config;
-    await _saveStorageConfigData(immediate: true);
+    final currentConfig = _configCache ?? const AppConfig();
+    _configCache = currentConfig.copyWith(
+      snapshotEnabled: config.snapshotEnabled,
+      snapshotOnEdit: config.snapshotOnEdit,
+      snapshotOnStartup: config.snapshotOnStartup,
+      snapshotOnExit: config.snapshotOnExit,
+      limitSnapshotCount: config.limitSnapshotCount,
+      maxSnapshotCount: config.maxSnapshotCount,
+      autoBackupEnabled: config.autoBackupEnabled,
+      backupOnStartup: config.backupOnStartup,
+      backupOnConfigChange: config.backupOnConfigChange,
+      backupOnExit: config.backupOnExit,
+      limitBackupCount: config.limitBackupCount,
+      maxAutoBackupCount: config.maxAutoBackupCount,
+    );
+    await _saveConfigData(immediate: true);
   }
 
 }
