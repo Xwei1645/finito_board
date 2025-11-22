@@ -116,10 +116,7 @@ class _MyAppState extends State<MyApp> {
           GlobalCupertinoLocalizations.delegate,
           FlutterQuillLocalizations.delegate,
         ],
-        supportedLocales: const [
-          Locale('en', 'US'),
-          Locale('zh', 'CN'),
-        ],
+        locale: const Locale('zh', 'CN'),
         home: MainWindow(onThemeChanged: _loadThemeSettings),
         debugShowCheckedModeBanner: false,
       ),
