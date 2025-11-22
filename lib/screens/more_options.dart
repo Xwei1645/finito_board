@@ -10,7 +10,6 @@ import 'widgets/appearance_widgets.dart';
 import 'widgets/storage_widgets.dart';
 import 'widgets/about_widgets.dart';
 
-
 class MoreOptionsWindow extends StatefulWidget {
   final VoidCallback? onThemeChanged;
   final VoidCallback? onSettingsChanged;
@@ -148,8 +147,7 @@ class _MoreOptionsWindowState extends State<MoreOptionsWindow> with WindowListen
     final savedBackgroundImageOpacity = settingsService.getBackgroundImageOpacity();
 
     final actualAutoStart = await settingsService.checkAutoStartStatus();
-    
-    // 加载存储配置
+
     final storageConfig = settingsService.getStorageConfig();
 
     setState(() {
@@ -162,8 +160,7 @@ class _MoreOptionsWindowState extends State<MoreOptionsWindow> with WindowListen
       _backgroundImagePath = savedBackgroundImagePath;
       _backgroundImageMode = savedBackgroundImageMode;
       _backgroundImageOpacity = savedBackgroundImageOpacity;
-      
-      // 存储配置
+
       _snapshotEnabled = storageConfig.snapshotEnabled;
       _snapshotOnEdit = storageConfig.snapshotOnEdit;
       _snapshotOnStartup = storageConfig.snapshotOnStartup;
@@ -280,9 +277,10 @@ class _MoreOptionsWindowState extends State<MoreOptionsWindow> with WindowListen
       child: Column(
         crossAxisAlignment: CrossAxisAlignment.start,
         children: [
-          _buildCategoryHeader(0, '系统', colorScheme),
+          CommonSettingWidgets.buildCategoryHeader(context, _categoryKeys[0]!, '系统'),
           const SizedBox(height: 16),
-          _buildSettingItem(
+          CommonSettingWidgets.buildSettingItem(
+            context: context,
             icon: Icons.power_settings_new,
             title: '开机自启',
             subtitle: '系统启动时自动运行',
@@ -291,9 +289,10 @@ class _MoreOptionsWindowState extends State<MoreOptionsWindow> with WindowListen
           ),
           const SizedBox(height: 32),
 
-          _buildCategoryHeader(1, '显示', colorScheme),
+          CommonSettingWidgets.buildCategoryHeader(context, _categoryKeys[1]!, '显示'),
           const SizedBox(height: 16),
-          _buildWindowLayerItem(
+          CommonSettingWidgets.buildWindowLayerItem(
+            context: context,
             icon: Icons.layers,
             title: '窗口层级',
             subtitle: '设置窗口的显示层级',
@@ -302,9 +301,10 @@ class _MoreOptionsWindowState extends State<MoreOptionsWindow> with WindowListen
           ),
           const SizedBox(height: 32),
 
-          _buildCategoryHeader(2, '外观', colorScheme),
+          CommonSettingWidgets.buildCategoryHeader(context, _categoryKeys[2]!, '外观'),
           const SizedBox(height: 16),
-          _buildThemeModeItem(
+          CommonSettingWidgets.buildThemeModeItem(
+            context: context,
             icon: Icons.brightness_6,
             title: '明暗主题',
             subtitle: '选择应用的主题',
@@ -312,7 +312,8 @@ class _MoreOptionsWindowState extends State<MoreOptionsWindow> with WindowListen
             onChanged: _onThemeModeChanged,
           ),
           const SizedBox(height: 16),
-          _buildOpacitySlider(
+          AppearanceWidgets.buildOpacitySlider(
+            context: context,
             icon: Icons.opacity,
             title: '背景不透明度',
             subtitle: '调整窗口背景的透明度',
@@ -320,34 +321,48 @@ class _MoreOptionsWindowState extends State<MoreOptionsWindow> with WindowListen
             onChanged: _onBackgroundOpacityChanged,
           ),
           const SizedBox(height: 16),
-          _buildThemeColorPicker(
+          AppearanceWidgets.buildThemeColorPicker(
+            context: context,
             icon: Icons.color_lens,
             title: '主题色',
             subtitle: '自定义应用的主题色',
             value: _themeColor,
-            onChanged: _onThemeColorChanged,
+            onTap: () => AppearanceWidgets.showColorPickerDialog(
+              context,
+              _themeColor,
+              _onThemeColorChanged,
+            ),
           ),
           const SizedBox(height: 16),
-          _buildBackgroundImagePicker(
+          AppearanceWidgets.buildBackgroundImagePicker(
+            context: context,
             icon: Icons.image,
             title: '背景图片',
             subtitle: '选择在主界面背景显示的图片',
             path: _backgroundImagePath,
             mode: _backgroundImageMode,
+            opacity: _backgroundImageOpacity,
             onPathChanged: _onBackgroundImagePathChanged,
             onModeChanged: _onBackgroundImageModeChanged,
+            onOpacityChanged: (value) {
+              setState(() {
+                _backgroundImageOpacity = value;
+              });
+              _onBackgroundImageOpacityChanged(value);
+            },
             onClear: _onClearBackgroundImage,
           ),
           const SizedBox(height: 32),
 
-          _buildCategoryHeader(3, '存储', colorScheme),
+          CommonSettingWidgets.buildCategoryHeader(context, _categoryKeys[3]!, '存储'),
           const SizedBox(height: 16),
           _buildStorageSection(colorScheme),
           const SizedBox(height: 32),
 
-          _buildCategoryHeader(4, '高级', colorScheme),
+          CommonSettingWidgets.buildCategoryHeader(context, _categoryKeys[4]!, '高级'),
           const SizedBox(height: 16),
-          _buildSettingItem(
+          CommonSettingWidgets.buildSettingItem(
+            context: context,
             icon: Icons.task,
             title: '在任务栏显示',
             subtitle: '在任务栏中显示应用图标',
@@ -355,7 +370,8 @@ class _MoreOptionsWindowState extends State<MoreOptionsWindow> with WindowListen
             onChanged: _onShowInTaskbarChanged,
           ),
           const SizedBox(height: 16),
-          _buildActionItem(
+          CommonSettingWidgets.buildActionItem(
+            context: context,
             icon: Icons.rocket_launch,
             title: '打开 OOBE',
             subtitle: '重新打开首次使用向导',
@@ -363,279 +379,18 @@ class _MoreOptionsWindowState extends State<MoreOptionsWindow> with WindowListen
           ),
           const SizedBox(height: 32),
 
-          _buildCategoryHeader(5, '关于', colorScheme),
+          CommonSettingWidgets.buildCategoryHeader(context, _categoryKeys[5]!, '关于'),
           const SizedBox(height: 16),
-          _buildAboutCard(colorScheme),
+          AboutWidgets.buildAboutCard(context, colorScheme),
           const SizedBox(height: 24),
         ],
       ),
     );
   }
 
-  Widget _buildCategoryHeader(int index, String title, ColorScheme colorScheme) {
-    return Container(
-      key: _categoryKeys[index],
-      padding: const EdgeInsets.only(bottom: 16, top: 8),
-      child: Text(
-        title,
-        style: TextStyle(
-          fontSize: 22,
-          fontWeight: FontWeight.bold,
-          color: colorScheme.onSurface,
-          letterSpacing: 0,
-        ),
-      ),
-    );
-  }
 
-  Widget _buildOpacitySlider({
-    required IconData icon,
-    required String title,
-    required String subtitle,
-    required double value,
-    required ValueChanged<double> onChanged,
-  }) {
-    final colorScheme = Theme.of(context).colorScheme;
 
-    return Container(
-      padding: const EdgeInsets.all(16),
-      decoration: BoxDecoration(
-        color: colorScheme.surface,
-        borderRadius: BorderRadius.circular(12),
-        boxShadow: [
-          BoxShadow(
-            color: Colors.black.withValues(alpha: 0.05),
-            blurRadius: 8,
-            offset: const Offset(0, 2),
-          ),
-        ],
-      ),
-      child: Row(
-        children: [
-          Container(
-            padding: const EdgeInsets.all(12),
-            decoration: BoxDecoration(
-              color: colorScheme.primaryContainer,
-              borderRadius: BorderRadius.circular(12),
-            ),
-            child: Icon(
-              icon,
-              color: colorScheme.onPrimaryContainer,
-              size: 24,
-            ),
-          ),
-          const SizedBox(width: 16),
-          Expanded(
-            child: Column(
-              crossAxisAlignment: CrossAxisAlignment.start,
-              children: [
-                Row(
-                  mainAxisAlignment: MainAxisAlignment.spaceBetween,
-                  children: [
-                    Text(
-                      title,
-                      style: TextStyle(
-                        fontSize: 16,
-                        fontWeight: FontWeight.w500,
-                        color: colorScheme.onSurface,
-                      ),
-                    ),
-                    Container(
-                      padding: const EdgeInsets.symmetric(horizontal: 12, vertical: 4),
-                      decoration: BoxDecoration(
-                        color: colorScheme.primary.withValues(alpha: 0.15),
-                        borderRadius: BorderRadius.circular(12),
-                      ),
-                      child: Text(
-                        '${(value * 100).round()}%',
-                        style: TextStyle(
-                          fontSize: 14,
-                          fontWeight: FontWeight.w600,
-                          color: colorScheme.primary,
-                        ),
-                      ),
-                    ),
-                  ],
-                ),
-                const SizedBox(height: 4),
-                Text(
-                  subtitle,
-                  style: TextStyle(
-                    fontSize: 13,
-                    color: colorScheme.onSurfaceVariant,
-                  ),
-                ),
-                const SizedBox(height: 8),
-                Slider(
-                  value: value,
-                  min: 0.3,
-                  max: 1.0,
-                  divisions: 14,
-                  onChanged: onChanged,
-                  activeColor: colorScheme.primary,
-                ),
-              ],
-            ),
-          ),
-        ],
-      ),
-    );
-  }
 
-  Widget _buildThemeColorPicker({
-    required IconData icon,
-    required String title,
-    required String subtitle,
-    required int? value,
-    required ValueChanged<int?> onChanged,
-  }) {
-    final colorScheme = Theme.of(context).colorScheme;
-    final displayColor = value != null ? Color(value) : colorScheme.primary;
-
-    return Container(
-      padding: const EdgeInsets.all(16),
-      decoration: BoxDecoration(
-        color: colorScheme.surface,
-        borderRadius: BorderRadius.circular(12),
-        boxShadow: [
-          BoxShadow(
-            color: Colors.black.withValues(alpha: 0.05),
-            blurRadius: 8,
-            offset: const Offset(0, 2),
-          ),
-        ],
-      ),
-      child: Row(
-        children: [
-          Container(
-            padding: const EdgeInsets.all(12),
-            decoration: BoxDecoration(
-              color: colorScheme.primaryContainer,
-              borderRadius: BorderRadius.circular(12),
-            ),
-            child: Icon(
-              icon,
-              color: colorScheme.onPrimaryContainer,
-              size: 24,
-            ),
-          ),
-          const SizedBox(width: 16),
-          Expanded(
-            child: Column(
-              crossAxisAlignment: CrossAxisAlignment.start,
-              children: [
-                Row(
-                  mainAxisAlignment: MainAxisAlignment.spaceBetween,
-                  children: [
-                    Text(
-                      title,
-                      style: TextStyle(
-                        fontSize: 16,
-                        fontWeight: FontWeight.w500,
-                        color: colorScheme.onSurface,
-                      ),
-                    ),
-                    GestureDetector(
-                      onTap: () => _showColorPickerDialog(onChanged),
-                      child: Container(
-                        width: 32,
-                        height: 32,
-                        decoration: BoxDecoration(
-                          color: displayColor,
-                          borderRadius: BorderRadius.circular(8),
-                          border: Border.all(
-                            color: colorScheme.outline.withValues(alpha: 0.3),
-                            width: 1,
-                          ),
-                        ),
-                      ),
-                    ),
-                  ],
-                ),
-                const SizedBox(height: 4),
-                Text(
-                  subtitle,
-                  style: TextStyle(
-                    fontSize: 13,
-                    color: colorScheme.onSurfaceVariant,
-                  ),
-                ),
-              ],
-            ),
-          ),
-        ],
-      ),
-    );
-  }
-
-  Widget _buildSettingItem({
-    required IconData icon,
-    required String title,
-    required String subtitle,
-    required bool value,
-    required ValueChanged<bool> onChanged,
-  }) {
-    final colorScheme = Theme.of(context).colorScheme;
-    
-    return Container(
-      padding: const EdgeInsets.all(16),
-      decoration: BoxDecoration(
-        color: colorScheme.surface,
-        borderRadius: BorderRadius.circular(12),
-        boxShadow: [
-          BoxShadow(
-            color: Colors.black.withValues(alpha: 0.05),
-            blurRadius: 8,
-            offset: const Offset(0, 2),
-          ),
-        ],
-      ),
-      child: Row(
-        children: [
-          Container(
-            padding: const EdgeInsets.all(12),
-            decoration: BoxDecoration(
-              color: colorScheme.primaryContainer,
-              borderRadius: BorderRadius.circular(12),
-            ),
-            child: Icon(
-              icon,
-              color: colorScheme.onPrimaryContainer,
-              size: 24,
-            ),
-          ),
-          const SizedBox(width: 16),
-          Expanded(
-            child: Column(
-              crossAxisAlignment: CrossAxisAlignment.start,
-              children: [
-                Text(
-                  title,
-                  style: TextStyle(
-                    fontSize: 16,
-                    fontWeight: FontWeight.w500,
-                    color: colorScheme.onSurface,
-                  ),
-                ),
-                const SizedBox(height: 4),
-                Text(
-                  subtitle,
-                  style: TextStyle(
-                    fontSize: 13,
-                    color: colorScheme.onSurfaceVariant,
-                  ),
-                ),
-              ],
-            ),
-          ),
-          Switch(
-            value: value,
-            onChanged: onChanged,
-          ),
-        ],
-      ),
-    );
-  }
 
   Future<void> _onAutoStartChanged(bool value) async {
     final settingsService = SettingsService.instance;
@@ -646,11 +401,10 @@ class _MoreOptionsWindowState extends State<MoreOptionsWindow> with WindowListen
         _autoStartEnabled = value;
       });
     } else {
-      // 设置失败，静默处理
+      
     }
   }
 
-  // 窗口层级变化处理：0=常规,1=置顶,2=置底
   Future<void> _onWindowLayerChanged(int value) async {
     final settingsService = SettingsService.instance;
 
@@ -663,100 +417,11 @@ class _MoreOptionsWindowState extends State<MoreOptionsWindow> with WindowListen
         widget.onSettingsChanged?.call();
       }
     } catch (e) {
-      // 静默处理异常
+      
     }
   }
 
-  Widget _buildWindowLayerItem({
-    required IconData icon,
-    required String title,
-    required String subtitle,
-    required int value,
-    required ValueChanged<int> onChanged,
-  }) {
-    final colorScheme = Theme.of(context).colorScheme;
 
-    return Container(
-      padding: const EdgeInsets.all(16),
-      decoration: BoxDecoration(
-        color: colorScheme.surface,
-        borderRadius: BorderRadius.circular(12),
-        boxShadow: [
-          BoxShadow(
-            color: Colors.black.withValues(alpha: 0.05),
-            blurRadius: 8,
-            offset: const Offset(0, 2),
-          ),
-        ],
-      ),
-      child: Row(
-        children: [
-          Container(
-            padding: const EdgeInsets.all(12),
-            decoration: BoxDecoration(
-              color: colorScheme.primaryContainer,
-              borderRadius: BorderRadius.circular(12),
-            ),
-            child: Icon(
-              icon,
-              color: colorScheme.onPrimaryContainer,
-              size: 24,
-            ),
-          ),
-          const SizedBox(width: 16),
-          Expanded(
-            child: Column(
-              crossAxisAlignment: CrossAxisAlignment.start,
-              children: [
-                Text(
-                  title,
-                  style: TextStyle(
-                    fontSize: 16,
-                    fontWeight: FontWeight.w500,
-                    color: colorScheme.onSurface,
-                  ),
-                ),
-                const SizedBox(height: 4),
-                Text(
-                  subtitle,
-                  style: TextStyle(
-                    fontSize: 13,
-                    color: colorScheme.onSurfaceVariant,
-                  ),
-                ),
-              ],
-            ),
-          ),
-          Container(
-            padding: const EdgeInsets.symmetric(horizontal: 12, vertical: 6),
-            decoration: BoxDecoration(
-              color: colorScheme.primary.withValues(alpha: 0.06),
-              borderRadius: BorderRadius.circular(12),
-            ),
-            child: DropdownButton<int>(
-              value: value,
-              underline: const SizedBox.shrink(),
-              dropdownColor: colorScheme.surface,
-              elevation: 1,
-              borderRadius: BorderRadius.all(Radius.circular(12)),
-              items: const [
-                DropdownMenuItem(value: 1, child: Text('置顶')),
-                DropdownMenuItem(value: 0, child: Text('常规')),
-                DropdownMenuItem(value: 2, child: Text('置底')),
-              ],
-              onChanged: (v) {
-                if (v == null) return;
-                onChanged(v);
-              },
-            ),
-          ),
-        ],
-      ),
-    );
-  }
-
-
-  // 主题选择：0=亮色,1=暗色
   Future<void> _onThemeModeChanged(int value) async {
     final settingsService = SettingsService.instance;
     try {
@@ -768,99 +433,10 @@ class _MoreOptionsWindowState extends State<MoreOptionsWindow> with WindowListen
         widget.onThemeChanged?.call();
       }
     } catch (e) {
-      // 静默处理
+      
     }
   }
 
-  Widget _buildThemeModeItem({
-    required IconData icon,
-    required String title,
-    required String subtitle,
-    required int value,
-    required ValueChanged<int> onChanged,
-  }) {
-    final colorScheme = Theme.of(context).colorScheme;
-
-    return Container(
-      padding: const EdgeInsets.all(16),
-      decoration: BoxDecoration(
-        color: colorScheme.surface,
-        borderRadius: BorderRadius.circular(12),
-        boxShadow: [
-          BoxShadow(
-            color: Colors.black.withValues(alpha: 0.05),
-            blurRadius: 8,
-            offset: const Offset(0, 2),
-          ),
-        ],
-      ),
-      child: Row(
-        children: [
-          Container(
-            padding: const EdgeInsets.all(12),
-            decoration: BoxDecoration(
-              color: colorScheme.primaryContainer,
-              borderRadius: BorderRadius.circular(12),
-            ),
-            child: Icon(
-              icon,
-              color: colorScheme.onPrimaryContainer,
-              size: 24,
-            ),
-          ),
-          const SizedBox(width: 16),
-          Expanded(
-            child: Column(
-              crossAxisAlignment: CrossAxisAlignment.start,
-              children: [
-                Text(
-                  title,
-                  style: TextStyle(
-                    fontSize: 16,
-                    fontWeight: FontWeight.w500,
-                    color: colorScheme.onSurface,
-                  ),
-                ),
-                const SizedBox(height: 4),
-                Text(
-                  subtitle,
-                  style: TextStyle(
-                    fontSize: 13,
-                    color: colorScheme.onSurfaceVariant,
-                  ),
-                ),
-              ],
-            ),
-          ),
-          Container(
-            padding: const EdgeInsets.symmetric(horizontal: 12, vertical: 6),
-            decoration: BoxDecoration(
-              color: colorScheme.primary.withValues(alpha: 0.06),
-              borderRadius: BorderRadius.circular(12),
-            ),
-            child: DropdownButton<int>(
-              value: value,
-              underline: const SizedBox.shrink(),
-              dropdownColor: colorScheme.surface,
-              elevation: 1,
-              borderRadius: BorderRadius.all(Radius.circular(12)),
-              items: const [
-                DropdownMenuItem(value: 0, child: Text('亮色')),
-                DropdownMenuItem(value: 1, child: Text('暗色')),
-              ],
-              onChanged: (v) {
-                if (v == null) return;
-                onChanged(v);
-              },
-            ),
-          ),
-        ],
-      ),
-    );
-  }
-
-
-  // 已由 _onThemeModeChanged 处理主题切换
 
   Future<void> _onBackgroundOpacityChanged(double value) async {
     final settingsService = SettingsService.instance;
@@ -872,7 +448,7 @@ class _MoreOptionsWindowState extends State<MoreOptionsWindow> with WindowListen
       });
       widget.onSettingsChanged?.call();
     } else {
-      // 设置失败，静默处理
+      
     }
   }
 
@@ -886,7 +462,7 @@ class _MoreOptionsWindowState extends State<MoreOptionsWindow> with WindowListen
       });
       widget.onThemeChanged?.call();
     } else {
-      // 设置失败，静默处理
+      
     }
   }
 
@@ -900,7 +476,7 @@ class _MoreOptionsWindowState extends State<MoreOptionsWindow> with WindowListen
       });
       widget.onSettingsChanged?.call();
     } else {
-      // 设置失败，静默处理
+      
     }
   }
 
@@ -914,7 +490,7 @@ class _MoreOptionsWindowState extends State<MoreOptionsWindow> with WindowListen
       });
       widget.onSettingsChanged?.call();
     } else {
-      // 设置失败，静默处理
+      
     }
   }
 
@@ -928,7 +504,7 @@ class _MoreOptionsWindowState extends State<MoreOptionsWindow> with WindowListen
       });
       widget.onSettingsChanged?.call();
     } else {
-      // 设置失败，静默处理
+      
     }
   }
 
@@ -946,7 +522,7 @@ class _MoreOptionsWindowState extends State<MoreOptionsWindow> with WindowListen
       });
       widget.onSettingsChanged?.call();
     } else {
-      // 设置失败，静默处理
+      
     }
   }
 
@@ -969,754 +545,22 @@ class _MoreOptionsWindowState extends State<MoreOptionsWindow> with WindowListen
     );
   }
 
-  Widget _buildActionItem({
-    required IconData icon,
-    required String title,
-    required String subtitle,
-    required VoidCallback onTap,
-  }) {
-    final colorScheme = Theme.of(context).colorScheme;
-    
-    return InkWell(
-      onTap: onTap,
-      borderRadius: BorderRadius.circular(12),
-      child: Container(
-        padding: const EdgeInsets.all(16),
-        decoration: BoxDecoration(
-          color: colorScheme.surface,
-          borderRadius: BorderRadius.circular(12),
-          boxShadow: [
-            BoxShadow(
-              color: Colors.black.withValues(alpha: 0.05),
-              blurRadius: 8,
-              offset: const Offset(0, 2),
-            ),
-          ],
-        ),
-        child: Row(
-          children: [
-            Container(
-              padding: const EdgeInsets.all(12),
-              decoration: BoxDecoration(
-                color: colorScheme.primaryContainer,
-                borderRadius: BorderRadius.circular(12),
-              ),
-              child: Icon(
-                icon,
-                color: colorScheme.onPrimaryContainer,
-                size: 24,
-              ),
-            ),
-            const SizedBox(width: 16),
-            Expanded(
-              child: Column(
-                crossAxisAlignment: CrossAxisAlignment.start,
-                children: [
-                  Text(
-                    title,
-                    style: TextStyle(
-                      fontSize: 16,
-                      fontWeight: FontWeight.w500,
-                      color: colorScheme.onSurface,
-                    ),
-                  ),
-                  const SizedBox(height: 4),
-                  Text(
-                    subtitle,
-                    style: TextStyle(
-                      fontSize: 13,
-                      color: colorScheme.onSurfaceVariant,
-                    ),
-                  ),
-                ],
-              ),
-            ),
-            Icon(
-              Icons.arrow_forward_ios,
-              size: 16,
-              color: colorScheme.onSurfaceVariant,
-            ),
-          ],
-        ),
-      ),
-    );
-  }
 
-  Widget _buildAboutCard(ColorScheme colorScheme) {
-    return FutureBuilder<PackageInfo>(
-      future: PackageInfo.fromPlatform(),
-      builder: (context, snapshot) {
-        final version = snapshot.data?.version ?? '加载中...';
-        
-        return Container(
-          padding: const EdgeInsets.all(24),
-          decoration: BoxDecoration(
-            color: colorScheme.surface,
-            borderRadius: BorderRadius.circular(12),
-            boxShadow: [
-              BoxShadow(
-                color: Colors.black.withValues(alpha: 0.05),
-                blurRadius: 8,
-                offset: const Offset(0, 2),
-              ),
-            ],
-          ),
-          child: Column(
-            crossAxisAlignment: CrossAxisAlignment.start,
-            children: [
-              Row(
-                children: [
-                  Container(
-                    padding: const EdgeInsets.all(16),
-                    decoration: BoxDecoration(
-                      color: colorScheme.primaryContainer,
-                      borderRadius: BorderRadius.circular(16),
-                    ),
-                    child: Icon(
-                      Icons.info_outline,
-                      color: colorScheme.onPrimaryContainer,
-                      size: 32,
-                    ),
-                  ),
-                  const SizedBox(width: 16),
-                  Expanded(
-                    child: Column(
-                      crossAxisAlignment: CrossAxisAlignment.start,
-                      children: [
-                        Text(
-                          'FinitoBoard',
-                          style: TextStyle(
-                            fontSize: 24,
-                            fontWeight: FontWeight.w600,
-                            color: colorScheme.onSurface,
-                          ),
-                        ),
-                        const SizedBox(height: 4),
-                        Text(
-                          '版本 $version',
-                          style: TextStyle(
-                            fontSize: 14,
-                            color: colorScheme.onSurfaceVariant,
-                          ),
-                        ),
-                      ],
-                    ),
-                  ),
-                ],
-              ),
-              const SizedBox(height: 16),
-              Text(
-                '集中布置作业！',
-                style: TextStyle(
-                  fontSize: 15,
-                  color: colorScheme.onSurface,
-                  height: 1.5,
-                ),
-              ),
-              const SizedBox(height: 20),
-              Wrap(
-                spacing: 12,
-                runSpacing: 12,
-                children: [
-                  TextButton.icon(
-                    onPressed: () async {
-                      final uri = Uri.parse('https://github.com/Xwei1645/finito_board');
-                      if (await canLaunchUrl(uri)) {
-                        await launchUrl(uri);
-                      }
-                    },
-                    icon: const Icon(Icons.open_in_new, size: 18),
-                    label: const Text('GitHub'),
-                  ),
-                  TextButton.icon(
-                    onPressed: () => _showLicenseDialog(context),
-                    icon: const Icon(Icons.description, size: 18),
-                    label: const Text('开放源代码许可'),
-                  ),
-                ],
-              ),
-            ],
-          ),
-        );
-      },
-    );
-  }
 
-  void _showLicenseDialog(BuildContext context) async {
-    try {
-      final licenseText = await rootBundle.loadString('LICENSE');
-      
-      if (!context.mounted) return;
-      
-      final colorScheme = Theme.of(context).colorScheme;
-      
-      showDialog(
-        context: context,
-        builder: (context) => AlertDialog(
-          shape: RoundedRectangleBorder(
-            borderRadius: BorderRadius.circular(16),
-          ),
-          title: Row(
-            children: [
-              Icon(
-                Icons.description,
-                color: colorScheme.primary,
-                size: 24,
-              ),
-              const SizedBox(width: 12),
-              const Text(
-                '开放源代码许可',
-                style: TextStyle(fontWeight: FontWeight.bold),
-              ),
-            ],
-          ),
-          content: SizedBox(
-            width: 500,
-            height: 400,
-            child: SingleChildScrollView(
-              child: SelectableText(
-                licenseText,
-                style: const TextStyle(
-                  fontSize: 14,
-                ),
-              ),
-            ),
-          ),
-          actionsAlignment: MainAxisAlignment.spaceBetween,
-          actions: [
-            TextButton.icon(
-              onPressed: () {
-                Navigator.of(context).pop();
-                showLicensePage(
-                  context: context,
-                  applicationName: 'FinitoBoard',
-                  applicationVersion: null,
-                );
-              },
-              icon: const Icon(Icons.extension, size: 18),
-              label: const Text('第三方库'),
-            ),
-            FilledButton(
-              onPressed: () => Navigator.of(context).pop(),
-              style: FilledButton.styleFrom(
-                shape: RoundedRectangleBorder(
-                  borderRadius: BorderRadius.circular(20),
-                ),
-              ),
-              child: const Text('确定'),
-            ),
-          ],
-        ),
-      );
-    } catch (e) {
-      if (!context.mounted) return;
-      
-      ScaffoldMessenger.of(context).showSnackBar(
-        SnackBar(
-          content: Text('无法加载许可证文件: $e'),
-          backgroundColor: Colors.red,
-        ),
-      );
-    }
-  }
 
-  void _showColorPickerDialog(ValueChanged<int?> onChanged) {
-    final colorScheme = Theme.of(context).colorScheme;
-    Color selectedColor = _themeColor != null ? Color(_themeColor!) : colorScheme.primary;
 
-    showDialog(
-      context: context,
-      builder: (context) => StatefulBuilder(
-        builder: (context, setState) => AlertDialog(
-          title: const Text(
-            '选择主题色',
-            style: TextStyle(fontWeight: FontWeight.bold),
-          ),
-          content: SizedBox(
-            width: 320,
-            child: Column(
-              mainAxisSize: MainAxisSize.min,
-              children: [
-                Container(
-                  width: double.infinity,
-                  height: 60,
-                  decoration: BoxDecoration(
-                    color: selectedColor,
-                    borderRadius: BorderRadius.circular(8),
-                    border: Border.all(
-                      color: colorScheme.outline.withValues(alpha: 0.3),
-                      width: 1,
-                    ),
-                  ),
-                  child: Center(
-                    child: Text(
-                      '#${selectedColor.toARGB32().toRadixString(16).padLeft(8, '0').toUpperCase()}',
-                      style: TextStyle(
-                        color: selectedColor.computeLuminance() > 0.5 ? Colors.black : Colors.white,
-                        fontWeight: FontWeight.bold,
-                      ),
-                    ),
-                  ),
-                ),
-                const SizedBox(height: 16),
-                _buildColorSlider(
-                  label: '红',
-                  value: (selectedColor.r * 255.0).roundToDouble(),
-                  onChanged: (value) {
-                    setState(() {
-                      selectedColor = Color.fromARGB(
-                        (selectedColor.a * 255.0).round(),
-                        value.toInt(),
-                        (selectedColor.g * 255.0).round(),
-                        (selectedColor.b * 255.0).round(),
-                      );
-                    });
-                  },
-                  activeColor: Colors.red,
-                ),
-                _buildColorSlider(
-                  label: '绿',
-                  value: (selectedColor.g * 255.0).roundToDouble(),
-                  onChanged: (value) {
-                    setState(() {
-                      selectedColor = Color.fromARGB(
-                        (selectedColor.a * 255.0).round(),
-                        (selectedColor.r * 255.0).round(),
-                        value.toInt(),
-                        (selectedColor.b * 255.0).round(),
-                      );
-                    });
-                  },
-                  activeColor: Colors.green,
-                ),
-                _buildColorSlider(
-                  label: '蓝',
-                  value: (selectedColor.b * 255.0).roundToDouble(),
-                  onChanged: (value) {
-                    setState(() {
-                      selectedColor = Color.fromARGB(
-                        (selectedColor.a * 255.0).round(),
-                        (selectedColor.r * 255.0).round(),
-                        (selectedColor.g * 255.0).round(),
-                        value.toInt(),
-                      );
-                    });
-                  },
-                  activeColor: Colors.blue,
-                ),
-                const SizedBox(height: 16),
-                Wrap(
-                  spacing: 6,
-                  runSpacing: 6,
-                  children: [
-                    colorScheme.primary,
-                    Colors.red,
-                    Colors.pink,
-                    Colors.purple,
-                    Colors.deepPurple,
-                    Colors.indigo,
-                    Colors.blue,
-                    Colors.lightBlue,
-                    Colors.cyan,
-                    Colors.teal,
-                    Colors.green,
-                    Colors.lightGreen,
-                    Colors.lime,
-                    Colors.yellow,
-                    Colors.amber,
-                    Colors.orange,
-                    Colors.deepOrange,
-                    Colors.brown,
-                    Colors.grey,
-                    Colors.blueGrey,
-                  ].map((color) => GestureDetector(
-                    onTap: () {
-                      setState(() {
-                        selectedColor = color;
-                      });
-                    },
-                    child: Container(
-                      width: 28,
-                      height: 28,
-                      decoration: BoxDecoration(
-                        color: color,
-                        borderRadius: BorderRadius.circular(4),
-                        border: selectedColor.toARGB32() == color.toARGB32()
-                            ? Border.all(color: colorScheme.primary, width: 2)
-                            : Border.all(color: colorScheme.outline.withValues(alpha: 0.3), width: 1),
-                      ),
-                    ),
-                  )).toList(),
-                ),
-              ],
-            ),
-          ),
-          actions: [
-            TextButton(
-              onPressed: () => Navigator.of(context).pop(),
-              child: const Text('取消'),
-            ),
-            FilledButton(
-              onPressed: () {
-                onChanged(selectedColor.toARGB32());
-                Navigator.of(context).pop();
-              },
-              child: const Text('确定'),
-            ),
-          ],
-        ),
-      ),
-    );
-  }
 
-  Widget _buildColorSlider({
-    required String label,
-    required double value,
-    required ValueChanged<double> onChanged,
-    required Color activeColor,
-  }) {
-    return Row(
-      children: [
-        SizedBox(
-          width: 20,
-          child: Text(
-            label,
-            style: const TextStyle(fontWeight: FontWeight.bold),
-          ),
-        ),
-        Expanded(
-          child: Slider(
-            value: value,
-            min: 0,
-            max: 255,
-            divisions: 255,
-            onChanged: onChanged,
-            activeColor: activeColor,
-          ),
-        ),
-        SizedBox(
-          width: 40,
-          child: Text(
-            value.toInt().toString(),
-            textAlign: TextAlign.center,
-            style: const TextStyle(fontSize: 12),
-          ),
-        ),
-      ],
-    );
-  }
 
-  Widget _buildBackgroundImagePicker({
-    required IconData icon,
-    required String title,
-    required String subtitle,
-    required String? path,
-    required int mode,
-    required ValueChanged<String?> onPathChanged,
-    required ValueChanged<int> onModeChanged,
-    required VoidCallback onClear,
-  }) {
-    final colorScheme = Theme.of(context).colorScheme;
-    final hasImage = path != null && path.isNotEmpty;
 
-    return Container(
-      padding: const EdgeInsets.all(16),
-      decoration: BoxDecoration(
-        color: colorScheme.surface,
-        borderRadius: BorderRadius.circular(12),
-        boxShadow: [
-          BoxShadow(
-            color: Colors.black.withValues(alpha: 0.05),
-            blurRadius: 8,
-            offset: const Offset(0, 2),
-          ),
-        ],
-      ),
-      child: Row(
-        children: [
-          // 左侧内容
-          Expanded(
-            flex: 3,
-            child: Column(
-              crossAxisAlignment: CrossAxisAlignment.start,
-              children: [
-                Row(
-                  children: [
-                    Container(
-                      padding: const EdgeInsets.all(12),
-                      decoration: BoxDecoration(
-                        color: colorScheme.primaryContainer,
-                        borderRadius: BorderRadius.circular(12),
-                      ),
-                      child: Icon(
-                        icon,
-                        color: colorScheme.onPrimaryContainer,
-                        size: 24,
-                      ),
-                    ),
-                    const SizedBox(width: 16),
-                    Expanded(
-                      child: Column(
-                        crossAxisAlignment: CrossAxisAlignment.start,
-                        children: [
-                          Text(
-                            title,
-                            style: TextStyle(
-                              fontSize: 16,
-                              fontWeight: FontWeight.w500,
-                              color: colorScheme.onSurface,
-                            ),
-                          ),
-                          const SizedBox(height: 4),
-                          Text(
-                            subtitle,
-                            style: TextStyle(
-                              fontSize: 13,
-                              color: colorScheme.onSurfaceVariant,
-                            ),
-                          ),
-                        ],
-                      ),
-                    ),
-                  ],
-                ),
-                const SizedBox(height: 16),
-                // 按钮行
-                Row(
-                  children: [
-                    Expanded(
-                      child: FilledButton.icon(
-                        onPressed: () async {
-                          final result = await FilePicker.platform.pickFiles(
-                            type: FileType.image,
-                            allowMultiple: false,
-                          );
-                          if (result != null && result.files.isNotEmpty) {
-                            onPathChanged(result.files.first.path);
-                          }
-                        },
-                        icon: const Icon(Icons.folder_open, size: 18),
-                        label: Text(hasImage ? '更换图片' : '选择图片'),
-                      ),
-                    ),
-                    if (hasImage) ...[
-                      const SizedBox(width: 12),
-                      TextButton.icon(
-                        onPressed: onClear,
-                        icon: const Icon(Icons.clear, size: 18),
-                        label: const Text('清空'),
-                      ),
-                    ],
-                  ],
-                ),
-                if (hasImage) ...[
-                  const SizedBox(height: 16),
-                  Row(
-                    children: [
-                      Expanded(
-                        flex: 3,
-                        child: Row(
-                          children: [
-                            Text(
-                              '显示模式:',
-                              style: TextStyle(
-                                fontSize: 14,
-                                color: colorScheme.onSurfaceVariant,
-                              ),
-                            ),
-                            const SizedBox(width: 12),
-                            Expanded(
-                              child: DropdownButton<int>(
-                                value: mode,
-                                underline: const SizedBox.shrink(),
-                                dropdownColor: colorScheme.surface,
-                                elevation: 1,
-                                borderRadius: BorderRadius.all(Radius.circular(8)),
-                                items: const [
-                                  DropdownMenuItem(value: 0, child: Text('适应')),
-                                  DropdownMenuItem(value: 1, child: Text('填充')),
-                                  DropdownMenuItem(value: 2, child: Text('拉伸')),
-                                ],
-                                onChanged: (v) {
-                                  if (v != null) {
-                                    onModeChanged(v);
-                                  }
-                                },
-                              ),
-                            ),
-                          ],
-                        ),
-                      ),
-                      const SizedBox(width: 24),
-                      Expanded(
-                        flex: 8,
-                        child: Row(
-                          children: [
-                            Text(
-                              '混合比例:',
-                              style: TextStyle(
-                                fontSize: 14,
-                                color: colorScheme.onSurfaceVariant,
-                              ),
-                            ),
-                            const SizedBox(width: 12),
-                            Expanded(
-                              child: Slider(
-                                value: _backgroundImageOpacity,
-                                min: 0.0,
-                                max: 1.0,
-                                divisions: 100,
-                                onChanged: (value) {
-                                  setState(() {
-                                    _backgroundImageOpacity = value;
-                                  });
-                                  _onBackgroundImageOpacityChanged(value);
-                                },
-                                activeColor: colorScheme.primary,
-                              ),
-                            ),
-                            const SizedBox(width: 12),
-                            Text(
-                              '${(_backgroundImageOpacity * 100).round()}%',
-                              style: TextStyle(
-                                fontSize: 14,
-                                fontWeight: FontWeight.w600,
-                                color: colorScheme.primary,
-                              ),
-                            ),
-                          ],
-                        ),
-                      ),
-                    ],
-                  ),
-                ],
-              ],
-            ),
-          ),
-          const SizedBox(width: 16),
-          // 右侧图片预览
-          Expanded(
-            flex: 1,
-            child: hasImage
-                ? FutureBuilder<Size>(
-                    future: _getWindowSize(),
-                    builder: (context, snapshot) {
-                      final windowSize = snapshot.data ?? const Size(1200, 800);
-                      final aspectRatio = windowSize.width / windowSize.height;
-
-                      return LayoutBuilder(
-                        builder: (context, constraints) {
-                          final availableHeight = constraints.maxHeight;
-                          final availableWidth = constraints.maxWidth;
-
-                          // 计算内框尺寸，使其宽高比等于窗口宽高比，填满可用空间但留间隙
-                          double innerWidth = availableWidth - 16; // 留左右间隙
-                          double innerHeight = availableHeight - 16; // 留上下间隙
-
-                          // 调整尺寸以保持宽高比
-                          if (innerWidth / innerHeight > aspectRatio) {
-                            innerWidth = innerHeight * aspectRatio;
-                          } else {
-                            innerHeight = innerWidth / aspectRatio;
-                          }
-
-                          return Container(
-                            decoration: BoxDecoration(
-                              borderRadius: BorderRadius.circular(8),
-                            ),
-                            child: Center(
-                              child: ClipRRect(
-                                borderRadius: BorderRadius.circular(6),
-                                child: SizedBox(
-                                  width: innerWidth,
-                                  height: innerHeight,
-                                  child: Stack(
-                                    children: [
-                                      Container(
-                                        color: colorScheme.surface, // 底色
-                                      ),
-                                      Opacity(
-                                        opacity: _backgroundImageOpacity,
-                                        child: FittedBox(
-                                          fit: BoxFit.fill,
-                                          child: SizedBox(
-                                            width: innerWidth,
-                                            height: innerHeight,
-                                            child: Image.file(
-                                              File(path),
-                                              fit: _getBoxFitFromMode(mode),
-                                            ),
-                                          ),
-                                        ),
-                                      ),
-                                    ],
-                                  ),
-                                ),
-                              ),
-                            ),
-                          );
-                        },
-                      );
-                    },
-                  )
-                : Container(
-                    height: 120,
-                    decoration: BoxDecoration(
-                      color: colorScheme.surfaceContainerHighest.withValues(alpha: 0.3),
-                      borderRadius: BorderRadius.circular(8),
-                      border: Border.all(
-                        color: colorScheme.outline.withValues(alpha: 0.3),
-                        width: 1,
-                      ),
-                    ),
-                    child: Center(
-                      child: Icon(
-                        Icons.image_not_supported,
-                        size: 48,
-                        color: colorScheme.onSurfaceVariant.withValues(alpha: 0.5),
-                      ),
-                    ),
-                  ),
-          ),
-        ],
-      ),
-    );
-  }
-
-  BoxFit _getBoxFitFromMode(int mode) {
-    switch (mode) {
-      case 0:
-        return BoxFit.contain; // 适应
-      case 1:
-        return BoxFit.cover; // 填充
-      case 2:
-        return BoxFit.fill; // 拉伸
-      default:
-        return BoxFit.contain;
-    }
-  }
-
-  Future<Size> _getWindowSize() async {
-    try {
-      final bounds = await windowManager.getBounds();
-      return Size(bounds.width, bounds.height);
-    } catch (e) {
-      // 如果获取失败，返回默认尺寸
-      return const Size(1200, 800);
-    }
-  }
-
-  // ==================== 存储部分UI ====================
 
   Widget _buildStorageSection(ColorScheme colorScheme) {
     return Column(
       crossAxisAlignment: CrossAxisAlignment.start,
       children: [
-        // 快照卡片
+        
         _buildSnapshotCard(colorScheme),
         const SizedBox(height: 16),
-        
-        // 备份卡片
+
         _buildBackupCard(colorScheme),
       ],
     );
@@ -1739,7 +583,7 @@ class _MoreOptionsWindowState extends State<MoreOptionsWindow> with WindowListen
       child: Column(
         crossAxisAlignment: CrossAxisAlignment.start,
         children: [
-          // 卡片标题
+          
           Row(
             children: [
               Container(
@@ -1784,8 +628,7 @@ class _MoreOptionsWindowState extends State<MoreOptionsWindow> with WindowListen
               ),
             ],
           ),
-          
-          // 快照选项
+
           AnimatedSize(
             duration: const Duration(milliseconds: 300),
             curve: Curves.easeInOutCubic,
@@ -1797,8 +640,7 @@ class _MoreOptionsWindowState extends State<MoreOptionsWindow> with WindowListen
                       const SizedBox(height: 16),
                       Divider(color: colorScheme.outlineVariant.withValues(alpha: 0.5)),
                       const SizedBox(height: 16),
-                      
-                      // 快照时机标题
+
                       Padding(
                         padding: const EdgeInsets.only(left: 16, bottom: 12),
                         child: Text(
@@ -1810,8 +652,7 @@ class _MoreOptionsWindowState extends State<MoreOptionsWindow> with WindowListen
                           ),
                         ),
                       ),
-                      
-                      // 快照时机选项
+
                       Padding(
                         padding: const EdgeInsets.only(left: 16),
                         child: _buildCheckboxOption(
@@ -1848,8 +689,7 @@ class _MoreOptionsWindowState extends State<MoreOptionsWindow> with WindowListen
                       const SizedBox(height: 12),
                       Divider(color: colorScheme.outlineVariant.withValues(alpha: 0.5)),
                       const SizedBox(height: 12),
-                      
-                      // 限制快照数量选项
+
                       _buildSwitchOption(
                         colorScheme: colorScheme,
                         icon: Icons.format_list_numbered,
@@ -1857,8 +697,7 @@ class _MoreOptionsWindowState extends State<MoreOptionsWindow> with WindowListen
                         value: _limitSnapshotCount,
                         onChanged: _onLimitSnapshotCountChanged,
                       ),
-                      
-                      // 最大快照数量控制
+
                       AnimatedSize(
                         duration: const Duration(milliseconds: 300),
                         curve: Curves.easeInOutCubic,
@@ -1879,8 +718,7 @@ class _MoreOptionsWindowState extends State<MoreOptionsWindow> with WindowListen
                   )
                 : const SizedBox.shrink(),
           ),
-          
-          // 操作按钮
+
           const SizedBox(height: 16),
           Wrap(
             spacing: 12,
@@ -1926,7 +764,7 @@ class _MoreOptionsWindowState extends State<MoreOptionsWindow> with WindowListen
       child: Column(
         crossAxisAlignment: CrossAxisAlignment.start,
         children: [
-          // 卡片标题
+          
           Row(
             children: [
               Container(
@@ -1971,8 +809,7 @@ class _MoreOptionsWindowState extends State<MoreOptionsWindow> with WindowListen
               ),
             ],
           ),
-          
-          // 备份选项
+
           AnimatedSize(
             duration: const Duration(milliseconds: 300),
             curve: Curves.easeInOutCubic,
@@ -1984,8 +821,7 @@ class _MoreOptionsWindowState extends State<MoreOptionsWindow> with WindowListen
                       const SizedBox(height: 16),
                       Divider(color: colorScheme.outlineVariant.withValues(alpha: 0.5)),
                       const SizedBox(height: 16),
-                      
-                      // 备份时机标题
+
                       Padding(
                         padding: const EdgeInsets.only(left: 16, bottom: 12),
                         child: Text(
@@ -1997,8 +833,7 @@ class _MoreOptionsWindowState extends State<MoreOptionsWindow> with WindowListen
                           ),
                         ),
                       ),
-                      
-                      // 备份时机选项
+
                       Padding(
                         padding: const EdgeInsets.only(left: 16),
                         child: _buildCheckboxOption(
@@ -2035,8 +870,7 @@ class _MoreOptionsWindowState extends State<MoreOptionsWindow> with WindowListen
                       const SizedBox(height: 12),
                       Divider(color: colorScheme.outlineVariant.withValues(alpha: 0.5)),
                       const SizedBox(height: 12),
-                      
-                      // 限制备份数量选项
+
                       _buildSwitchOption(
                         colorScheme: colorScheme,
                         icon: Icons.format_list_numbered,
@@ -2044,8 +878,7 @@ class _MoreOptionsWindowState extends State<MoreOptionsWindow> with WindowListen
                         value: _limitBackupCount,
                         onChanged: _onLimitBackupCountChanged,
                       ),
-                      
-                      // 最大备份数量控制
+
                       AnimatedSize(
                         duration: const Duration(milliseconds: 300),
                         curve: Curves.easeInOutCubic,
@@ -2066,8 +899,7 @@ class _MoreOptionsWindowState extends State<MoreOptionsWindow> with WindowListen
                   )
                 : const SizedBox.shrink(),
           ),
-          
-          // 操作按钮
+
           const SizedBox(height: 16),
           Wrap(
             spacing: 12,
@@ -2103,36 +935,12 @@ class _MoreOptionsWindowState extends State<MoreOptionsWindow> with WindowListen
     required bool value,
     required ValueChanged<bool> onChanged,
   }) {
-    return InkWell(
-      onTap: () => onChanged(!value),
-      borderRadius: BorderRadius.circular(8),
-      child: Padding(
-        padding: const EdgeInsets.symmetric(vertical: 4, horizontal: 4),
-        child: Row(
-          children: [
-            Icon(
-              icon,
-              size: 20,
-              color: colorScheme.onSurfaceVariant,
-            ),
-            const SizedBox(width: 12),
-            Expanded(
-              child: Text(
-                title,
-                style: TextStyle(
-                  fontSize: 14,
-                  fontWeight: FontWeight.w500,
-                  color: colorScheme.onSurface,
-                ),
-              ),
-            ),
-            Checkbox(
-              value: value,
-              onChanged: (v) => onChanged(v ?? false),
-            ),
-          ],
-        ),
-      ),
+    return StorageWidgets.buildCheckboxOption(
+      colorScheme: colorScheme,
+      icon: icon,
+      title: title,
+      value: value,
+      onChanged: onChanged,
     );
   }
 
@@ -2143,32 +951,12 @@ class _MoreOptionsWindowState extends State<MoreOptionsWindow> with WindowListen
     required bool value,
     required ValueChanged<bool> onChanged,
   }) {
-    return Padding(
-      padding: const EdgeInsets.symmetric(vertical: 4, horizontal: 4),
-      child: Row(
-        children: [
-          Icon(
-            icon,
-            size: 20,
-            color: colorScheme.onSurfaceVariant,
-          ),
-          const SizedBox(width: 12),
-          Expanded(
-            child: Text(
-              title,
-              style: TextStyle(
-                fontSize: 14,
-                fontWeight: FontWeight.w500,
-                color: colorScheme.onSurface,
-              ),
-            ),
-          ),
-          Switch(
-            value: value,
-            onChanged: onChanged,
-          ),
-        ],
-      ),
+    return StorageWidgets.buildSwitchOption(
+      colorScheme: colorScheme,
+      icon: icon,
+      title: title,
+      value: value,
+      onChanged: onChanged,
     );
   }
 
@@ -2294,8 +1082,6 @@ class _MoreOptionsWindowState extends State<MoreOptionsWindow> with WindowListen
     );
   }
 
-  // ==================== 存储设置处理方法 ====================
-
   void _onSnapshotEnabledChanged(bool value) async {
     setState(() {
       _snapshotEnabled = value;
@@ -2365,7 +1151,7 @@ class _MoreOptionsWindowState extends State<MoreOptionsWindow> with WindowListen
   void _onLimitBackupCountChanged(bool value) async {
     setState(() {
       _limitBackupCount = value;
-      // 不修改 _maxAutoBackupCount 的值，保持原有数值
+      
     });
     await _saveStorageConfig();
   }
@@ -2390,45 +1176,26 @@ class _MoreOptionsWindowState extends State<MoreOptionsWindow> with WindowListen
       maxAutoBackupCount: _maxAutoBackupCount,
     );
     await SettingsService.instance.saveStorageConfig(config);
-    
-    // 如果配置了编辑配置时备份，则触发备份
+
     if (_autoBackupEnabled && _backupOnConfigChange) {
       await BackupService.instance.backupOnConfigChange();
     }
   }
 
   Future<void> _performManualBackup() async {
-    _showSnackBar('正在备份...');
-    final success = await BackupService.instance.performBackup(isAuto: false);
-    if (success) {
-      _showSnackBar('备份成功');
-    } else {
-      _showSnackBar('备份失败，请检查权限');
-    }
+    await StorageWidgets.performManualBackup(_showSnackBar);
   }
 
   Future<void> _openBackupDirectory() async {
-    final success = await BackupService.instance.openBackupDirectory();
-    if (!success) {
-      _showSnackBar('无法打开备份目录');
-    }
+    await StorageWidgets.openBackupDirectory(_showSnackBar);
   }
 
   Future<void> _createManualSnapshot() async {
-    _showSnackBar('正在创建快照...');
-    final success = await SnapshotService.instance.createSnapshot(isAuto: false, trigger: 'manual');
-    if (success) {
-      _showSnackBar('快照创建成功');
-    } else {
-      _showSnackBar('快照创建失败，可能没有作业数据');
-    }
+    await StorageWidgets.createManualSnapshot(_showSnackBar);
   }
 
   Future<void> _openSnapshotDirectory() async {
-    final success = await SnapshotService.instance.openSnapshotDirectory();
-    if (!success) {
-      _showSnackBar('无法打开快照目录');
-    }
+    await StorageWidgets.openSnapshotDirectory(_showSnackBar);
   }
 
   void _showSnackBar(String message) {
