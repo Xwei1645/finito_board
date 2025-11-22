@@ -1,16 +1,14 @@
 import 'dart:async';
-import 'dart:io';
 import 'package:flutter/material.dart';
-import 'package:flutter/services.dart';
-import 'package:url_launcher/url_launcher.dart';
-import 'package:package_info_plus/package_info_plus.dart';
-import 'package:file_picker/file_picker.dart';
 import 'package:window_manager/window_manager.dart';
 import '../services/settings_service.dart';
 import '../services/storage/backup_service.dart';
-import '../services/storage/snapshot_service.dart';
 import '../models/storage_config.dart';
 import '../widgets/oobe_dialog.dart';
+import 'widgets/common_setting_widgets.dart';
+import 'widgets/appearance_widgets.dart';
+import 'widgets/storage_widgets.dart';
+import 'widgets/about_widgets.dart';
 
 
 class MoreOptionsWindow extends StatefulWidget {
@@ -29,19 +27,16 @@ class MoreOptionsWindow extends StatefulWidget {
 
 class _MoreOptionsWindowState extends State<MoreOptionsWindow> with WindowListener {
   bool _autoStartEnabled = false;
-  // 0 = 常规, 1 = 置顶, 2 = 置底
   int _windowLayer = 0;
-  // 0 = 亮色, 1 = 暗色
   int _themeMode = 0;
   bool _showInTaskbarEnabled = false;
   double _backgroundOpacity = 0.95;
-  int? _themeColor; // 自定义主题色
-  String? _backgroundImagePath; // 背景图片路径
-  int _backgroundImageMode = 0; // 背景图片显示模式: 0=适应, 1=填充, 2=拉伸
-  double _backgroundImageOpacity = 1.0; // 背景图片混合比例
+  int? _themeColor;
+  String? _backgroundImagePath;
+  int _backgroundImageMode = 0;
+  double _backgroundImageOpacity = 1.0;
   bool _isLoading = true;
 
-  // 存储配置
   bool _snapshotEnabled = false;
   bool _snapshotOnEdit = false;
   bool _snapshotOnStartup = false;
@@ -74,11 +69,9 @@ class _MoreOptionsWindowState extends State<MoreOptionsWindow> with WindowListen
     super.initState();
     _loadSettings();
     _scrollController.addListener(_onScroll);
-    // 监听窗口大小变化以便实时更新预览
     try {
       windowManager.addListener(this);
     } catch (e) {
-      // 忽略在不支持的平台上的错误
     }
   }
 
@@ -88,7 +81,6 @@ class _MoreOptionsWindowState extends State<MoreOptionsWindow> with WindowListen
     try {
       windowManager.removeListener(this);
     } catch (e) {
-      // 忽略
     }
     _manualSelectionTimer?.cancel();
     super.dispose();
@@ -96,7 +88,6 @@ class _MoreOptionsWindowState extends State<MoreOptionsWindow> with WindowListen
 
   @override
   void onWindowResize() {
-    // 触发 rebuild，以便 FutureBuilder 重新获取窗口尺寸并更新预览
     if (mounted) setState(() {});
   }
 
