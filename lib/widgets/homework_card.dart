@@ -162,7 +162,11 @@ class _HomeworkCardState extends State<HomeworkCard> {
                                 scrollable: false,
                                 customStyles: DefaultStyles(
                                   paragraph: DefaultTextBlockStyle(
-                                    TextStyle(fontSize: 20, color: textColor),
+                                    TextStyle(
+                                      fontSize: 20,
+                                      color: textColor,
+                                      fontFamily: 'HarmonyOS Sans SC',
+                                    ),
                                     const HorizontalSpacing(0, 0),
                                     const VerticalSpacing(0, 0),
                                     const VerticalSpacing(0, 0),

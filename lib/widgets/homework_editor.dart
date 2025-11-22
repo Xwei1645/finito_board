@@ -768,7 +768,11 @@ class _HomeworkEditorState extends State<HomeworkEditor> {
                      placeholder: '请输入作业内容...',
                      customStyles: DefaultStyles(
                        paragraph: DefaultTextBlockStyle(
-                         TextStyle(fontSize: 20, color: textColor),
+                         TextStyle(
+                           fontSize: 20,
+                           color: textColor,
+                           fontFamily: 'HarmonyOS Sans SC',
+                         ),
                          const HorizontalSpacing(0, 0),
                          const VerticalSpacing(0, 0),
                          const VerticalSpacing(0, 0),
