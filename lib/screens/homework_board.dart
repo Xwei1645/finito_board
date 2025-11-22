@@ -876,6 +876,12 @@ class _HomeworkBoardState extends State<HomeworkBoard> with WindowListener, Tick
     _saveWindowState();
   }
 
+  @override
+  void onWindowClose() async {
+    // 确保所有待写入的数据被保存
+    await JsonStorageService.instance.flush();
+  }
+
   Future<void> _saveWindowState() async {
     try {
       final bounds = await windowManager.getBounds();

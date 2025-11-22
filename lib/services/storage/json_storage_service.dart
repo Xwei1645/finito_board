@@ -1,5 +1,6 @@
 import 'dart:io';
 import 'dart:convert';
+import 'dart:async';
 import 'package:path/path.dart' as p;
 import '../../models/homework.dart';
 import '../../models/subject.dart';
@@ -22,6 +23,23 @@ class JsonStorageService {
   AppConfig? _configCache;
   WindowState? _windowStateCache;
   final Map<String, Tag> _tagCache = {};
+  
+  // 防抖定时器
+  Timer? _windowStateDebounceTimer;
+  
+  // 脏标记
+  bool _homeworkDirty = false;
+  bool _subjectDirty = false;
+  bool _configDirty = false;
+  bool _windowStateDirty = false;
+  bool _tagDirty = false;
+  
+  // 写入队列定时器
+  Timer? _flushTimer;
+  static const Duration _flushInterval = Duration(seconds: 2);
+  
+  // 窗口状态防抖延迟
+  static const Duration _windowStateDebounceDelay = Duration(milliseconds: 500);
 
   static JsonStorageService? _instance;
   static JsonStorageService get instance => _instance ??= JsonStorageService._();
@@ -70,15 +88,22 @@ class JsonStorageService {
     }
   }
 
-  /// 通用的JSON文件写入方法
-  Future<void> _writeJsonFile(String fileName, Map<String, dynamic> data) async {
-    try {
-      final file = File(p.join(_dataDir, fileName));
-      final jsonString = json.encode(data);
-      await file.writeAsString(jsonString);
-    } catch (e) {
-      // 重新抛出写入错误
-      rethrow;
+  /// 通用的JSON文件写入方法（带重试机制）
+  Future<void> _writeJsonFile(String fileName, Map<String, dynamic> data, {int retries = 3}) async {
+    for (int i = 0; i < retries; i++) {
+      try {
+        final file = File(p.join(_dataDir, fileName));
+        final jsonString = json.encode(data);
+        await file.writeAsString(jsonString);
+        return; // 写入成功
+      } catch (e) {
+        if (i == retries - 1) {
+          // 最后一次重试失败，抛出错误
+          rethrow;
+        }
+        // 等待后重试
+        await Future.delayed(Duration(milliseconds: 100 * (i + 1)));
+      }
     }
   }
 
@@ -100,11 +125,23 @@ class JsonStorageService {
   }
 
   /// 保存作业数据
-  Future<void> _saveHomeworkData() async {
+  Future<void> _saveHomeworkData({bool immediate = false}) async {
+    _homeworkDirty = true;
+    if (immediate) {
+      await _flushHomeworkData();
+    } else {
+      _scheduleFlush();
+    }
+  }
+  
+  /// 立即写入作业数据
+  Future<void> _flushHomeworkData() async {
+    if (!_homeworkDirty) return;
     final data = {
       'homework': _homeworkCache.values.map((h) => h.toJson()).toList(),
     };
     await _writeJsonFile(_homeworkFileName, data);
+    _homeworkDirty = false;
   }
 
   /// 加载科目数据
@@ -125,11 +162,23 @@ class JsonStorageService {
   }
 
   /// 保存科目数据
-  Future<void> _saveSubjectData() async {
+  Future<void> _saveSubjectData({bool immediate = false}) async {
+    _subjectDirty = true;
+    if (immediate) {
+      await _flushSubjectData();
+    } else {
+      _scheduleFlush();
+    }
+  }
+  
+  /// 立即写入科目数据
+  Future<void> _flushSubjectData() async {
+    if (!_subjectDirty) return;
     final data = {
       'subjects': _subjectCache.values.map((s) => s.toJson()).toList(),
     };
     await _writeJsonFile(_subjectFileName, data);
+    _subjectDirty = false;
   }
 
   /// 加载配置数据
@@ -148,11 +197,23 @@ class JsonStorageService {
   }
 
   /// 保存配置数据
-  Future<void> _saveConfigData() async {
+  Future<void> _saveConfigData({bool immediate = false}) async {
+    _configDirty = true;
+    if (immediate) {
+      await _flushConfigData();
+    } else {
+      _scheduleFlush();
+    }
+  }
+  
+  /// 立即写入配置数据
+  Future<void> _flushConfigData() async {
+    if (!_configDirty) return;
     final data = {
       'config': _configCache?.toJson() ?? const AppConfig().toJson(),
     };
     await _writeJsonFile(_configFileName, data);
+    _configDirty = false;
   }
 
   /// 加载窗口状态数据
@@ -170,12 +231,30 @@ class JsonStorageService {
     }
   }
 
-  /// 保存窗口状态数据
-  Future<void> _saveWindowStateData() async {
+  /// 保存窗口状态数据（带防抖）
+  Future<void> _saveWindowStateData({bool immediate = false}) async {
+    _windowStateDirty = true;
+    
+    if (immediate) {
+      _windowStateDebounceTimer?.cancel();
+      await _flushWindowStateData();
+    } else {
+      // 使用防抖，避免频繁写入
+      _windowStateDebounceTimer?.cancel();
+      _windowStateDebounceTimer = Timer(_windowStateDebounceDelay, () {
+        _flushWindowStateData();
+      });
+    }
+  }
+  
+  /// 立即写入窗口状态数据
+  Future<void> _flushWindowStateData() async {
+    if (!_windowStateDirty) return;
     final data = {
       'windowState': _windowStateCache?.toJson() ?? const WindowState().toJson(),
     };
     await _writeJsonFile(_windowStateFileName, data);
+    _windowStateDirty = false;
   }
 
   /// 加载标签数据
@@ -196,11 +275,69 @@ class JsonStorageService {
   }
 
   /// 保存标签数据
-  Future<void> _saveTagData() async {
+  Future<void> _saveTagData({bool immediate = false}) async {
+    _tagDirty = true;
+    if (immediate) {
+      await _flushTagData();
+    } else {
+      _scheduleFlush();
+    }
+  }
+  
+  /// 立即写入标签数据
+  Future<void> _flushTagData() async {
+    if (!_tagDirty) return;
     final data = {
       'tags': _tagCache.values.map((t) => t.toJson()).toList(),
     };
     await _writeJsonFile(_tagFileName, data);
+    _tagDirty = false;
+  }
+  
+  /// 调度批量写入
+  void _scheduleFlush() {
+    _flushTimer?.cancel();
+    _flushTimer = Timer(_flushInterval, () {
+      _flushAll();
+    });
+  }
+  
+  /// 批量写入所有脏数据
+  Future<void> _flushAll() async {
+    final futures = <Future>[];
+    
+    if (_homeworkDirty) {
+      futures.add(_flushHomeworkData());
+    }
+    if (_subjectDirty) {
+      futures.add(_flushSubjectData());
+    }
+    if (_configDirty) {
+      futures.add(_flushConfigData());
+    }
+    if (_windowStateDirty) {
+      futures.add(_flushWindowStateData());
+    }
+    if (_tagDirty) {
+      futures.add(_flushTagData());
+    }
+    
+    if (futures.isNotEmpty) {
+      await Future.wait(futures);
+    }
+  }
+  
+  /// 手动触发所有待写入数据的立即写入
+  Future<void> flush() async {
+    _flushTimer?.cancel();
+    _windowStateDebounceTimer?.cancel();
+    await _flushAll();
+  }
+  
+  /// 清理资源
+  void dispose() {
+    _flushTimer?.cancel();
+    _windowStateDebounceTimer?.cancel();
   }
 
   // ==================== 作业数据管理 ====================
@@ -218,13 +355,13 @@ class JsonStorageService {
   /// 保存作业
   Future<void> saveHomework(Homework homework) async {
     _homeworkCache[homework.uuid] = homework;
-    await _saveHomeworkData();
+    await _saveHomeworkData(immediate: true);
   }
 
   /// 删除作业
   Future<void> deleteHomework(String uuid) async {
     _homeworkCache.remove(uuid);
-    await _saveHomeworkData();
+    await _saveHomeworkData(immediate: true);
   }
 
 
@@ -276,13 +413,13 @@ class JsonStorageService {
   /// 保存科目
   Future<void> saveSubject(Subject subject) async {
     _subjectCache[subject.uuid] = subject;
-    await _saveSubjectData();
+    await _saveSubjectData(immediate: true);
   }
 
   /// 删除科目
   Future<void> deleteSubject(String uuid) async {
     _subjectCache.remove(uuid);
-    await _saveSubjectData();
+    await _saveSubjectData(immediate: true);
   }
 
   /// 根据UUID获取科目
@@ -315,7 +452,7 @@ class JsonStorageService {
   /// 保存应用配置
   Future<void> saveAppConfig(AppConfig config) async {
     _configCache = config;
-    await _saveConfigData();
+    await _saveConfigData(immediate: false);
   }
 
 
@@ -344,7 +481,7 @@ class JsonStorageService {
   /// 保存窗口状态
   Future<void> saveWindowState(WindowState state) async {
     _windowStateCache = state;
-    await _saveWindowStateData();
+    await _saveWindowStateData(immediate: false);
   }
 
 
@@ -377,13 +514,13 @@ class JsonStorageService {
   /// 保存标签
   Future<void> saveTag(Tag tag) async {
     _tagCache[tag.uuid] = tag;
-    await _saveTagData();
+    await _saveTagData(immediate: true);
   }
 
   /// 删除标签
   Future<void> deleteTag(String uuid) async {
     _tagCache.remove(uuid);
-    await _saveTagData();
+    await _saveTagData(immediate: true);
   }
 
   /// 根据名称查找标签
