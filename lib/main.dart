@@ -5,9 +5,12 @@ import 'package:flutter/material.dart';
 import 'package:flutter_localizations/flutter_localizations.dart';
 import 'package:flutter_quill/flutter_quill.dart';
 import 'package:window_manager/window_manager.dart';
+import 'package:path/path.dart' as p;
 import 'screens/homework_board.dart';
 import 'services/settings_service.dart';
 import 'services/storage/json_storage_service.dart';
+import 'services/storage/backup_service.dart';
+import 'services/storage/snapshot_service.dart';
 
 
 void main() async {
@@ -16,8 +19,22 @@ void main() async {
   // 初始化JSON存储服务
   await JsonStorageService.instance.init();
   
+  // 初始化备份服务
+  final appDir = p.dirname(Platform.resolvedExecutable);
+  final dataDir = p.join(appDir, 'data');
+  await BackupService.instance.init(dataDir);
+  
+  // 初始化快照服务
+  await SnapshotService.instance.init(dataDir);
+  
   // 初始化设置服务
   await SettingsService.instance.initialize();
+  
+  // 应用启动时执行自动备份
+  await BackupService.instance.backupOnStartup();
+  
+  // 应用启动时执行自动快照
+  await SnapshotService.instance.snapshotOnStartup();
   
   if (!kIsWeb && (Platform.isWindows || Platform.isLinux || Platform.isMacOS)) {
     await windowManager.ensureInitialized();

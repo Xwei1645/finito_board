@@ -5,6 +5,7 @@ import 'package:window_manager/window_manager.dart';
 import 'package:package_info_plus/package_info_plus.dart';
 import '../models/app_config.dart';
 import '../models/window_state.dart';
+import '../models/storage_config.dart';
 import 'storage/json_storage_service.dart';
 
 
@@ -498,6 +499,23 @@ class SettingsService {
         backgroundImageOpacity: opacity,
       );
       await storageService.saveAppConfig(updatedConfig);
+      return true;
+    } catch (e) {
+      return false;
+    }
+  }
+
+  // ==================== 存储配置管理 ====================
+
+  /// 获取存储配置
+  StorageConfig getStorageConfig() {
+    return JsonStorageService.instance.getStorageConfig();
+  }
+
+  /// 保存存储配置
+  Future<bool> saveStorageConfig(StorageConfig config) async {
+    try {
+      await JsonStorageService.instance.saveStorageConfig(config);
       return true;
     } catch (e) {
       return false;

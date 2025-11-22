@@ -16,6 +16,8 @@ import '../widgets/toolbar.dart';
 import '../widgets/quick_menu.dart';
 import '../services/settings_service.dart';
 import '../services/storage/json_storage_service.dart';
+import '../services/storage/backup_service.dart';
+import '../services/storage/snapshot_service.dart';
 
 /// 作业看板主界面
 class HomeworkBoard extends StatefulWidget {
@@ -409,6 +411,11 @@ class _HomeworkBoardState extends State<HomeworkBoard> with WindowListener, Tick
     
     // 保存到JSON存储
     await storageService.saveHomework(homework);
+    
+    // 如果是编辑现有作业，触发快照
+    if (isEdit) {
+      await SnapshotService.instance.snapshotOnEdit();
+    }
     
     // 重新加载数据以更新UI
     await _loadData();
@@ -878,6 +885,10 @@ class _HomeworkBoardState extends State<HomeworkBoard> with WindowListener, Tick
 
   @override
   void onWindowClose() async {
+    // 退出时执行自动备份
+    await BackupService.instance.backupOnExit();
+    // 退出时执行自动快照
+    await SnapshotService.instance.snapshotOnExit();
     // 确保所有待写入的数据被保存
     await JsonStorageService.instance.flush();
   }

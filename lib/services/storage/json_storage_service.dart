@@ -7,6 +7,7 @@ import '../../models/subject.dart';
 import '../../models/app_config.dart';
 import '../../models/window_state.dart';
 import '../../models/tag.dart';
+import '../../models/storage_config.dart';
 
 class JsonStorageService {
   static const String _homeworkFileName = 'homework.json';
@@ -14,6 +15,7 @@ class JsonStorageService {
   static const String _configFileName = 'config.json';
   static const String _windowStateFileName = 'window_state.json';
   static const String _tagFileName = 'tag.json';
+  static const String _storageConfigFileName = 'storage_config.json';
 
   late String _dataDir;
   
@@ -23,6 +25,7 @@ class JsonStorageService {
   AppConfig? _configCache;
   WindowState? _windowStateCache;
   final Map<String, Tag> _tagCache = {};
+  StorageConfig? _storageConfigCache;
   
   // 防抖定时器
   Timer? _windowStateDebounceTimer;
@@ -33,6 +36,7 @@ class JsonStorageService {
   bool _configDirty = false;
   bool _windowStateDirty = false;
   bool _tagDirty = false;
+  bool _storageConfigDirty = false;
   
   // 写入队列定时器
   Timer? _flushTimer;
@@ -68,6 +72,7 @@ class JsonStorageService {
     await _loadConfigData();
     await _loadWindowStateData();
     await _loadTagData();
+    await _loadStorageConfigData();
   }
 
   /// 通用的JSON文件读取方法
@@ -293,6 +298,41 @@ class JsonStorageService {
     await _writeJsonFile(_tagFileName, data);
     _tagDirty = false;
   }
+
+  /// 加载存储配置数据
+  Future<void> _loadStorageConfigData() async {
+    final data = await _readJsonFile(_storageConfigFileName);
+    if (data != null && data['storageConfig'] != null) {
+      try {
+        _storageConfigCache = StorageConfig.fromJson(data['storageConfig']);
+      } catch (e) {
+        // 使用默认存储配置
+        _storageConfigCache = const StorageConfig();
+      }
+    } else {
+      _storageConfigCache = const StorageConfig();
+    }
+  }
+
+  /// 保存存储配置数据
+  Future<void> _saveStorageConfigData({bool immediate = false}) async {
+    _storageConfigDirty = true;
+    if (immediate) {
+      await _flushStorageConfigData();
+    } else {
+      _scheduleFlush();
+    }
+  }
+  
+  /// 立即写入存储配置数据
+  Future<void> _flushStorageConfigData() async {
+    if (!_storageConfigDirty) return;
+    final data = {
+      'storageConfig': _storageConfigCache?.toJson() ?? const StorageConfig().toJson(),
+    };
+    await _writeJsonFile(_storageConfigFileName, data);
+    _storageConfigDirty = false;
+  }
   
   /// 调度批量写入
   void _scheduleFlush() {
@@ -320,6 +360,9 @@ class JsonStorageService {
     }
     if (_tagDirty) {
       futures.add(_flushTagData());
+    }
+    if (_storageConfigDirty) {
+      futures.add(_flushStorageConfigData());
     }
     
     if (futures.isNotEmpty) {
@@ -534,6 +577,17 @@ class JsonStorageService {
     }
   }
 
+  // ==================== 存储配置管理 ====================
+  
+  /// 获取存储配置
+  StorageConfig getStorageConfig() {
+    return _storageConfigCache ?? const StorageConfig();
+  }
 
+  /// 保存存储配置
+  Future<void> saveStorageConfig(StorageConfig config) async {
+    _storageConfigCache = config;
+    await _saveStorageConfigData(immediate: true);
+  }
 
 }
