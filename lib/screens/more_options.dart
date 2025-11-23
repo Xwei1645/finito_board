@@ -188,9 +188,14 @@ class _MoreOptionsWindowState extends State<MoreOptionsWindow> with WindowListen
     return Scaffold(
       backgroundColor: colorScheme.surface,
       appBar: AppBar(
-        title: const Text(
-          '更多选项',
-          style: TextStyle(fontWeight: FontWeight.bold),
+        title: DragToMoveArea(
+          child: const SizedBox(
+            width: double.infinity,
+            child: Text(
+              '更多选项',
+              style: TextStyle(fontWeight: FontWeight.bold),
+            ),
+          ),
         ),
         centerTitle: false,
         elevation: 0,
