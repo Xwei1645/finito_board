@@ -2,6 +2,7 @@ import 'dart:convert';
 import 'package:flutter/material.dart';
 import 'package:flutter_quill/flutter_quill.dart';
 import 'package:intl/intl.dart';
+import 'package:loggy/loggy.dart';
 import '../models/homework.dart';
 import '../services/storage/json_storage_service.dart';
 import '../models/tag.dart';
@@ -64,8 +65,10 @@ class _HomeworkEditorState extends State<HomeworkEditor> {
         // 尝试解析JSON格式的富文本内容
         final deltaJson = jsonDecode(widget.homework!.content);
         _contentController.document = Document.fromJson(deltaJson);
+        logDebug('成功解析作业内容为富文本格式');
       } catch (e) {
         // 如果解析失败，说明是旧的纯文本格式，直接插入
+        logWarning('富文本解析失败，使用纯文本格式: $e');
         _contentController.document = Document()..insert(0, widget.homework!.content);
       }
     }

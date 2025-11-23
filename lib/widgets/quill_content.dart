@@ -1,5 +1,6 @@
 import 'dart:convert';
 import 'package:flutter/material.dart';
+import 'package:loggy/loggy.dart';
 
 class QuillContent extends StatelessWidget {
   final String content;
@@ -57,12 +58,14 @@ class QuillContent extends StatelessWidget {
         }
       }
 
+      logDebug('QuillContent: 成功渲染富文本内容');
       return RichText(
         text: TextSpan(children: spans),
         textScaler: textScaler,
       );
     } catch (e) {
       // Fallback for plain text
+      logWarning('QuillContent: 富文本解析失败，使用纯文本格式: $e');
       return Text(
         content,
         style: defaultTextStyle,

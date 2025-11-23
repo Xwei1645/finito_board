@@ -2,6 +2,7 @@ import 'dart:io';
 import 'dart:convert';
 import 'dart:async';
 import 'package:path/path.dart' as p;
+import 'package:loggy/loggy.dart';
 import '../../models/homework.dart';
 import '../../models/subject.dart';
 import '../../models/app_config.dart';
@@ -50,18 +51,23 @@ class JsonStorageService {
   /// 初始化JSON存储服务
   Future<void> init() async {
     try {
+      logInfo('初始化JSON存储服务');
       final appDir = p.dirname(Platform.resolvedExecutable);
       _dataDir = p.join(appDir, 'data');
+      logDebug('数据目录: $_dataDir');
       
       // 确保data目录存在
       final dataDirEntity = Directory(_dataDir);
       if (!await dataDirEntity.exists()) {
         await dataDirEntity.create(recursive: true);
+        logInfo('创建数据目录: $_dataDir');
       }
       
       // 加载所有数据到缓存
       await _loadAllData();
+      logInfo('JSON存储服务初始化成功');
     } catch (e) {
+      logError('JSON存储服务初始化失败', e);
       rethrow;
     }
   }
@@ -78,10 +84,12 @@ class JsonStorageService {
   /// 通用的JSON文件读取方法
   Future<Map<String, dynamic>?> _readJsonFile(String fileName) async {
     try {
+      logDebug('读取JSON文件: $fileName');
       final file = File(p.join(_dataDir, fileName));
       
       // 检查文件是否存在
       if (!await file.exists()) {
+        logDebug('文件不存在: $fileName');
         return null;
       }
       
@@ -90,6 +98,7 @@ class JsonStorageService {
       
       // 检查内容是否为空
       if (content.trim().isEmpty) {
+        logDebug('文件内容为空: $fileName');
         return null;
       }
       
@@ -97,20 +106,26 @@ class JsonStorageService {
       try {
         final decoded = json.decode(content);
         if (decoded is! Map<String, dynamic>) {
+          logDebug('JSON格式不正确: $fileName');
           return null;
         }
+        logDebug('成功读取JSON文件: $fileName');
         return decoded;
-      } on FormatException {
+      } on FormatException catch (e) {
+        logError('JSON解析失败: $fileName', e);
         // 尝试备份损坏的文件
         try {
           final bakFile = File(p.join(_dataDir, '$fileName.corrupted'));
           await file.copy(bakFile.path);
-        } catch (_) {
+          logInfo('已备份损坏的文件: $fileName.corrupted');
+        } catch (backupError) {
+          logError('备份损坏文件失败: $fileName', backupError);
           // 备份失败不影响主流程
         }
         return null;
       }
     } catch (e) {
+      logError('读取JSON文件失败: $fileName', e);
       // 处理其他读取错误（如权限问题）
       return null;
     }
@@ -120,6 +135,7 @@ class JsonStorageService {
   Future<void> _writeJsonFile(String fileName, Map<String, dynamic> data, {int retries = 3}) async {
     for (int i = 0; i < retries; i++) {
       try {
+        logDebug('写入JSON文件: $fileName (尝试 ${i + 1}/$retries)');
         final file = File(p.join(_dataDir, fileName));
         final bakFile = File(p.join(_dataDir, '$fileName.bak'));
         
@@ -127,7 +143,9 @@ class JsonStorageService {
         if (await file.exists()) {
           try {
             await file.copy(bakFile.path);
+            logDebug('创建备份: $fileName.bak');
           } catch (e) {
+            logError('创建备份失败: $fileName', e);
             // 备份失败不影响主流程
           }
         }
@@ -137,26 +155,32 @@ class JsonStorageService {
         try {
           jsonString = json.encode(data);
         } catch (e) {
+          logError('JSON编码失败: $fileName', e);
           rethrow;
         }
         
         // 写入文件
         await file.writeAsString(jsonString);
+        logInfo('成功写入JSON文件: $fileName');
         return; // 写入成功
       } catch (e) {
         if (i == retries - 1) {
+          logError('写入JSON文件失败（所有重试均失败）: $fileName', e);
           // 最后一次重试失败，尝试恢复备份
           try {
             final file = File(p.join(_dataDir, fileName));
             final bakFile = File(p.join(_dataDir, '$fileName.bak'));
             if (await bakFile.exists()) {
               await bakFile.copy(file.path);
+              logInfo('已恢复备份文件: $fileName');
             }
           } catch (restoreError) {
+            logError('恢复备份文件失败: $fileName', restoreError);
             // 恢复失败
           }
           rethrow;
         }
+        logDebug('写入失败，等待重试: $fileName');
         // 等待后重试
         await Future.delayed(Duration(milliseconds: 100 * (i + 1)));
       }
@@ -166,6 +190,7 @@ class JsonStorageService {
   /// 加载作业数据
   Future<void> _loadHomeworkData() async {
     try {
+      logDebug('加载作业数据');
       final data = await _readJsonFile(_homeworkFileName);
       _homeworkCache.clear();
       if (data != null && data['homework'] is List) {
@@ -177,11 +202,14 @@ class JsonStorageService {
               _homeworkCache[homework.uuid] = homework;
             }
           } catch (e) {
+            logError('解析作业数据项失败', e);
             // 跳过无效项
           }
         }
       }
+      logInfo('加载作业数据完成，共 ${_homeworkCache.length} 条');
     } catch (e) {
+      logError('加载作业数据失败', e);
       _homeworkCache.clear();
     }
   }
@@ -209,6 +237,7 @@ class JsonStorageService {
   /// 加载科目数据
   Future<void> _loadSubjectData() async {
     try {
+      logDebug('加载科目数据');
       final data = await _readJsonFile(_subjectFileName);
       _subjectCache.clear();
       if (data != null && data['subjects'] is List) {
@@ -220,11 +249,14 @@ class JsonStorageService {
               _subjectCache[subject.uuid] = subject;
             }
           } catch (e) {
+            logError('解析科目数据项失败', e);
             // 跳过无效项
           }
         }
       }
+      logInfo('加载科目数据完成，共 ${_subjectCache.length} 条');
     } catch (e) {
+      logError('加载科目数据失败', e);
       _subjectCache.clear();
     }
   }
@@ -252,21 +284,27 @@ class JsonStorageService {
   /// 加载配置数据
   Future<void> _loadConfigData() async {
     try {
+      logDebug('加载配置数据');
       final data = await _readJsonFile(_configFileName);
       if (data != null && data['config'] != null) {
         try {
           if (data['config'] is Map<String, dynamic>) {
             _configCache = AppConfig.fromJson(data['config']);
+            logInfo('加载配置数据完成');
           } else {
             _configCache = const AppConfig();
+            logDebug('配置数据格式不正确，使用默认配置');
           }
         } catch (e) {
+          logError('解析配置数据失败，使用默认配置', e);
           _configCache = const AppConfig();
         }
       } else {
+        logDebug('配置文件不存在，使用默认配置');
         _configCache = const AppConfig();
       }
     } catch (e) {
+      logError('加载配置数据失败，使用默认配置', e);
       _configCache = const AppConfig();
     }
   }
@@ -294,21 +332,27 @@ class JsonStorageService {
   /// 加载窗口状态数据
   Future<void> _loadWindowStateData() async {
     try {
+      logDebug('加载窗口状态数据');
       final data = await _readJsonFile(_windowStateFileName);
       if (data != null && data['windowState'] != null) {
         try {
           if (data['windowState'] is Map<String, dynamic>) {
             _windowStateCache = WindowState.fromJson(data['windowState']);
+            logDebug('加载窗口状态数据完成');
           } else {
             _windowStateCache = const WindowState();
+            logDebug('窗口状态数据格式不正确，使用默认值');
           }
         } catch (e) {
+          logError('解析窗口状态数据失败，使用默认值', e);
           _windowStateCache = const WindowState();
         }
       } else {
+        logDebug('窗口状态文件不存在，使用默认值');
         _windowStateCache = const WindowState();
       }
     } catch (e) {
+      logError('加载窗口状态数据失败，使用默认值', e);
       _windowStateCache = const WindowState();
     }
   }
@@ -342,6 +386,7 @@ class JsonStorageService {
   /// 加载标签数据
   Future<void> _loadTagData() async {
     try {
+      logDebug('加载标签数据');
       final data = await _readJsonFile(_tagFileName);
       _tagCache.clear();
       if (data != null && data['tags'] is List) {
@@ -353,11 +398,14 @@ class JsonStorageService {
               _tagCache[tag.uuid] = tag;
             }
           } catch (e) {
+            logError('解析标签数据项失败', e);
             // 跳过无效项
           }
         }
       }
+      logInfo('加载标签数据完成，共 ${_tagCache.length} 条');
     } catch (e) {
+      logError('加载标签数据失败', e);
       _tagCache.clear();
     }
   }
@@ -417,6 +465,7 @@ class JsonStorageService {
   
   /// 手动触发所有待写入数据的立即写入
   Future<void> flush() async {
+    logInfo('手动刷新所有待写入数据');
     _flushTimer?.cancel();
     _windowStateDebounceTimer?.cancel();
     await _flushAll();
@@ -442,12 +491,14 @@ class JsonStorageService {
 
   /// 保存作业
   Future<void> saveHomework(Homework homework) async {
+    logInfo('保存作业: ${homework.uuid}');
     _homeworkCache[homework.uuid] = homework;
     await _saveHomeworkData(immediate: true);
   }
 
   /// 删除作业
   Future<void> deleteHomework(String uuid) async {
+    logInfo('删除作业: $uuid');
     _homeworkCache.remove(uuid);
     await _saveHomeworkData(immediate: true);
   }
@@ -500,12 +551,14 @@ class JsonStorageService {
 
   /// 保存科目
   Future<void> saveSubject(Subject subject) async {
+    logInfo('保存科目: ${subject.name} (${subject.uuid})');
     _subjectCache[subject.uuid] = subject;
     await _saveSubjectData(immediate: true);
   }
 
   /// 删除科目
   Future<void> deleteSubject(String uuid) async {
+    logInfo('删除科目: $uuid');
     _subjectCache.remove(uuid);
     await _saveSubjectData(immediate: true);
   }
@@ -522,6 +575,7 @@ class JsonStorageService {
         (subject) => subject.name == name,
       );
     } catch (e) {
+      logDebug('未找到科目: $name');
       return null;
     }
   }
@@ -539,6 +593,7 @@ class JsonStorageService {
 
   /// 保存应用配置
   Future<void> saveAppConfig(AppConfig config) async {
+    logInfo('保存应用配置');
     _configCache = config;
     await _saveConfigData(immediate: false);
   }
@@ -568,6 +623,7 @@ class JsonStorageService {
 
   /// 保存窗口状态
   Future<void> saveWindowState(WindowState state) async {
+    logDebug('保存窗口状态');
     _windowStateCache = state;
     await _saveWindowStateData(immediate: false);
   }
@@ -601,12 +657,14 @@ class JsonStorageService {
 
   /// 保存标签
   Future<void> saveTag(Tag tag) async {
+    logInfo('保存标签: ${tag.name} (${tag.uuid})');
     _tagCache[tag.uuid] = tag;
     await _saveTagData(immediate: true);
   }
 
   /// 删除标签
   Future<void> deleteTag(String uuid) async {
+    logInfo('删除标签: $uuid');
     _tagCache.remove(uuid);
     await _saveTagData(immediate: true);
   }
@@ -618,6 +676,7 @@ class JsonStorageService {
         (tag) => tag.name == name,
       );
     } catch (e) {
+      logDebug('未找到标签: $name');
       return null;
     }
   }
@@ -645,6 +704,7 @@ class JsonStorageService {
 
   /// 保存存储配置（更新到 AppConfig 中）
   Future<void> saveStorageConfig(StorageConfig config) async {
+    logInfo('保存存储配置');
     final currentConfig = _configCache ?? const AppConfig();
     _configCache = currentConfig.copyWith(
       snapshotEnabled: config.snapshotEnabled,

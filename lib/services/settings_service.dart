@@ -3,6 +3,7 @@ import 'package:flutter/material.dart';
 import 'package:launch_at_startup/launch_at_startup.dart';
 import 'package:window_manager/window_manager.dart';
 import 'package:package_info_plus/package_info_plus.dart';
+import 'package:loggy/loggy.dart';
 import '../models/app_config.dart';
 import '../models/window_state.dart';
 import '../models/storage_config.dart';
@@ -45,8 +46,9 @@ class SettingsService {
         appPath: Platform.resolvedExecutable,
         packageName: packageInfo.packageName,
       );
+      logDebug('开机自启配置初始化成功');
     } catch (e) {
-      // 初始化失败，静默处理
+      logWarning('开机自启配置初始化失败', e);
     }
   }
   
@@ -66,8 +68,11 @@ class SettingsService {
   /// 检查开机自启的实际状态（从系统获取）
   Future<bool> checkAutoStartStatus() async {
     try {
-      return await launchAtStartup.isEnabled();
+      final enabled = await launchAtStartup.isEnabled();
+      logDebug('开机自启状态: $enabled');
+      return enabled;
     } catch (e) {
+      logError('检查开机自启状态失败', e);
       return false;
     }
   }
@@ -107,9 +112,11 @@ class SettingsService {
         showInTaskbar: currentConfig.showInTaskbar,
       );
       await storageService.saveAppConfig(updatedConfig);
+      logInfo('开机自启已${enabled ? "启用" : "禁用"}');
       return const SettingsResult.success();
     } catch (e) {
       final errorMessage = e.toString();
+      logError('设置开机自启失败', e);
       return SettingsResult.failure(errorMessage);
     }
   }
@@ -143,8 +150,10 @@ class SettingsService {
         windowLevel: level,
       );
       await storageService.saveAppConfig(updatedConfig);
+      logDebug('窗口层级已设置为: $level');
       return true;
     } catch (e) {
+      logError('设置窗口层级失败', e);
       return false;
     }
   }
@@ -171,8 +180,10 @@ class SettingsService {
         showInTaskbar: enabled,
       );
       await storageService.saveAppConfig(updatedConfig);
+      logDebug('任务栏显示已${enabled ? "启用" : "禁用"}');
       return true;
     } catch (e) {
+      logError('设置任务栏显示失败', e);
       return false;
     }
   }
@@ -203,8 +214,10 @@ class SettingsService {
         themeColor: currentConfig.themeColor,
       );
       await storageService.saveAppConfig(updatedConfig);
+      logDebug('主题模式已设置为: ${enabled ? "深色" : "浅色"}');
       return true;
     } catch (e) {
+      logError('设置主题模式失败', e);
       return false;
     }
   }
@@ -228,8 +241,10 @@ class SettingsService {
         backgroundOpacity: clampedOpacity,
       );
       await storageService.saveAppConfig(updatedConfig);
+      logDebug('背景不透明度已设置为: ${(clampedOpacity * 100).toStringAsFixed(0)}%');
       return true;
     } catch (e) {
+      logError('设置背景不透明度失败', e);
       return false;
     }
   }
@@ -250,8 +265,10 @@ class SettingsService {
         themeColor: colorValue,
       );
       await storageService.saveAppConfig(updatedConfig);
+      logDebug('主题色已设置: ${colorValue != null ? "#${colorValue.toRadixString(16)}" : "默认"}');
       return true;
     } catch (e) {
+      logError('设置主题色失败', e);
       return false;
     }
   }
@@ -278,8 +295,10 @@ class SettingsService {
       );
       
       await JsonStorageService.instance.saveWindowState(windowState);
+      logDebug('窗口状态已保存: $width x $height at ($x, $y)');
       return true;
     } catch (e) {
+      logError('保存窗口状态失败', e);
       return false;
     }
   }
@@ -289,6 +308,7 @@ class SettingsService {
     try {
       return JsonStorageService.instance.getWindowState();
     } catch (e) {
+      logError('获取窗口状态失败', e);
       return null;
     }
   }
@@ -312,10 +332,12 @@ class SettingsService {
           await windowManager.setFullScreen(true);
         }
         
+        logInfo('窗口状态已恢复');
         return true;
       }
       return false;
     } catch (e) {
+      logError('恢复窗口状态失败', e);
       return false;
     }
   }
@@ -335,8 +357,10 @@ class SettingsService {
         firstLaunch: false,
       );
       await storageService.saveAppConfig(updatedConfig);
+      logInfo('OOBE已完成标记');
       return true;
     } catch (e) {
+      logError('标记OOBE完成失败', e);
       return false;
     }
   }
@@ -381,11 +405,14 @@ class SettingsService {
       ]);
       
       if (createResult.exitCode == 0) {
+        logInfo('桌面快捷方式创建成功');
         return const SettingsResult.success();
       } else {
+        logError('创建桌面快捷方式失败', createResult.stderr);
         return SettingsResult.failure('创建快捷方式失败: ${createResult.stderr}');
       }
     } catch (e) {
+      logError('创建桌面快捷方式异常', e);
       return SettingsResult.failure('创建桌面快捷方式时发生错误: $e');
     }
   }
@@ -430,11 +457,14 @@ class SettingsService {
       ]);
       
       if (createResult.exitCode == 0) {
+        logInfo('开始菜单快捷方式创建成功');
         return const SettingsResult.success();
       } else {
+        logError('创建开始菜单快捷方式失败', createResult.stderr);
         return SettingsResult.failure('创建快捷方式失败: ${createResult.stderr}');
       }
     } catch (e) {
+      logError('创建开始菜单快捷方式异常', e);
       return SettingsResult.failure('创建开始菜单快捷方式时发生错误: $e');
     }
   }
@@ -455,8 +485,10 @@ class SettingsService {
         backgroundImagePath: path,
       );
       await storageService.saveAppConfig(updatedConfig);
+      logDebug('背景图片路径已设置: ${path ?? "无"}');
       return true;
     } catch (e) {
+      logError('设置背景图片路径失败', e);
       return false;
     }
   }
@@ -477,8 +509,10 @@ class SettingsService {
         backgroundImageMode: mode,
       );
       await storageService.saveAppConfig(updatedConfig);
+      logDebug('背景图片显示模式已设置为: $mode');
       return true;
     } catch (e) {
+      logError('设置背景图片显示模式失败', e);
       return false;
     }
   }
@@ -499,8 +533,10 @@ class SettingsService {
         backgroundImageOpacity: opacity,
       );
       await storageService.saveAppConfig(updatedConfig);
+      logDebug('背景图片不透明度已设置为: ${(opacity * 100).toStringAsFixed(0)}%');
       return true;
     } catch (e) {
+      logError('设置背景图片不透明度失败', e);
       return false;
     }
   }
@@ -516,8 +552,10 @@ class SettingsService {
   Future<bool> saveStorageConfig(StorageConfig config) async {
     try {
       await JsonStorageService.instance.saveStorageConfig(config);
+      logDebug('存储配置已保存');
       return true;
     } catch (e) {
+      logError('保存存储配置失败', e);
       return false;
     }
   }

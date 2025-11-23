@@ -2,6 +2,7 @@ import 'dart:convert';
 import 'package:flutter/material.dart';
 import 'package:flutter_quill/flutter_quill.dart';
 import 'package:intl/intl.dart';
+import 'package:loggy/loggy.dart';
 import '../models/homework.dart';
 import '../services/settings_service.dart';
 import '../services/storage/json_storage_service.dart';
@@ -40,8 +41,10 @@ class _HomeworkCardState extends State<HomeworkCard> {
         // 尝试解析JSON格式的富文本内容
         final deltaJson = jsonDecode(widget.homework.content);
         _contentController.document = Document.fromJson(deltaJson);
+        logDebug('作业卡片: 成功解析富文本内容');
       } catch (e) {
         // 如果解析失败，说明是旧的纯文本格式，直接插入
+        logWarning('作业卡片: 富文本解析失败，使用纯文本格式: $e');
         _contentController.document = Document()..insert(0, widget.homework.content);
       }
     }
@@ -77,8 +80,10 @@ class _HomeworkCardState extends State<HomeworkCard> {
           // 尝试解析JSON格式的富文本内容
           final deltaJson = jsonDecode(widget.homework.content);
           _contentController.document = Document.fromJson(deltaJson);
+          logDebug('作业卡片更新: 成功解析富文本内容');
         } catch (e) {
           // 如果解析失败，直接插入
+          logWarning('作业卡片更新: 富文本解析失败，使用纯文本格式: $e');
           _contentController.document = Document()..insert(0, widget.homework.content);
         }
       } else {

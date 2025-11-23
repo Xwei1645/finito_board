@@ -1,5 +1,6 @@
 import 'dart:io';
 import 'package:flutter/material.dart';
+import 'package:loggy/loggy.dart';
 import '../services/settings_service.dart';
 
 class OOBEDialog extends StatefulWidget {
@@ -54,39 +55,48 @@ class _OOBEDialogState extends State<OOBEDialog> {
       
       // 应用开机自启设置
       await settingsService.setAutoStart(_autoStart);
+      logDebug('OOBE: 开机自启设置已应用 - $_autoStart');
       
       // 应用主题设置
       await settingsService.setDarkMode(_isDarkMode);
+      logDebug('OOBE: 主题设置已应用 - 深色模式: $_isDarkMode');
       
       // 创建快捷方式（仅在Windows平台）
       if (_isWindows) {
         if (_createDesktopShortcut) {
           final desktopResult = await settingsService.createDesktopShortcut();
           if (!desktopResult.success && mounted) {
+            logWarning('OOBE: 创建桌面快捷方式失败: ${desktopResult.error}');
             ScaffoldMessenger.of(context).showSnackBar(
               SnackBar(
                 content: Text('创建桌面快捷方式失败: ${desktopResult.error}'),
                 backgroundColor: Colors.orange,
               ),
             );
+          } else {
+            logDebug('OOBE: 桌面快捷方式创建成功');
           }
         }
         
         if (_createStartMenuShortcut) {
           final startMenuResult = await settingsService.createStartMenuShortcut();
           if (!startMenuResult.success && mounted) {
+            logWarning('OOBE: 创建开始菜单快捷方式失败: ${startMenuResult.error}');
             ScaffoldMessenger.of(context).showSnackBar(
               SnackBar(
                 content: Text('创建开始菜单快捷方式失败: ${startMenuResult.error}'),
                 backgroundColor: Colors.orange,
               ),
             );
+          } else {
+            logDebug('OOBE: 开始菜单快捷方式创建成功');
           }
         }
       }
       
       // 标记OOBE已完成
       await _markOOBECompleted();
+      logDebug('OOBE: 设置完成，OOBE 已标记为完成');
       
       if (widget.onCompleted != null) {
         widget.onCompleted!();
@@ -97,6 +107,7 @@ class _OOBEDialogState extends State<OOBEDialog> {
       }
     } catch (e) {
       // 处理错误
+      logError('OOBE: 应用设置失败', e);
       if (mounted) {
         ScaffoldMessenger.of(context).showSnackBar(
           SnackBar(

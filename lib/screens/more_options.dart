@@ -1,6 +1,7 @@
 import 'dart:async';
 import 'package:flutter/material.dart';
 import 'package:window_manager/window_manager.dart';
+import 'package:loggy/loggy.dart';
 import '../services/settings_service.dart';
 import '../services/storage/backup_service.dart';
 import '../models/storage_config.dart';
@@ -71,6 +72,7 @@ class _MoreOptionsWindowState extends State<MoreOptionsWindow> with WindowListen
     try {
       windowManager.addListener(this);
     } catch (e) {
+      logWarning('添加窗口监听器失败', e);
     }
   }
 
@@ -80,6 +82,7 @@ class _MoreOptionsWindowState extends State<MoreOptionsWindow> with WindowListen
     try {
       windowManager.removeListener(this);
     } catch (e) {
+      logWarning('移除窗口监听器失败', e);
     }
     _manualSelectionTimer?.cancel();
     super.dispose();
@@ -400,8 +403,9 @@ class _MoreOptionsWindowState extends State<MoreOptionsWindow> with WindowListen
       setState(() {
         _autoStartEnabled = value;
       });
+      logInfo('开机自启已${value ? "启用" : "禁用"}');
     } else {
-      
+      logError('设置开机自启失败', result.error);
     }
   }
 
@@ -415,9 +419,10 @@ class _MoreOptionsWindowState extends State<MoreOptionsWindow> with WindowListen
           _windowLayer = value;
         });
         widget.onSettingsChanged?.call();
+        logInfo('窗口层级已更改为: $value');
       }
     } catch (e) {
-      
+      logError('更改窗口层级失败', e);
     }
   }
 
@@ -431,9 +436,10 @@ class _MoreOptionsWindowState extends State<MoreOptionsWindow> with WindowListen
           _themeMode = value;
         });
         widget.onThemeChanged?.call();
+        logInfo('主题模式已切换为: ${value == 1 ? "深色" : "浅色"}');
       }
     } catch (e) {
-      
+      logError('切换主题模式失败', e);
     }
   }
 
@@ -447,8 +453,9 @@ class _MoreOptionsWindowState extends State<MoreOptionsWindow> with WindowListen
         _backgroundOpacity = value;
       });
       widget.onSettingsChanged?.call();
+      logDebug('背景透明度已更改为: ${(value * 100).toStringAsFixed(0)}%');
     } else {
-      
+      logWarning('设置背景透明度失败');
     }
   }
 
