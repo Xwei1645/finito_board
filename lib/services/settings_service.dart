@@ -530,6 +530,33 @@ class SettingsService {
     }
   }
 
+  /// 获取窗口圆角半径
+  double getWindowCornerRadius() {
+    final config = JsonStorageService.instance.getAppConfig();
+    return config.windowCornerRadius;
+  }
+
+  /// 设置窗口圆角半径
+  Future<bool> setWindowCornerRadius(double radius) async {
+    try {
+      // 确保值在有效范围内
+      final clampedRadius = radius.clamp(0.0, 32.0);
+
+      // 更新JSON配置
+      final storageService = JsonStorageService.instance;
+      final currentConfig = storageService.getAppConfig();
+      final updatedConfig = currentConfig.copyWith(
+        windowCornerRadius: clampedRadius,
+      );
+      await storageService.saveAppConfig(updatedConfig);
+      logDebug('窗口圆角半径已设置为: ${clampedRadius.toStringAsFixed(1)}');
+      return true;
+    } catch (e) {
+      logError('设置窗口圆角半径失败', e);
+      return false;
+    }
+  }
+
   // ==================== 存储配置管理 ====================
 
   /// 获取存储配置

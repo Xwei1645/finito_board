@@ -21,8 +21,13 @@ import '../services/storage/snapshot_service.dart';
 /// 作业看板主界面
 class HomeworkBoard extends StatefulWidget {
   final VoidCallback? onThemeChanged;
+  final ValueChanged<bool>? onWindowLockChanged;
 
-  const HomeworkBoard({super.key, this.onThemeChanged});
+  const HomeworkBoard({
+    super.key,
+    this.onThemeChanged,
+    this.onWindowLockChanged,
+  });
 
   @override
   State<HomeworkBoard> createState() => _HomeworkBoardState();
@@ -205,7 +210,6 @@ class _HomeworkBoardState extends State<HomeworkBoard>
         content: Text(message),
         behavior: SnackBarBehavior.floating,
         margin: const EdgeInsets.only(left: 200, right: 200, bottom: 16),
-        shape: RoundedRectangleBorder(borderRadius: BorderRadius.circular(12)),
       ),
     );
   }
@@ -267,6 +271,9 @@ class _HomeworkBoardState extends State<HomeworkBoard>
       _isWindowLocked = willLock;
     });
 
+    // 通知父组件窗口锁定状态变化
+    widget.onWindowLockChanged?.call(willLock);
+
     if (willLock) {
       await _lockWindow();
     } else {
@@ -296,12 +303,14 @@ class _HomeworkBoardState extends State<HomeworkBoard>
   Future<void> _lockWindowSilently() async {
     await windowManager.setResizable(false);
     await windowManager.setAsFrameless();
+    widget.onWindowLockChanged?.call(true);
   }
 
   // 静默解锁窗口（不显示提示，用于全屏切换）
   Future<void> _unlockWindowSilently() async {
     await windowManager.setTitleBarStyle(TitleBarStyle.hidden);
     await windowManager.setResizable(true);
+    widget.onWindowLockChanged?.call(false);
   }
 
   // 开始拖动窗口
@@ -502,9 +511,6 @@ class _HomeworkBoardState extends State<HomeworkBoard>
                           opacity: _backgroundImageOpacity,
                         )
                       : null,
-                  borderRadius: _isFullScreen
-                      ? BorderRadius.zero
-                      : BorderRadius.circular(12),
                 ),
                 child: hasHomework
                     ? Theme(
@@ -650,6 +656,7 @@ class _HomeworkBoardState extends State<HomeworkBoard>
         builder: (context) => MoreOptionsWindow(
           onThemeChanged: widget.onThemeChanged,
           onSettingsChanged: _loadBackgroundSettings,
+          isWindowLocked: _isWindowLocked,
         ),
       ),
     );

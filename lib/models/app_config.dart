@@ -13,6 +13,7 @@ class AppConfig {
   final String? backgroundImagePath; // 背景图片路径
   final int backgroundImageMode; // 背景图片显示模式: 0=适应, 1=填充, 2=拉伸
   final double backgroundImageOpacity; // 背景图片混合比例: 0.0-1.0
+  final double windowCornerRadius; // 窗口圆角半径
 
   // 存储配置 - 快照设置
   final bool snapshotEnabled; // 是否启用快照
@@ -45,6 +46,7 @@ class AppConfig {
     this.backgroundImagePath,
     this.backgroundImageMode = 0,
     this.backgroundImageOpacity = 1.0,
+    this.windowCornerRadius = 12.0,
     this.snapshotEnabled = false,
     this.snapshotOnEdit = false,
     this.snapshotOnStartup = false,
@@ -74,6 +76,7 @@ class AppConfig {
     String? backgroundImagePath,
     int? backgroundImageMode,
     double? backgroundImageOpacity,
+    double? windowCornerRadius,
     bool? snapshotEnabled,
     bool? snapshotOnEdit,
     bool? snapshotOnStartup,
@@ -103,6 +106,7 @@ class AppConfig {
       backgroundImageMode: backgroundImageMode ?? this.backgroundImageMode,
       backgroundImageOpacity:
           backgroundImageOpacity ?? this.backgroundImageOpacity,
+      windowCornerRadius: windowCornerRadius ?? this.windowCornerRadius,
       snapshotEnabled: snapshotEnabled ?? this.snapshotEnabled,
       snapshotOnEdit: snapshotOnEdit ?? this.snapshotOnEdit,
       snapshotOnStartup: snapshotOnStartup ?? this.snapshotOnStartup,
@@ -135,6 +139,7 @@ class AppConfig {
       'backgroundImagePath': backgroundImagePath,
       'backgroundImageMode': backgroundImageMode,
       'backgroundImageOpacity': backgroundImageOpacity,
+      'windowCornerRadius': windowCornerRadius,
       'snapshotEnabled': snapshotEnabled,
       'snapshotOnEdit': snapshotOnEdit,
       'snapshotOnStartup': snapshotOnStartup,
@@ -171,6 +176,8 @@ class AppConfig {
       backgroundImageMode: json['backgroundImageMode'] as int? ?? 0,
       backgroundImageOpacity:
           (json['backgroundImageOpacity'] as num?)?.toDouble() ?? 1.0,
+      windowCornerRadius:
+          (json['windowCornerRadius'] as num?)?.toDouble() ?? 12.0,
       snapshotEnabled: json['snapshotEnabled'] as bool? ?? false,
       snapshotOnEdit: json['snapshotOnEdit'] as bool? ?? false,
       snapshotOnStartup: json['snapshotOnStartup'] as bool? ?? false,

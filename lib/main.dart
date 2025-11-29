@@ -196,6 +196,8 @@ class MyApp extends StatefulWidget {
 class _MyAppState extends State<MyApp> {
   bool _isDarkMode = false;
   int? _themeColor;
+  double _windowCornerRadius = 12.0;
+  double _savedCornerRadius = 12.0; // 保存设置的圆角值
 
   @override
   void initState() {
@@ -207,10 +209,20 @@ class _MyAppState extends State<MyApp> {
     final settingsService = SettingsService.instance;
     final isDarkMode = settingsService.getDarkMode();
     final themeColor = settingsService.getThemeColor();
+    final windowCornerRadius = settingsService.getWindowCornerRadius();
 
     setState(() {
       _isDarkMode = isDarkMode;
       _themeColor = themeColor;
+      _windowCornerRadius = windowCornerRadius;
+      _savedCornerRadius = windowCornerRadius; // 保存设置值
+    });
+  }
+
+  void _onWindowLockChanged(bool isLocked) {
+    setState(() {
+      // 解锁时圆角为0，锁定时使用保存的圆角值
+      _windowCornerRadius = isLocked ? _savedCornerRadius : 0.0;
     });
   }
 
@@ -219,7 +231,7 @@ class _MyAppState extends State<MyApp> {
     final seedColor = _themeColor != null ? Color(_themeColor!) : Colors.blue;
 
     return ClipRRect(
-      borderRadius: BorderRadius.circular(12),
+      borderRadius: BorderRadius.circular(_windowCornerRadius),
       child: MaterialApp(
         title: 'FinitoBoard',
         theme: ThemeData(
@@ -246,7 +258,10 @@ class _MyAppState extends State<MyApp> {
           FlutterQuillLocalizations.delegate,
         ],
         locale: const Locale('zh', 'CN'),
-        home: MainWindow(onThemeChanged: _loadThemeSettings),
+        home: MainWindow(
+          onThemeChanged: _loadThemeSettings,
+          onWindowLockChanged: _onWindowLockChanged,
+        ),
         debugShowCheckedModeBanner: false,
       ),
     );
@@ -255,11 +270,15 @@ class _MyAppState extends State<MyApp> {
 
 class MainWindow extends StatelessWidget {
   final VoidCallback? onThemeChanged;
+  final ValueChanged<bool>? onWindowLockChanged;
 
-  const MainWindow({super.key, this.onThemeChanged});
+  const MainWindow({super.key, this.onThemeChanged, this.onWindowLockChanged});
 
   @override
   Widget build(BuildContext context) {
-    return HomeworkBoard(onThemeChanged: onThemeChanged);
+    return HomeworkBoard(
+      onThemeChanged: onThemeChanged,
+      onWindowLockChanged: onWindowLockChanged,
+    );
   }
 }

@@ -14,11 +14,13 @@ import 'widgets/about_widgets.dart';
 class MoreOptionsWindow extends StatefulWidget {
   final VoidCallback? onThemeChanged;
   final VoidCallback? onSettingsChanged;
+  final bool isWindowLocked;
 
   const MoreOptionsWindow({
     super.key,
     this.onThemeChanged,
     this.onSettingsChanged,
+    this.isWindowLocked = true,
   });
 
   @override
@@ -36,6 +38,7 @@ class _MoreOptionsWindowState extends State<MoreOptionsWindow>
   String? _backgroundImagePath;
   int _backgroundImageMode = 0;
   double _backgroundImageOpacity = 1.0;
+  double _windowCornerRadius = 12.0;
   bool _isLoading = true;
 
   bool _snapshotEnabled = false;
@@ -154,6 +157,7 @@ class _MoreOptionsWindowState extends State<MoreOptionsWindow>
     final savedBackgroundImageMode = settingsService.getBackgroundImageMode();
     final savedBackgroundImageOpacity = settingsService
         .getBackgroundImageOpacity();
+    final savedWindowCornerRadius = settingsService.getWindowCornerRadius();
 
     final actualAutoStart = await settingsService.checkAutoStartStatus();
 
@@ -169,6 +173,7 @@ class _MoreOptionsWindowState extends State<MoreOptionsWindow>
       _backgroundImagePath = savedBackgroundImagePath;
       _backgroundImageMode = savedBackgroundImageMode;
       _backgroundImageOpacity = savedBackgroundImageOpacity;
+      _windowCornerRadius = savedWindowCornerRadius;
 
       _snapshotEnabled = storageConfig.snapshotEnabled;
       _snapshotOnEdit = storageConfig.snapshotOnEdit;
@@ -357,6 +362,27 @@ class _MoreOptionsWindowState extends State<MoreOptionsWindow>
             ),
           ),
           const SizedBox(height: 16),
+          AppearanceWidgets.buildValueSlider(
+            context: context,
+            icon: Icons.rounded_corner,
+            title: '窗口圆角',
+            subtitle: widget.isWindowLocked
+                ? '调整窗口的圆角半径（0 为直角）'
+                : '窗口解锁时无法调整圆角',
+            value: _windowCornerRadius,
+            min: 0.0,
+            max: 32.0,
+            divisions: 32,
+            valueFormatter: (value) => '${value.round()} px',
+            onChanged: (value) {
+              setState(() {
+                _windowCornerRadius = value;
+              });
+              _onWindowCornerRadiusChanged(value);
+            },
+            enabled: widget.isWindowLocked,
+          ),
+          const SizedBox(height: 16),
           AppearanceWidgets.buildBackgroundImagePicker(
             context: context,
             icon: Icons.image,
@@ -531,6 +557,23 @@ class _MoreOptionsWindowState extends State<MoreOptionsWindow>
       });
       widget.onSettingsChanged?.call();
     } else {}
+  }
+
+  Future<void> _onWindowCornerRadiusChanged(double value) async {
+    final settingsService = SettingsService.instance;
+    final success = await settingsService.setWindowCornerRadius(value);
+
+    if (success) {
+      setState(() {
+        _windowCornerRadius = value;
+      });
+      // 触发主题刷新以应用新的圆角半径
+      widget.onThemeChanged?.call();
+      widget.onSettingsChanged?.call();
+      logDebug('窗口圆角半径已更改为: ${value.toStringAsFixed(1)}');
+    } else {
+      logWarning('设置窗口圆角半径失败');
+    }
   }
 
   Future<void> _onClearBackgroundImage() async {

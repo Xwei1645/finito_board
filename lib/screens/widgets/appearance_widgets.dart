@@ -98,6 +98,125 @@ class AppearanceWidgets {
     );
   }
 
+  static Widget buildValueSlider({
+    required BuildContext context,
+    required IconData icon,
+    required String title,
+    required String subtitle,
+    required double value,
+    required double min,
+    required double max,
+    required int divisions,
+    required String Function(double) valueFormatter,
+    required ValueChanged<double> onChanged,
+    bool enabled = true,
+  }) {
+    final colorScheme = Theme.of(context).colorScheme;
+
+    return Container(
+      padding: const EdgeInsets.all(16),
+      decoration: BoxDecoration(
+        color: enabled
+            ? colorScheme.surface
+            : colorScheme.surfaceContainerHighest.withValues(alpha: 0.5),
+        borderRadius: BorderRadius.circular(12),
+        boxShadow: [
+          BoxShadow(
+            color: Colors.black.withValues(alpha: 0.05),
+            blurRadius: 8,
+            offset: const Offset(0, 2),
+          ),
+        ],
+      ),
+      child: Row(
+        children: [
+          Container(
+            padding: const EdgeInsets.all(12),
+            decoration: BoxDecoration(
+              color: enabled
+                  ? colorScheme.primaryContainer
+                  : colorScheme.onSurface.withValues(alpha: 0.1),
+              borderRadius: BorderRadius.circular(12),
+            ),
+            child: Icon(
+              icon,
+              color: enabled
+                  ? colorScheme.onPrimaryContainer
+                  : colorScheme.onSurface.withValues(alpha: 0.4),
+              size: 24,
+            ),
+          ),
+          const SizedBox(width: 16),
+          Expanded(
+            child: Column(
+              crossAxisAlignment: CrossAxisAlignment.start,
+              children: [
+                Row(
+                  mainAxisAlignment: MainAxisAlignment.spaceBetween,
+                  children: [
+                    Text(
+                      title,
+                      style: TextStyle(
+                        fontSize: 16,
+                        fontWeight: FontWeight.w500,
+                        color: enabled
+                            ? colorScheme.onSurface
+                            : colorScheme.onSurface.withValues(alpha: 0.6),
+                      ),
+                    ),
+                    Container(
+                      padding: const EdgeInsets.symmetric(
+                        horizontal: 12,
+                        vertical: 4,
+                      ),
+                      decoration: BoxDecoration(
+                        color: enabled
+                            ? colorScheme.primary.withValues(alpha: 0.15)
+                            : colorScheme.onSurface.withValues(alpha: 0.1),
+                        borderRadius: BorderRadius.circular(12),
+                      ),
+                      child: Text(
+                        valueFormatter(value),
+                        style: TextStyle(
+                          fontSize: 14,
+                          fontWeight: FontWeight.w600,
+                          color: enabled
+                              ? colorScheme.primary
+                              : colorScheme.onSurface.withValues(alpha: 0.4),
+                        ),
+                      ),
+                    ),
+                  ],
+                ),
+                const SizedBox(height: 4),
+                Text(
+                  subtitle,
+                  style: TextStyle(
+                    fontSize: 13,
+                    color: enabled
+                        ? colorScheme.onSurfaceVariant
+                        : colorScheme.onSurfaceVariant.withValues(alpha: 0.6),
+                  ),
+                ),
+                const SizedBox(height: 8),
+                Slider(
+                  value: value,
+                  min: min,
+                  max: max,
+                  divisions: divisions,
+                  onChanged: enabled ? onChanged : null,
+                  activeColor: enabled
+                      ? colorScheme.primary
+                      : colorScheme.onSurface.withValues(alpha: 0.3),
+                ),
+              ],
+            ),
+          ),
+        ],
+      ),
+    );
+  }
+
   static Widget buildThemeColorPicker({
     required BuildContext context,
     required IconData icon,
