@@ -17,11 +17,10 @@ dependencies:
   url_launcher: ^6.2.4
   package_info_plus: ^9.0.0
   launch_at_startup: ^0.5.1
-
   path_provider: ^2.1.1
   path: ^1.8.3
   uuid: ^4.5.1
-  file_picker: ^8.1.2
+  file_picker: ^10.3.7
   loggy: ^2.0.3
   split_button_m3e: ^0.2.1
 
@@ -29,8 +28,7 @@ dev_dependencies:
   flutter_test:
     sdk: flutter
   flutter_lints: ^6.0.0
-
-  analyzer: 6.4.1
+  analyzer: ^9.0.0
 
 flutter:
   uses-material-design: true
