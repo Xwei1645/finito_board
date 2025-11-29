@@ -13,7 +13,6 @@ import '../widgets/subject_manager.dart';
 import '../widgets/tag_manager.dart';
 import '../widgets/oobe_dialog.dart';
 import '../widgets/toolbar.dart';
-import '../widgets/quick_menu.dart';
 import '../services/settings_service.dart';
 import '../services/storage/json_storage_service.dart';
 import '../services/storage/backup_service.dart';
@@ -34,7 +33,7 @@ class _HomeworkBoardState extends State<HomeworkBoard> with WindowListener, Tick
 
   String? _selectedHomeworkId;
   Timer? _selectionTimer;
-  Timer? _quickMenuAutoHideTimer;
+  // Timer? _quickMenuAutoHideTimer; // Removed, using PopupMenu now
   Timer? _toolbarOpacityTimer;
   
   // 界面缩放倍数（百分比）
@@ -44,7 +43,7 @@ class _HomeworkBoardState extends State<HomeworkBoard> with WindowListener, Tick
   int _columnCount = 3;
   
   // 快捷菜单显示状态
-  bool _isQuickMenuVisible = false;
+  // bool _isQuickMenuVisible = false; // Removed, using PopupMenu now
   
   // 全屏状态
   bool _isFullScreen = false;
@@ -63,11 +62,6 @@ class _HomeworkBoardState extends State<HomeworkBoard> with WindowListener, Tick
   int _backgroundImageMode = 0;
   double _backgroundImageOpacity = 1.0;
   
-  // 快捷菜单动画控制器
-  late AnimationController _quickMenuAnimationController;
-  late Animation<double> _quickMenuOpacityAnimation;
-  late Animation<Offset> _quickMenuSlideAnimation;
-  
   // 工具栏透明度相关
   double _toolbarOpacity = 1.0;
   late AnimationController _toolbarOpacityAnimationController;
@@ -80,30 +74,6 @@ class _HomeworkBoardState extends State<HomeworkBoard> with WindowListener, Tick
   void initState() {
     super.initState();
     windowManager.addListener(this);
-    
-    // 初始化快捷菜单动画控制器
-    _quickMenuAnimationController = AnimationController(
-      duration: const Duration(milliseconds: 250),
-      vsync: this,
-    );
-    
-    // 透明度动画（淡入淡出）
-    _quickMenuOpacityAnimation = Tween<double>(
-      begin: 0.0,
-      end: 1.0,
-    ).animate(CurvedAnimation(
-      parent: _quickMenuAnimationController,
-      curve: Curves.easeInOut,
-    ));
-    
-    // 滑动动画（从右下角滑入）
-    _quickMenuSlideAnimation = Tween<Offset>(
-      begin: const Offset(0.3, 0.3),
-      end: Offset.zero,
-    ).animate(CurvedAnimation(
-      parent: _quickMenuAnimationController,
-      curve: Curves.easeOutBack,
-    ));
     
     // 初始化工具栏透明度动画控制器
     _toolbarOpacityAnimationController = AnimationController(
@@ -214,9 +184,7 @@ class _HomeworkBoardState extends State<HomeworkBoard> with WindowListener, Tick
   void dispose() {
     windowManager.removeListener(this);
     _selectionTimer?.cancel();
-    _quickMenuAutoHideTimer?.cancel();
     _toolbarOpacityTimer?.cancel();
-    _quickMenuAnimationController.dispose();
     _toolbarOpacityAnimationController.dispose();
     super.dispose();
   }
@@ -526,18 +494,6 @@ class _HomeworkBoardState extends State<HomeworkBoard> with WindowListener, Tick
           // 背景容器
           GestureDetector(
             onTap: () {
-              // 隐藏快捷菜单
-              if (_isQuickMenuVisible) {
-                // 取消自动隐藏定时器
-                _quickMenuAutoHideTimer?.cancel();
-                _quickMenuAnimationController.reverse().then((_) {
-                  if (mounted) {
-                    setState(() {
-                      _isQuickMenuVisible = false;
-                    });
-                  }
-                });
-              }
               // 取消选中卡片
               if (_selectedHomeworkId != null) {
                 setState(() {
@@ -628,42 +584,24 @@ class _HomeworkBoardState extends State<HomeworkBoard> with WindowListener, Tick
               opacity: _toolbarOpacity,
               backgroundOpacity: _backgroundOpacity,
               isFullScreen: _isFullScreen,
+              isWindowLocked: _isWindowLocked,
+              windowLockedBeforeFullScreen: _windowLockedBeforeFullScreen,
+              scaleFactor: _scaleFactor,
+              columnCount: _columnCount,
               onNewHomework: _showHomeworkEditor,
               onToggleFullScreen: _toggleFullScreen,
-              onOpenQuickMenu: _toggleQuickMenu,
+              onOpenMoreOptions: () => _hideMenuAndExecute(_openMoreOptionsWindow),
+              onToggleWindowLock: _toggleWindowLock,
+              onShowSubjectManager: () => _hideMenuAndExecute(_showSubjectManager),
+              onShowTagManager: () => _hideMenuAndExecute(_showTagManager),
+              onAdjustScale: _adjustScale,
+              onAdjustColumnCount: _adjustColumnCount,
+              onExitApplication: () => _hideMenuAndExecute(_exitApplication),
               onMouseEnter: _resetToolbarOpacity,
               onMouseExit: _startToolbarOpacityTimer,
               onButtonPressed: _resetToolbarOpacity,
             ),
           ),
-          // 快捷菜单
-          if (_isQuickMenuVisible)
-            Positioned(
-              bottom: 70,
-              right: 16,
-              child: SlideTransition(
-                position: _quickMenuSlideAnimation,
-                child: FadeTransition(
-                  opacity: _quickMenuOpacityAnimation,
-                  child: QuickMenu(
-                    backgroundOpacity: _backgroundOpacity,
-                    isFullScreen: _isFullScreen,
-                    isWindowLocked: _isWindowLocked,
-                    windowLockedBeforeFullScreen: _windowLockedBeforeFullScreen,
-                    scaleFactor: _scaleFactor,
-                    columnCount: _columnCount,
-                    onOpenMoreOptions: () => _hideMenuAndExecute(_openMoreOptionsWindow),
-                    onToggleWindowLock: _toggleWindowLock,
-                    onShowSubjectManager: () => _hideMenuAndExecute(_showSubjectManager),
-                    onShowTagManager: () => _hideMenuAndExecute(_showTagManager),
-                    onAdjustScale: _adjustScale,
-                    onAdjustColumnCount: _adjustColumnCount,
-                    onExitApplication: () => _hideMenuAndExecute(_exitApplication),
-                    onResetMenuTimer: _resetQuickMenuTimer,
-                  ),
-                ),
-              ),
-            ),
         ],
       ),
     );
@@ -691,53 +629,9 @@ class _HomeworkBoardState extends State<HomeworkBoard> with WindowListener, Tick
     await JsonStorageService.instance.saveColumnCount(newColumnCount);
   }
 
-  // 切换快捷菜单显示状态
-  void _toggleQuickMenu() {
-    if (_isQuickMenuVisible) {
-      // 隐藏菜单：取消自动隐藏定时器，播放反向动画，然后隐藏
-      _quickMenuAutoHideTimer?.cancel();
-      _quickMenuAnimationController.reverse().then((_) {
-        if (mounted) {
-          setState(() {
-            _isQuickMenuVisible = false;
-          });
-        }
-      });
-    } else {
-      // 显示菜单：先显示，然后播放正向动画，启动10秒自动隐藏定时器
-      setState(() {
-        _isQuickMenuVisible = true;
-      });
-      _quickMenuAnimationController.forward();
-      
-      // 启动10秒自动隐藏定时器
-      _quickMenuAutoHideTimer?.cancel(); // 取消之前的定时器
-      _quickMenuAutoHideTimer = Timer(const Duration(seconds: 10), () {
-        if (mounted && _isQuickMenuVisible) {
-          _toggleQuickMenu(); // 自动隐藏菜单
-        }
-      });
-    }
-  }
-
-  // 隐藏快捷菜单并执行操作
+  // 隐藏快捷菜单并执行操作 (不再需要隐藏菜单，直接执行)
   void _hideMenuAndExecute(VoidCallback action) {
-    if (_isQuickMenuVisible) {
-      // 取消自动隐藏定时器
-      _quickMenuAutoHideTimer?.cancel();
-      _quickMenuAnimationController.reverse().then((_) {
-        if (mounted) {
-          setState(() {
-            _isQuickMenuVisible = false;
-          });
-          // 在菜单隐藏后执行操作
-          action();
-        }
-      });
-    } else {
-      // 如果菜单已经隐藏，直接执行操作
-      action();
-    }
+    action();
   }
 
   // 启动工具栏透明度定时器
@@ -760,18 +654,6 @@ class _HomeworkBoardState extends State<HomeworkBoard> with WindowListener, Tick
     }
     // 重新启动定时器
     _startToolbarOpacityTimer();
-  }
-
-  // 重置快捷菜单自动隐藏定时器
-  void _resetQuickMenuTimer() {
-    if (_isQuickMenuVisible) {
-      _quickMenuAutoHideTimer?.cancel();
-      _quickMenuAutoHideTimer = Timer(const Duration(seconds: 10), () {
-        if (mounted && _isQuickMenuVisible) {
-          _toggleQuickMenu(); // 自动隐藏菜单
-        }
-      });
-    }
   }
 
   // 打开设置窗口
