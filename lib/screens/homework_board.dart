@@ -54,7 +54,7 @@ class _HomeworkBoardState extends State<HomeworkBoard>
   // 全屏状态
   bool _isFullScreen = false;
 
-  // 窗口锁定状态
+  // 窗口锁定状态（会从配置中加载）
   bool _isWindowLocked = true;
 
   // 拖动状态
@@ -118,6 +118,9 @@ class _HomeworkBoardState extends State<HomeworkBoard>
     // 加载界面设置
     final appConfig = storageService.getAppConfig();
 
+    // 加载窗口锁定状态
+    final windowLocked = SettingsService.instance.getWindowLocked();
+
     // 按科目UUID分组作业
     Map<String, List<Homework>> homeworksBySubjectUuid = {};
     for (var homework in homeworks) {
@@ -139,6 +142,8 @@ class _HomeworkBoardState extends State<HomeworkBoard>
       // 从存储中恢复界面设置
       _scaleFactor = appConfig.scaleFactor;
       _columnCount = appConfig.columnCount;
+      // 从存储中恢复窗口锁定状态
+      _isWindowLocked = windowLocked;
     });
 
     _distributeHomeworksToColumns();
@@ -270,6 +275,9 @@ class _HomeworkBoardState extends State<HomeworkBoard>
     setState(() {
       _isWindowLocked = willLock;
     });
+
+    // 保存窗口锁定状态到持久化存储
+    await SettingsService.instance.saveWindowLocked(willLock);
 
     // 通知父组件窗口锁定状态变化
     widget.onWindowLockChanged?.call(willLock);

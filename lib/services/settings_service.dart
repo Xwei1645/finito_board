@@ -275,8 +275,13 @@ class SettingsService {
     bool maximized = false,
     bool minimized = false,
     bool fullscreen = false,
+    bool? windowLocked,
   }) async {
     try {
+      // 如果没有提供 windowLocked，保留当前存储的值
+      final currentState = JsonStorageService.instance.getWindowState();
+      final isLocked = windowLocked ?? currentState.isWindowLocked;
+
       final windowState = WindowState(
         x: x,
         y: y,
@@ -285,10 +290,11 @@ class SettingsService {
         isMaximized: maximized,
         isMinimized: minimized,
         isFullScreen: fullscreen,
+        isWindowLocked: isLocked,
       );
 
       await JsonStorageService.instance.saveWindowState(windowState);
-      logDebug('窗口状态已保存: $width x $height at ($x, $y)');
+      logDebug('窗口状态已保存: $width x $height at ($x, $y), locked: $isLocked');
       return true;
     } catch (e) {
       logError('保存窗口状态失败', e);
@@ -303,6 +309,31 @@ class SettingsService {
     } catch (e) {
       logError('获取窗口状态失败', e);
       return null;
+    }
+  }
+
+  /// 获取窗口锁定状态
+  bool getWindowLocked() {
+    try {
+      final windowState = JsonStorageService.instance.getWindowState();
+      return windowState.isWindowLocked;
+    } catch (e) {
+      logError('获取窗口锁定状态失败', e);
+      return true;
+    }
+  }
+
+  /// 保存窗口锁定状态
+  Future<bool> saveWindowLocked(bool isLocked) async {
+    try {
+      final currentState = JsonStorageService.instance.getWindowState();
+      final updatedState = currentState.copyWith(isWindowLocked: isLocked);
+      await JsonStorageService.instance.saveWindowState(updatedState);
+      logDebug('窗口锁定状态已保存: $isLocked');
+      return true;
+    } catch (e) {
+      logError('保存窗口锁定状态失败', e);
+      return false;
     }
   }
 

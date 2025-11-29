@@ -175,11 +175,21 @@ void main() async {
         await SettingsService.instance.restoreWindowState();
       }
 
-      // 初始状态设置为锁定（无边框，不可调整大小）
-      // 初始化时先设置为无边框，再禁用调整大小
-      await windowManager.setAsFrameless();
-      // await windowManager.setHasShadow(false);
-      await windowManager.setResizable(false);
+      // 根据保存的窗口锁定状态初始化窗口
+      final isWindowLocked = SettingsService.instance.getWindowLocked();
+      if (isWindowLocked) {
+        // 锁定状态：无边框，不可调整大小
+        await windowManager.setAsFrameless();
+        await windowManager.setResizable(false);
+      } else {
+        // 解锁状态：隐藏标题栏，可调整大小
+        if (Platform.isLinux) {
+          await windowManager.setTitleBarStyle(TitleBarStyle.normal);
+        } else {
+          await windowManager.setTitleBarStyle(TitleBarStyle.hidden);
+        }
+        await windowManager.setResizable(true);
+      }
     });
   }
 
@@ -210,12 +220,14 @@ class _MyAppState extends State<MyApp> {
     final isDarkMode = settingsService.getDarkMode();
     final themeColor = settingsService.getThemeColor();
     final windowCornerRadius = settingsService.getWindowCornerRadius();
+    final isWindowLocked = settingsService.getWindowLocked();
 
     setState(() {
       _isDarkMode = isDarkMode;
       _themeColor = themeColor;
-      _windowCornerRadius = windowCornerRadius;
       _savedCornerRadius = windowCornerRadius; // 保存设置值
+      // 根据窗口锁定状态决定初始圆角值
+      _windowCornerRadius = isWindowLocked ? windowCornerRadius : 0.0;
     });
   }
 

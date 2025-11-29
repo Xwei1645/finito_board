@@ -6,6 +6,7 @@ class WindowState {
   final bool isMaximized; // 是否最大化
   final bool isMinimized; // 是否最小化
   final bool isFullScreen; // 是否全屏
+  final bool isWindowLocked; // 窗口是否锁定
 
   const WindowState({
     this.x = 100,
@@ -15,6 +16,7 @@ class WindowState {
     this.isMaximized = false,
     this.isMinimized = false,
     this.isFullScreen = false,
+    this.isWindowLocked = true,
   });
 
   WindowState copyWith({
@@ -25,6 +27,7 @@ class WindowState {
     bool? isMaximized,
     bool? isMinimized,
     bool? isFullScreen,
+    bool? isWindowLocked,
   }) {
     return WindowState(
       x: x ?? this.x,
@@ -34,6 +37,7 @@ class WindowState {
       isMaximized: isMaximized ?? this.isMaximized,
       isMinimized: isMinimized ?? this.isMinimized,
       isFullScreen: isFullScreen ?? this.isFullScreen,
+      isWindowLocked: isWindowLocked ?? this.isWindowLocked,
     );
   }
 
@@ -47,6 +51,7 @@ class WindowState {
       'isMaximized': isMaximized,
       'isMinimized': isMinimized,
       'isFullScreen': isFullScreen,
+      'isWindowLocked': isWindowLocked,
     };
   }
 
@@ -60,6 +65,7 @@ class WindowState {
       isMaximized: json['isMaximized'] as bool? ?? false,
       isMinimized: json['isMinimized'] as bool? ?? false,
       isFullScreen: json['isFullScreen'] as bool? ?? false,
+      isWindowLocked: json['isWindowLocked'] as bool? ?? true,
     );
   }
 }
