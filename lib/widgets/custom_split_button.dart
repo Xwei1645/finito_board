@@ -2,7 +2,7 @@ import 'package:flutter/material.dart';
 import 'package:split_button_m3e/split_button_m3e.dart';
 
 /// 自定义 SplitButton 组件
-/// 
+///
 /// 基于 split_button_m3e，修改了：
 /// 1. 菜单显示在按钮上方（而不是下方）
 /// 2. 箭头方向互换（默认向上，展开时向下）
@@ -46,15 +46,17 @@ class _CustomSplitButtonState<T> extends State<CustomSplitButton<T>> {
   @override
   Widget build(BuildContext context) {
     final colorScheme = Theme.of(context).colorScheme;
-    
+
     // 获取按钮的颜色配置
-    final (Color containerColor, Color onContainerColor) = _getColors(colorScheme);
-    
+    final (Color containerColor, Color onContainerColor) = _getColors(
+      colorScheme,
+    );
+
     final height = _getHeight();
     final outerRadius = widget.shape == SplitButtonM3EShape.round
         ? height / 2
         : height * 0.25;
-    
+
     return Row(
       mainAxisSize: MainAxisSize.min,
       children: [
@@ -85,7 +87,7 @@ class _CustomSplitButtonState<T> extends State<CustomSplitButton<T>> {
     required double outerRadius,
   }) {
     final iconSize = _getIconSize();
-    
+
     Widget content;
     if (widget.leadingIcon != null && widget.label != null) {
       content = Row(
@@ -100,7 +102,11 @@ class _CustomSplitButtonState<T> extends State<CustomSplitButton<T>> {
         ],
       );
     } else if (widget.leadingIcon != null) {
-      content = Icon(widget.leadingIcon, size: iconSize, color: onContainerColor);
+      content = Icon(
+        widget.leadingIcon,
+        size: iconSize,
+        color: onContainerColor,
+      );
     } else {
       content = Text(
         widget.label ?? '',
@@ -140,7 +146,7 @@ class _CustomSplitButtonState<T> extends State<CustomSplitButton<T>> {
     required double outerRadius,
   }) {
     final iconSize = _getIconSize();
-    
+
     return Tooltip(
       message: widget.trailingTooltip ?? '',
       child: Material(
@@ -180,44 +186,44 @@ class _CustomSplitButtonState<T> extends State<CustomSplitButton<T>> {
 
   Future<void> _openMenu(BuildContext context) async {
     setState(() => _menuOpen = true);
-    
+
     final RenderBox overlay =
         Overlay.of(context).context.findRenderObject() as RenderBox;
-    
+
     final RenderBox? buttonBox =
         _buttonKey.currentContext?.findRenderObject() as RenderBox?;
-    
+
     if (buttonBox == null) {
       setState(() => _menuOpen = false);
       return;
     }
-    
+
     final Offset buttonTopLeft = buttonBox.localToGlobal(
       Offset.zero,
       ancestor: overlay,
     );
-    
+
     const double menuVerticalOffset = 4.0;
     final double buttonRight = buttonTopLeft.dx + buttonBox.size.width;
     final double buttonBottom = buttonTopLeft.dy + buttonBox.size.height;
-    
+
     final RelativeRect position = RelativeRect.fromLTRB(
       buttonRight - buttonBox.size.width,
       buttonBottom + menuVerticalOffset,
       overlay.size.width - buttonRight,
       overlay.size.height - buttonBottom - menuVerticalOffset,
     );
-    
+
     final T? result = await showMenu<T>(
       context: context,
       position: position,
-      constraints: BoxConstraints(minWidth: buttonBox.size.width * 0.7), // 减小宽度到按钮宽度的70%
-      shape: RoundedRectangleBorder(
-        borderRadius: BorderRadius.circular(12),
-      ),
+      constraints: BoxConstraints(
+        minWidth: buttonBox.size.width * 0.7,
+      ), // 减小宽度到按钮宽度的70%
+      shape: RoundedRectangleBorder(borderRadius: BorderRadius.circular(12)),
       items: widget.menuBuilder(context),
     );
-    
+
     if (mounted) {
       setState(() => _menuOpen = false);
       if (result != null && widget.onSelected != null) {
@@ -231,7 +237,10 @@ class _CustomSplitButtonState<T> extends State<CustomSplitButton<T>> {
       case SplitButtonM3EEmphasis.filled:
         return (colorScheme.primary, colorScheme.onPrimary);
       case SplitButtonM3EEmphasis.tonal:
-        return (colorScheme.secondaryContainer, colorScheme.onSecondaryContainer);
+        return (
+          colorScheme.secondaryContainer,
+          colorScheme.onSecondaryContainer,
+        );
       case SplitButtonM3EEmphasis.elevated:
         return (colorScheme.surfaceContainerLow, colorScheme.primary);
       case SplitButtonM3EEmphasis.outlined:

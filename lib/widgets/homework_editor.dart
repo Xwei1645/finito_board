@@ -34,7 +34,7 @@ class _HomeworkEditorState extends State<HomeworkEditor> {
   final TextEditingController _newTagController = TextEditingController();
   final TextEditingController _fontSizeController = TextEditingController();
   double _currentFontSize = 20.0;
-  
+
   // 格式状态
   bool _isBold = false;
   bool _isItalic = false;
@@ -44,22 +44,21 @@ class _HomeworkEditorState extends State<HomeworkEditor> {
   // 可选学科列表
   List<String> _availableSubjects = [];
 
-
-
   @override
   void initState() {
     super.initState();
-    
+
     _contentController = QuillController.basic();
     _editorFocusNode = FocusNode();
-    _selectedSubject = widget.homework?.subjectUuid ?? widget.initialSubject ?? '';
+    _selectedSubject =
+        widget.homework?.subjectUuid ?? widget.initialSubject ?? '';
     _fontSizeController.text = _currentFontSize.toInt().toString();
-    
+
     // 加载所有科目
     _loadSubjects();
-    
+
     _contentController.addListener(_updateFontSizeDisplay);
-    
+
     if (widget.homework != null && widget.homework!.content.isNotEmpty) {
       try {
         // 尝试解析JSON格式的富文本内容
@@ -69,12 +68,16 @@ class _HomeworkEditorState extends State<HomeworkEditor> {
       } catch (e) {
         // 如果解析失败，说明是旧的纯文本格式，直接插入
         logWarning('富文本解析失败，使用纯文本格式: $e');
-        _contentController.document = Document()..insert(0, widget.homework!.content);
+        _contentController.document = Document()
+          ..insert(0, widget.homework!.content);
       }
     }
-    
-    _selectedDate = widget.homework?.dueDate ?? DateTime.now().add(const Duration(days: 1));
-    _selectedTagUuids = _cleanInvalidTagUuids(List.from(widget.homework?.tagUuids ?? []));
+
+    _selectedDate =
+        widget.homework?.dueDate ?? DateTime.now().add(const Duration(days: 1));
+    _selectedTagUuids = _cleanInvalidTagUuids(
+      List.from(widget.homework?.tagUuids ?? []),
+    );
   }
 
   @override
@@ -91,7 +94,9 @@ class _HomeworkEditorState extends State<HomeworkEditor> {
     setState(() {
       _availableSubjects = subjects.map((subject) => subject.uuid).toList();
       // 如果当前选中的科目为空或不在可用科目列表中，且有可用科目，选择第一个
-      if ((_selectedSubject.isEmpty || !_availableSubjects.contains(_selectedSubject)) && _availableSubjects.isNotEmpty) {
+      if ((_selectedSubject.isEmpty ||
+              !_availableSubjects.contains(_selectedSubject)) &&
+          _availableSubjects.isNotEmpty) {
         _selectedSubject = _availableSubjects.first;
       }
     });
@@ -117,7 +122,7 @@ class _HomeworkEditorState extends State<HomeworkEditor> {
       lastDate: DateTime.now().add(const Duration(days: 365)),
       locale: const Locale('zh', 'CN'),
     );
-    
+
     if (pickedDate != null && mounted) {
       final TimeOfDay? pickedTime = await showTimePicker(
         context: context,
@@ -130,7 +135,7 @@ class _HomeworkEditorState extends State<HomeworkEditor> {
           );
         },
       );
-      
+
       if (pickedTime != null && mounted) {
         setState(() {
           _selectedDate = DateTime(
@@ -149,7 +154,7 @@ class _HomeworkEditorState extends State<HomeworkEditor> {
     if (tagName.isNotEmpty) {
       // 查找是否已存在该名称的标签
       Tag? existingTag = JsonStorageService.instance.getTagByName(tagName);
-      
+
       if (existingTag != null) {
         // 如果标签已存在，添加其UUID到选中列表
         if (!_selectedTagUuids.contains(existingTag.uuid)) {
@@ -213,12 +218,17 @@ class _HomeworkEditorState extends State<HomeworkEditor> {
     if (selection.isValid) {
       // 保存当前选择状态
       final currentSelection = _contentController.selection;
-      
-      _contentController.formatSelection(SizeAttribute(_currentFontSize.toString()));
-      
+
+      _contentController.formatSelection(
+        SizeAttribute(_currentFontSize.toString()),
+      );
+
       // 恢复选择状态和焦点
       WidgetsBinding.instance.addPostFrameCallback((_) {
-        _contentController.updateSelection(currentSelection, ChangeSource.local);
+        _contentController.updateSelection(
+          currentSelection,
+          ChangeSource.local,
+        );
         _editorFocusNode.requestFocus();
       });
     }
@@ -227,10 +237,10 @@ class _HomeworkEditorState extends State<HomeworkEditor> {
   void _updateFontSizeDisplay() {
     final selection = _contentController.selection;
     if (!selection.isValid) return;
-    
+
     // 获取当前选择位置的样式
     final style = _contentController.getSelectionStyle();
-    
+
     // 更新字号
     final sizeAttribute = style.attributes[Attribute.size.key];
     double newFontSize = _currentFontSize;
@@ -240,18 +250,20 @@ class _HomeworkEditorState extends State<HomeworkEditor> {
         newFontSize = fontSize;
       }
     }
-    
+
     // 简化格式状态检测逻辑
     bool newIsBold = false;
     bool newIsItalic = false;
     bool newIsStrikethrough = false;
     bool newIsUnderline = false;
-    
+
     if (selection.isCollapsed) {
       // 光标位置，直接检查当前样式
       newIsBold = style.attributes.containsKey(Attribute.bold.key);
       newIsItalic = style.attributes.containsKey(Attribute.italic.key);
-      newIsStrikethrough = style.attributes.containsKey(Attribute.strikeThrough.key);
+      newIsStrikethrough = style.attributes.containsKey(
+        Attribute.strikeThrough.key,
+      );
       newIsUnderline = style.attributes.containsKey(Attribute.underline.key);
     } else {
       // 有选择范围，检查选择范围的格式一致性
@@ -260,11 +272,15 @@ class _HomeworkEditorState extends State<HomeworkEditor> {
       bool allItalic = true;
       bool allStrikethrough = true;
       bool allUnderline = true;
-      
+
       // 检查选择范围内是否所有字符都有相同的格式
-      for (int i = selection.start; i < selection.end && i < document.length; i++) {
+      for (
+        int i = selection.start;
+        i < selection.end && i < document.length;
+        i++
+      ) {
         final charStyle = document.collectStyle(i, 1);
-        
+
         if (!charStyle.attributes.containsKey(Attribute.bold.key)) {
           allBold = false;
         }
@@ -278,17 +294,17 @@ class _HomeworkEditorState extends State<HomeworkEditor> {
           allUnderline = false;
         }
       }
-      
+
       newIsBold = allBold;
       newIsItalic = allItalic;
       newIsStrikethrough = allStrikethrough;
       newIsUnderline = allUnderline;
     }
-    
+
     // 只有状态发生变化时才更新UI
-    if (newFontSize != _currentFontSize || 
-        newIsBold != _isBold || 
-        newIsItalic != _isItalic || 
+    if (newFontSize != _currentFontSize ||
+        newIsBold != _isBold ||
+        newIsItalic != _isItalic ||
         newIsStrikethrough != _isStrikethrough ||
         newIsUnderline != _isUnderline) {
       setState(() {
@@ -305,18 +321,20 @@ class _HomeworkEditorState extends State<HomeworkEditor> {
   Future<void> _save() async {
     // 保存富文本格式的JSON数据
     final content = jsonEncode(_contentController.document.toDelta().toJson());
-    
-    final homework = widget.homework?.copyWith(
-      content: content,
-      dueDate: _selectedDate,
-      subjectUuid: _selectedSubject,
-      tagUuids: _selectedTagUuids,
-    ) ?? Homework.create(
-      content: content,
-      dueDate: _selectedDate,
-      subjectUuid: _selectedSubject,
-      tagUuids: _selectedTagUuids,
-    );
+
+    final homework =
+        widget.homework?.copyWith(
+          content: content,
+          dueDate: _selectedDate,
+          subjectUuid: _selectedSubject,
+          tagUuids: _selectedTagUuids,
+        ) ??
+        Homework.create(
+          content: content,
+          dueDate: _selectedDate,
+          subjectUuid: _selectedSubject,
+          tagUuids: _selectedTagUuids,
+        );
 
     await widget.onSave(homework);
   }
@@ -326,7 +344,7 @@ class _HomeworkEditorState extends State<HomeworkEditor> {
     final theme = Theme.of(context);
     final colorScheme = theme.colorScheme;
     final textColor = colorScheme.onSurface;
-    
+
     return Dialog(
       backgroundColor: Colors.transparent,
       elevation: 0,
@@ -357,7 +375,7 @@ class _HomeworkEditorState extends State<HomeworkEditor> {
               ),
             ),
             const SizedBox(height: 24),
-            
+
             Row(
               children: [
                 Expanded(
@@ -394,12 +412,19 @@ class _HomeworkEditorState extends State<HomeworkEditor> {
                               borderSide: BorderSide.none,
                             ),
                             filled: false,
-                            contentPadding: const EdgeInsets.symmetric(horizontal: 16, vertical: 12),
+                            contentPadding: const EdgeInsets.symmetric(
+                              horizontal: 16,
+                              vertical: 12,
+                            ),
                           ),
-                          items: _availableSubjects.map((subjectUuid) => DropdownMenuItem(
-                            value: subjectUuid,
-                            child: Text(_getSubjectName(subjectUuid)),
-                          )).toList(),
+                          items: _availableSubjects
+                              .map(
+                                (subjectUuid) => DropdownMenuItem(
+                                  value: subjectUuid,
+                                  child: Text(_getSubjectName(subjectUuid)),
+                                ),
+                              )
+                              .toList(),
                           onChanged: (value) {
                             if (value != null) {
                               setState(() {
@@ -413,7 +438,7 @@ class _HomeworkEditorState extends State<HomeworkEditor> {
                   ),
                 ),
                 const SizedBox(width: 16),
-                
+
                 Expanded(
                   child: Column(
                     crossAxisAlignment: CrossAxisAlignment.start,
@@ -431,7 +456,8 @@ class _HomeworkEditorState extends State<HomeworkEditor> {
                         width: double.infinity,
                         child: OutlinedButton.icon(
                           onPressed: _selectDate,
-                          icon: Icon(Icons.access_time, 
+                          icon: Icon(
+                            Icons.access_time,
                             color: colorScheme.primary,
                           ),
                           label: Text(
@@ -439,12 +465,16 @@ class _HomeworkEditorState extends State<HomeworkEditor> {
                             style: TextStyle(color: colorScheme.onSurface),
                           ),
                           style: OutlinedButton.styleFrom(
-                            padding: const EdgeInsets.symmetric(horizontal: 16, vertical: 12),
+                            padding: const EdgeInsets.symmetric(
+                              horizontal: 16,
+                              vertical: 12,
+                            ),
                             shape: RoundedRectangleBorder(
                               borderRadius: BorderRadius.circular(12),
                             ),
                             side: BorderSide.none,
-                            backgroundColor: colorScheme.surfaceContainerHighest,
+                            backgroundColor:
+                                colorScheme.surfaceContainerHighest,
                             minimumSize: const Size(double.infinity, 48),
                             alignment: Alignment.centerLeft,
                           ),
@@ -456,76 +486,99 @@ class _HomeworkEditorState extends State<HomeworkEditor> {
               ],
             ),
             const SizedBox(height: 24),
-            
+
             // 标签选择
             Column(
               crossAxisAlignment: CrossAxisAlignment.start,
               children: [
-                Text('标签', 
+                Text(
+                  '标签',
                   style: theme.textTheme.titleMedium?.copyWith(
                     fontWeight: FontWeight.w500,
                     color: colorScheme.onSurface,
                   ),
                 ),
                 const SizedBox(height: 12),
-                
+
                 // 已选标签
                 if (_selectedTagUuids.isNotEmpty) ...[
                   Wrap(
                     spacing: 8,
                     runSpacing: 8,
-                    children: _selectedTagUuids.where((tagUuid) {
-                      return JsonStorageService.instance.getTagByUuid(tagUuid) != null;
-                    }).map((tagUuid) {
-                      final tagName = JsonStorageService.instance.getTagByUuid(tagUuid)!.name;
-                      return Chip(
-                        label: Text(tagName, style: TextStyle(
-                          fontSize: 13,
-                          color: colorScheme.onSecondaryContainer,
-                        )),
-                        onDeleted: () => _removeTagByUuid(tagUuid),
-                        deleteIcon: Icon(Icons.close, 
-                          size: 16, 
-                          color: colorScheme.onSecondaryContainer,
-                        ),
-                        backgroundColor: colorScheme.secondaryContainer,
-                        side: BorderSide.none,
-                        shape: RoundedRectangleBorder(
-                          borderRadius: BorderRadius.circular(8),
-                        ),
-                        materialTapTargetSize: MaterialTapTargetSize.shrinkWrap,
-                      );
-                    }).toList(),
+                    children: _selectedTagUuids
+                        .where((tagUuid) {
+                          return JsonStorageService.instance.getTagByUuid(
+                                tagUuid,
+                              ) !=
+                              null;
+                        })
+                        .map((tagUuid) {
+                          final tagName = JsonStorageService.instance
+                              .getTagByUuid(tagUuid)!
+                              .name;
+                          return Chip(
+                            label: Text(
+                              tagName,
+                              style: TextStyle(
+                                fontSize: 13,
+                                color: colorScheme.onSecondaryContainer,
+                              ),
+                            ),
+                            onDeleted: () => _removeTagByUuid(tagUuid),
+                            deleteIcon: Icon(
+                              Icons.close,
+                              size: 16,
+                              color: colorScheme.onSecondaryContainer,
+                            ),
+                            backgroundColor: colorScheme.secondaryContainer,
+                            side: BorderSide.none,
+                            shape: RoundedRectangleBorder(
+                              borderRadius: BorderRadius.circular(8),
+                            ),
+                            materialTapTargetSize:
+                                MaterialTapTargetSize.shrinkWrap,
+                          );
+                        })
+                        .toList(),
                   ),
                   const SizedBox(height: 12),
                 ],
-                
+
                 // 预定义标签 + 新建标签按钮
                 Wrap(
                   spacing: 8,
                   runSpacing: 8,
                   children: [
                     // 可用标签（未选中的）
-                    ...JsonStorageService.instance.getAllTags()
+                    ...JsonStorageService.instance
+                        .getAllTags()
                         .where((tag) => !_selectedTagUuids.contains(tag.uuid))
-                        .map((tag) => ActionChip(
-                              label: Text(tag.name, style: TextStyle(
+                        .map(
+                          (tag) => ActionChip(
+                            label: Text(
+                              tag.name,
+                              style: TextStyle(
                                 fontSize: 13,
                                 color: colorScheme.onSurfaceVariant,
-                              )),
-                              onPressed: () => _addTagByName(tag.name),
-                              backgroundColor: colorScheme.surfaceContainerHighest,
-                              side: BorderSide.none,
-                              shape: RoundedRectangleBorder(
-                                borderRadius: BorderRadius.circular(8),
                               ),
-                              materialTapTargetSize: MaterialTapTargetSize.shrinkWrap,
-                            )),
-                    
+                            ),
+                            onPressed: () => _addTagByName(tag.name),
+                            backgroundColor:
+                                colorScheme.surfaceContainerHighest,
+                            side: BorderSide.none,
+                            shape: RoundedRectangleBorder(
+                              borderRadius: BorderRadius.circular(8),
+                            ),
+                            materialTapTargetSize:
+                                MaterialTapTargetSize.shrinkWrap,
+                          ),
+                        ),
+
                     // 新建标签
                     ActionChip(
-                      label: Icon(Icons.add, 
-                        size: 18, 
+                      label: Icon(
+                        Icons.add,
+                        size: 18,
                         color: colorScheme.primary,
                       ),
                       onPressed: () => _showAddTagDialog(),
@@ -541,12 +594,13 @@ class _HomeworkEditorState extends State<HomeworkEditor> {
               ],
             ),
             const SizedBox(height: 24),
-            
+
             // 富文本编辑
             Row(
               crossAxisAlignment: CrossAxisAlignment.center,
               children: [
-                Text('内容', 
+                Text(
+                  '内容',
                   style: theme.textTheme.headlineSmall?.copyWith(
                     fontWeight: FontWeight.w500,
                     color: colorScheme.onSurface,
@@ -559,9 +613,9 @@ class _HomeworkEditorState extends State<HomeworkEditor> {
                     // 加粗按钮
                     Container(
                       decoration: BoxDecoration(
-                        color: _isBold 
-                          ? colorScheme.primaryContainer 
-                          : colorScheme.surfaceContainerHighest,
+                        color: _isBold
+                            ? colorScheme.primaryContainer
+                            : colorScheme.surfaceContainerHighest,
                         borderRadius: BorderRadius.circular(6),
                       ),
                       child: IconButton(
@@ -573,23 +627,28 @@ class _HomeworkEditorState extends State<HomeworkEditor> {
                         onPressed: () {
                           // 保存当前选择状态
                           final currentSelection = _contentController.selection;
-                          
+
                           // 直接切换状态，然后应用格式
                           final newBoldState = !_isBold;
                           setState(() {
                             _isBold = newBoldState;
                           });
-                          
+
                           // 应用或移除格式
                           if (newBoldState) {
                             _contentController.formatSelection(Attribute.bold);
                           } else {
-                            _contentController.formatSelection(Attribute.clone(Attribute.bold, null));
+                            _contentController.formatSelection(
+                              Attribute.clone(Attribute.bold, null),
+                            );
                           }
-                          
+
                           // 恢复选择状态和焦点
                           WidgetsBinding.instance.addPostFrameCallback((_) {
-                            _contentController.updateSelection(currentSelection, ChangeSource.local);
+                            _contentController.updateSelection(
+                              currentSelection,
+                              ChangeSource.local,
+                            );
                             _editorFocusNode.requestFocus();
                           });
                         },
@@ -603,9 +662,9 @@ class _HomeworkEditorState extends State<HomeworkEditor> {
                     // 斜体按钮
                     Container(
                       decoration: BoxDecoration(
-                        color: _isItalic 
-                          ? colorScheme.primaryContainer 
-                          : colorScheme.surfaceContainerHighest,
+                        color: _isItalic
+                            ? colorScheme.primaryContainer
+                            : colorScheme.surfaceContainerHighest,
                         borderRadius: BorderRadius.circular(6),
                       ),
                       child: IconButton(
@@ -617,23 +676,30 @@ class _HomeworkEditorState extends State<HomeworkEditor> {
                         onPressed: () {
                           // 保存当前选择状态
                           final currentSelection = _contentController.selection;
-                          
+
                           // 直接切换状态，然后应用格式
                           final newItalicState = !_isItalic;
                           setState(() {
                             _isItalic = newItalicState;
                           });
-                          
+
                           // 应用或移除格式
                           if (newItalicState) {
-                            _contentController.formatSelection(Attribute.italic);
+                            _contentController.formatSelection(
+                              Attribute.italic,
+                            );
                           } else {
-                            _contentController.formatSelection(Attribute.clone(Attribute.italic, null));
+                            _contentController.formatSelection(
+                              Attribute.clone(Attribute.italic, null),
+                            );
                           }
-                          
+
                           // 恢复选择状态和焦点
                           WidgetsBinding.instance.addPostFrameCallback((_) {
-                            _contentController.updateSelection(currentSelection, ChangeSource.local);
+                            _contentController.updateSelection(
+                              currentSelection,
+                              ChangeSource.local,
+                            );
                             _editorFocusNode.requestFocus();
                           });
                         },
@@ -647,9 +713,9 @@ class _HomeworkEditorState extends State<HomeworkEditor> {
                     // 删除线按钮
                     Container(
                       decoration: BoxDecoration(
-                        color: _isStrikethrough 
-                          ? colorScheme.primaryContainer 
-                          : colorScheme.surfaceContainerHighest,
+                        color: _isStrikethrough
+                            ? colorScheme.primaryContainer
+                            : colorScheme.surfaceContainerHighest,
                         borderRadius: BorderRadius.circular(6),
                       ),
                       child: IconButton(
@@ -661,23 +727,30 @@ class _HomeworkEditorState extends State<HomeworkEditor> {
                         onPressed: () {
                           // 保存当前选择状态
                           final currentSelection = _contentController.selection;
-                          
+
                           // 直接切换状态，然后应用格式
                           final newStrikethroughState = !_isStrikethrough;
                           setState(() {
                             _isStrikethrough = newStrikethroughState;
                           });
-                          
+
                           // 应用或移除格式
                           if (newStrikethroughState) {
-                            _contentController.formatSelection(Attribute.strikeThrough);
+                            _contentController.formatSelection(
+                              Attribute.strikeThrough,
+                            );
                           } else {
-                            _contentController.formatSelection(Attribute.clone(Attribute.strikeThrough, null));
+                            _contentController.formatSelection(
+                              Attribute.clone(Attribute.strikeThrough, null),
+                            );
                           }
-                          
+
                           // 恢复选择状态和焦点
                           WidgetsBinding.instance.addPostFrameCallback((_) {
-                            _contentController.updateSelection(currentSelection, ChangeSource.local);
+                            _contentController.updateSelection(
+                              currentSelection,
+                              ChangeSource.local,
+                            );
                             _editorFocusNode.requestFocus();
                           });
                         },
@@ -762,32 +835,32 @@ class _HomeworkEditorState extends State<HomeworkEditor> {
                   color: colorScheme.surfaceContainerHighest,
                 ),
                 child: QuillEditor.basic(
-                   controller: _contentController,
-                   focusNode: _editorFocusNode,
-                   config: QuillEditorConfig(
-                     padding: const EdgeInsets.all(16),
-                     autoFocus: false,
-                     showCursor: true,
-                     placeholder: '请输入作业内容...',
-                     customStyles: DefaultStyles(
-                       paragraph: DefaultTextBlockStyle(
-                         TextStyle(
-                           fontSize: 20,
-                           color: textColor,
-                           fontFamily: 'HarmonyOS Sans SC',
-                         ),
-                         const HorizontalSpacing(0, 0),
-                         const VerticalSpacing(0, 0),
-                         const VerticalSpacing(0, 0),
-                         null,
-                       ),
-                     ),
-                   ),
-                 ),
+                  controller: _contentController,
+                  focusNode: _editorFocusNode,
+                  config: QuillEditorConfig(
+                    padding: const EdgeInsets.all(16),
+                    autoFocus: false,
+                    showCursor: true,
+                    placeholder: '请输入作业内容...',
+                    customStyles: DefaultStyles(
+                      paragraph: DefaultTextBlockStyle(
+                        TextStyle(
+                          fontSize: 20,
+                          color: textColor,
+                          fontFamily: 'HarmonyOS Sans SC',
+                        ),
+                        const HorizontalSpacing(0, 0),
+                        const VerticalSpacing(0, 0),
+                        const VerticalSpacing(0, 0),
+                        null,
+                      ),
+                    ),
+                  ),
+                ),
               ),
             ),
             const SizedBox(height: 24),
-            
+
             // 操作按钮 - MD3 风格
             Row(
               mainAxisAlignment: MainAxisAlignment.end,
@@ -795,7 +868,10 @@ class _HomeworkEditorState extends State<HomeworkEditor> {
                 ElevatedButton(
                   onPressed: widget.onCancel,
                   style: ElevatedButton.styleFrom(
-                    padding: const EdgeInsets.symmetric(horizontal: 24, vertical: 12),
+                    padding: const EdgeInsets.symmetric(
+                      horizontal: 24,
+                      vertical: 12,
+                    ),
                     backgroundColor: colorScheme.surfaceContainerHighest,
                     foregroundColor: colorScheme.onSurface,
                     elevation: 0,
@@ -806,10 +882,14 @@ class _HomeworkEditorState extends State<HomeworkEditor> {
                   child: const Text('取消'),
                 ),
                 const SizedBox(width: 12),
-                FilledButton( // MD3 FilledButton
+                FilledButton(
+                  // MD3 FilledButton
                   onPressed: () async => await _save(),
                   style: FilledButton.styleFrom(
-                    padding: const EdgeInsets.symmetric(horizontal: 24, vertical: 12),
+                    padding: const EdgeInsets.symmetric(
+                      horizontal: 24,
+                      vertical: 12,
+                    ),
                     shape: RoundedRectangleBorder(
                       borderRadius: BorderRadius.circular(20), // MD3 圆角
                     ),
@@ -830,12 +910,15 @@ class _HomeworkEditorState extends State<HomeworkEditor> {
       builder: (context) {
         final theme = Theme.of(context);
         final colorScheme = theme.colorScheme;
-        
+
         return AlertDialog(
           backgroundColor: colorScheme.surface,
           elevation: 0,
-          shape: RoundedRectangleBorder(borderRadius: BorderRadius.circular(16)),
-          title: Text('添加新标签', 
+          shape: RoundedRectangleBorder(
+            borderRadius: BorderRadius.circular(16),
+          ),
+          title: Text(
+            '添加新标签',
             style: theme.textTheme.headlineSmall?.copyWith(
               fontWeight: FontWeight.w500,
             ),
@@ -849,7 +932,10 @@ class _HomeworkEditorState extends State<HomeworkEditor> {
               focusedBorder: InputBorder.none,
               filled: true,
               fillColor: colorScheme.surfaceContainerHighest,
-              contentPadding: const EdgeInsets.symmetric(horizontal: 16, vertical: 12),
+              contentPadding: const EdgeInsets.symmetric(
+                horizontal: 16,
+                vertical: 12,
+              ),
             ),
             autofocus: true,
             onSubmitted: (_) {
@@ -861,7 +947,10 @@ class _HomeworkEditorState extends State<HomeworkEditor> {
             ElevatedButton(
               onPressed: () => Navigator.of(context).pop(),
               style: ElevatedButton.styleFrom(
-                padding: const EdgeInsets.symmetric(horizontal: 24, vertical: 12),
+                padding: const EdgeInsets.symmetric(
+                  horizontal: 24,
+                  vertical: 12,
+                ),
                 backgroundColor: colorScheme.surfaceContainerHighest,
                 foregroundColor: colorScheme.onSurface,
                 elevation: 0,
@@ -871,7 +960,8 @@ class _HomeworkEditorState extends State<HomeworkEditor> {
               ),
               child: const Text('取消'),
             ),
-            FilledButton( // MD3 FilledButton
+            FilledButton(
+              // MD3 FilledButton
               onPressed: () {
                 _addNewTag();
                 Navigator.of(context).pop();

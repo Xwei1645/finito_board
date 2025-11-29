@@ -4,30 +4,16 @@ class Tag {
   final String uuid;
   final String name;
 
-  const Tag({
-    required this.uuid,
-    required this.name,
-  });
+  const Tag({required this.uuid, required this.name});
 
   // 工厂构造函数，自动生成UUID
-  factory Tag.create({
-    required String name,
-  }) {
-    return Tag(
-      uuid: const Uuid().v4(),
-      name: name,
-    );
+  factory Tag.create({required String name}) {
+    return Tag(uuid: const Uuid().v4(), name: name);
   }
 
   // 复制方法
-  Tag copyWith({
-    String? uuid,
-    String? name,
-  }) {
-    return Tag(
-      uuid: uuid ?? this.uuid,
-      name: name ?? this.name,
-    );
+  Tag copyWith({String? uuid, String? name}) {
+    return Tag(uuid: uuid ?? this.uuid, name: name ?? this.name);
   }
 
   @override
@@ -44,18 +30,12 @@ class Tag {
 
   // JSON序列化
   Map<String, dynamic> toJson() {
-    return {
-      'uuid': uuid,
-      'name': name,
-    };
+    return {'uuid': uuid, 'name': name};
   }
 
   // JSON反序列化
   factory Tag.fromJson(Map<String, dynamic> json) {
-    return Tag(
-      uuid: json['uuid'] as String,
-      name: json['name'] as String,
-    );
+    return Tag(uuid: json['uuid'] as String, name: json['name'] as String);
   }
 
   // 获取可用标签列表（从存储服务中获取所有标签的名称）
@@ -64,9 +44,7 @@ class Tag {
       // 延迟获取存储服务实例以避免循环依赖
       final storageService = _getStorageService();
       if (storageService != null) {
-        return storageService.getAllTags()
-            .map((tag) => tag.name)
-            .toList();
+        return storageService.getAllTags().map((tag) => tag.name).toList();
       }
       return [];
     } catch (e) {

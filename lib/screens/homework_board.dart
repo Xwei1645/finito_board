@@ -21,85 +21,82 @@ import '../services/storage/snapshot_service.dart';
 /// 作业看板主界面
 class HomeworkBoard extends StatefulWidget {
   final VoidCallback? onThemeChanged;
-  
+
   const HomeworkBoard({super.key, this.onThemeChanged});
 
   @override
   State<HomeworkBoard> createState() => _HomeworkBoardState();
 }
 
-class _HomeworkBoardState extends State<HomeworkBoard> with WindowListener, TickerProviderStateMixin {
+class _HomeworkBoardState extends State<HomeworkBoard>
+    with WindowListener, TickerProviderStateMixin {
   List<Subject> subjects = [];
 
   String? _selectedHomeworkId;
   Timer? _selectionTimer;
   // Timer? _quickMenuAutoHideTimer; // Removed, using PopupMenu now
   Timer? _toolbarOpacityTimer;
-  
+
   // 界面缩放倍数（百分比）
   double _scaleFactor = 100.0;
-  
+
   // 作业列数
   int _columnCount = 3;
-  
+
   // 快捷菜单显示状态
   // bool _isQuickMenuVisible = false; // Removed, using PopupMenu now
-  
+
   // 全屏状态
   bool _isFullScreen = false;
-  
+
   // 窗口锁定状态
   bool _isWindowLocked = true;
-  
+
   // 拖动状态
   bool _isDragging = false;
-  
+
   // 背景不透明度
   double _backgroundOpacity = 1.0;
-  
+
   // 背景图片相关
   String? _backgroundImagePath;
   int _backgroundImageMode = 0;
   double _backgroundImageOpacity = 1.0;
-  
+
   // 工具栏透明度相关
   double _toolbarOpacity = 1.0;
   late AnimationController _toolbarOpacityAnimationController;
   late Animation<double> _toolbarOpacityAnimation;
-  
-
-
 
   @override
   void initState() {
     super.initState();
     windowManager.addListener(this);
-    
+
     // 初始化工具栏透明度动画控制器
     _toolbarOpacityAnimationController = AnimationController(
       duration: const Duration(milliseconds: 500),
       vsync: this,
     );
-    
+
     // 工具栏透明度动画（从1.0到0.3）
-    _toolbarOpacityAnimation = Tween<double>(
-      begin: 1.0,
-      end: 0.3,
-    ).animate(CurvedAnimation(
-      parent: _toolbarOpacityAnimationController,
-      curve: Curves.easeInOut,
-    ));
-    
+    _toolbarOpacityAnimation = Tween<double>(begin: 1.0, end: 0.3).animate(
+      CurvedAnimation(
+        parent: _toolbarOpacityAnimationController,
+        curve: Curves.easeInOut,
+      ),
+    );
+
     // 监听动画变化更新透明度状态
     _toolbarOpacityAnimation.addListener(() {
       setState(() {
         _toolbarOpacity = _toolbarOpacityAnimation.value;
       });
     });
-    
+
     _loadData();
     _loadBackgroundSettings();
-    
+
     // 确保主窗口完全加载后再检查并显示OOBE
     WidgetsBinding.instance.addPostFrameCallback((_) {
       _checkAndShowOOBE();
@@ -112,10 +109,10 @@ class _HomeworkBoardState extends State<HomeworkBoard> with WindowListener, Tick
     final storageService = JsonStorageService.instance;
     final homeworks = storageService.getAllHomework();
     final allSubjects = storageService.getAllSubjects();
-    
+
     // 加载界面设置
     final appConfig = storageService.getAppConfig();
-    
+
     // 按科目UUID分组作业
     Map<String, List<Homework>> homeworksBySubjectUuid = {};
     for (var homework in homeworks) {
@@ -124,29 +121,24 @@ class _HomeworkBoardState extends State<HomeworkBoard> with WindowListener, Tick
       }
       homeworksBySubjectUuid[homework.subjectUuid]!.add(homework);
     }
-    
+
     // 创建Subject对象（包含作业信息用于显示）
     List<Subject> loadedSubjects = [];
     for (var subject in allSubjects) {
       // 创建一个临时的Subject对象用于UI显示，包含作业信息
-      loadedSubjects.add(Subject(
-        uuid: subject.uuid,
-        name: subject.name,
-      ));
+      loadedSubjects.add(Subject(uuid: subject.uuid, name: subject.name));
     }
-    
 
-    
     setState(() {
       subjects = loadedSubjects;
       // 从存储中恢复界面设置
       _scaleFactor = appConfig.scaleFactor;
       _columnCount = appConfig.columnCount;
     });
-    
+
     _distributeHomeworksToColumns();
   }
-  
+
   void _loadBackgroundSettings() {
     final settingsService = SettingsService.instance;
     setState(() {
@@ -179,7 +171,7 @@ class _HomeworkBoardState extends State<HomeworkBoard> with WindowListener, Tick
       }
     }
   }
-  
+
   @override
   void dispose() {
     windowManager.removeListener(this);
@@ -193,9 +185,9 @@ class _HomeworkBoardState extends State<HomeworkBoard> with WindowListener, Tick
     setState(() {
       _selectedHomeworkId = homeworkUuid;
     });
-    
+
     _selectionTimer?.cancel();
-    
+
     _selectionTimer = Timer(const Duration(seconds: 10), () {
       setState(() {
         _selectedHomeworkId = null;
@@ -206,43 +198,37 @@ class _HomeworkBoardState extends State<HomeworkBoard> with WindowListener, Tick
   void _showCustomSnackBar(String message) {
     // 先清除当前显示的SnackBar，实现覆盖效果
     ScaffoldMessenger.of(context).clearSnackBars();
-    
+
     // 显示新的SnackBar
     ScaffoldMessenger.of(context).showSnackBar(
       SnackBar(
         content: Text(message),
         behavior: SnackBarBehavior.floating,
-        margin: const EdgeInsets.only(
-          left: 200,
-          right: 200,
-          bottom: 16,
-        ),
-        shape: RoundedRectangleBorder(
-          borderRadius: BorderRadius.circular(12),
-        ),
+        margin: const EdgeInsets.only(left: 200, right: 200, bottom: 16),
+        shape: RoundedRectangleBorder(borderRadius: BorderRadius.circular(12)),
       ),
     );
   }
 
   // 简化的全屏前窗口锁定状态记录
   bool _windowLockedBeforeFullScreen = false;
-  
+
   /// 切换全屏状态
   /// 优化后的实现：减少setState调用，简化状态管理，提高性能
   Future<void> _toggleFullScreen() async {
     final willEnterFullScreen = !_isFullScreen;
-    
+
     // 进入全屏前的准备工作
     if (willEnterFullScreen) {
       // 记录当前窗口锁定状态
       _windowLockedBeforeFullScreen = _isWindowLocked;
-      
+
       // 如果窗口当前是锁定的，需要先解锁（不显示提示）
       if (_isWindowLocked) {
         await _unlockWindowSilently();
       }
     }
-  
+
     // 一次性更新所有相关状态，减少重绘
     setState(() {
       _isFullScreen = willEnterFullScreen;
@@ -251,13 +237,13 @@ class _HomeworkBoardState extends State<HomeworkBoard> with WindowListener, Tick
         _isWindowLocked = false;
       }
     });
-  
+
     // 执行窗口管理器的全屏切换
     await windowManager.setFullScreen(willEnterFullScreen);
-    
+
     // 显示状态提示
     _showCustomSnackBar(willEnterFullScreen ? '已进入全屏模式' : '已退出全屏模式');
-  
+
     // 退出全屏后的恢复工作
     if (!willEnterFullScreen) {
       // 恢复之前的窗口锁定状态
@@ -276,7 +262,7 @@ class _HomeworkBoardState extends State<HomeworkBoard> with WindowListener, Tick
   // 切换窗口锁定状态
   Future<void> _toggleWindowLock() async {
     final willLock = !_isWindowLocked;
-    
+
     setState(() {
       _isWindowLocked = willLock;
     });
@@ -299,8 +285,7 @@ class _HomeworkBoardState extends State<HomeworkBoard> with WindowListener, Tick
   Future<void> _unlockWindow() async {
     if (Platform.isLinux) {
       await windowManager.setTitleBarStyle(TitleBarStyle.normal);
-    }
-    else {
+    } else {
       await windowManager.setTitleBarStyle(TitleBarStyle.hidden);
     }
     await windowManager.setResizable(true);
@@ -319,10 +304,6 @@ class _HomeworkBoardState extends State<HomeworkBoard> with WindowListener, Tick
     await windowManager.setResizable(true);
   }
 
-
-
-
-
   // 开始拖动窗口
   void _startDragWindow() async {
     if (!_isWindowLocked) {
@@ -336,8 +317,6 @@ class _HomeworkBoardState extends State<HomeworkBoard> with WindowListener, Tick
     }
   }
 
-
-
   void _onEditHomework(String homeworkUuid) {
     final storageService = JsonStorageService.instance;
     final homeworkToEdit = storageService.getHomeworkByUuid(homeworkUuid);
@@ -349,13 +328,13 @@ class _HomeworkBoardState extends State<HomeworkBoard> with WindowListener, Tick
 
   Future<void> _onDeleteHomework(String homeworkUuid) async {
     final storageService = JsonStorageService.instance;
-    
+
     // 从JSON存储中删除作业
     await storageService.deleteHomework(homeworkUuid);
-    
+
     // 重新加载数据以更新UI
     await _loadData();
-    
+
     _showCustomSnackBar('作业已删除');
   }
 
@@ -372,19 +351,19 @@ class _HomeworkBoardState extends State<HomeworkBoard> with WindowListener, Tick
 
   Future<void> _saveHomework(Homework homework) async {
     final storageService = JsonStorageService.instance;
-    
+
     // 检查是否为编辑模式
     final existingHomework = storageService.getHomeworkByUuid(homework.uuid);
     final isEdit = existingHomework != null;
-    
+
     // 保存到JSON存储
     await storageService.saveHomework(homework);
-    
+
     // 如果是编辑现有作业，触发快照
     if (isEdit) {
       await SnapshotService.instance.snapshotOnEdit();
     }
-    
+
     // 重新加载数据以更新UI
     await _loadData();
 
@@ -396,18 +375,21 @@ class _HomeworkBoardState extends State<HomeworkBoard> with WindowListener, Tick
     }
   }
 
-
-
   // 所有作业分配
   List<List<Widget>> _distributeHomeworksToColumns() {
-    List<List<Widget>> columns = List.generate(_columnCount, (index) => <Widget>[]);
+    List<List<Widget>> columns = List.generate(
+      _columnCount,
+      (index) => <Widget>[],
+    );
     int currentColumn = 0;
     final storageService = JsonStorageService.instance;
-    
+
     // 为每个学科创建标题和作业卡片，保持在同一列
     for (var subject in subjects) {
-      final subjectHomeworks = storageService.getHomeworkBySubjectUuid(subject.uuid);
-      
+      final subjectHomeworks = storageService.getHomeworkBySubjectUuid(
+        subject.uuid,
+      );
+
       if (subjectHomeworks.isNotEmpty) {
         // 添加学科标题到当前列
         columns[currentColumn].add(
@@ -416,7 +398,7 @@ class _HomeworkBoardState extends State<HomeworkBoard> with WindowListener, Tick
             homeworkCount: subjectHomeworks.length,
           ),
         );
-        
+
         // 添加该学科的所有作业到同一列
         for (var homework in subjectHomeworks) {
           columns[currentColumn].add(
@@ -430,19 +412,19 @@ class _HomeworkBoardState extends State<HomeworkBoard> with WindowListener, Tick
             ),
           );
         }
-        
+
         // 移动到下一列
         currentColumn = (currentColumn + 1) % _columnCount;
       }
     }
-    
+
     // 处理无效科目UUID的作业
     final allHomeworks = storageService.getAllHomework();
     final allSubjects = storageService.getAllSubjects();
     final invalidSubjectHomeworks = allHomeworks.where((homework) {
       return !allSubjects.any((s) => s.uuid == homework.subjectUuid);
     }).toList();
-    
+
     if (invalidSubjectHomeworks.isNotEmpty) {
       // 添加"未知"科目标题
       columns[currentColumn].add(
@@ -451,7 +433,7 @@ class _HomeworkBoardState extends State<HomeworkBoard> with WindowListener, Tick
           homeworkCount: invalidSubjectHomeworks.length,
         ),
       );
-      
+
       // 添加无效科目UUID的作业
       for (var homework in invalidSubjectHomeworks) {
         columns[currentColumn].add(
@@ -466,7 +448,7 @@ class _HomeworkBoardState extends State<HomeworkBoard> with WindowListener, Tick
         );
       }
     }
-    
+
     return columns;
   }
 
@@ -474,19 +456,21 @@ class _HomeworkBoardState extends State<HomeworkBoard> with WindowListener, Tick
   Widget build(BuildContext context) {
     final columns = _distributeHomeworksToColumns();
     final storageService = JsonStorageService.instance;
-    
+
     // 检查是否有作业（包括有效科目的作业和无效科目UUID的作业）
-    final hasValidSubjectHomework = subjects.any((subject) => 
-        storageService.getHomeworkBySubjectUuid(subject.uuid).isNotEmpty);
-    
+    final hasValidSubjectHomework = subjects.any(
+      (subject) =>
+          storageService.getHomeworkBySubjectUuid(subject.uuid).isNotEmpty,
+    );
+
     final allHomeworks = storageService.getAllHomework();
     final allSubjects = storageService.getAllSubjects();
     final hasInvalidSubjectHomework = allHomeworks.any((homework) {
       return !allSubjects.any((s) => s.uuid == homework.subjectUuid);
     });
-    
+
     final hasHomework = hasValidSubjectHomework || hasInvalidSubjectHomework;
-    
+
     return Scaffold(
       backgroundColor: Colors.transparent,
       body: Stack(
@@ -509,73 +493,74 @@ class _HomeworkBoardState extends State<HomeworkBoard> with WindowListener, Tick
                 height: double.infinity,
                 decoration: BoxDecoration(
                   color: Theme.of(context).colorScheme.surface,
-                  image: _backgroundImagePath != null && _backgroundImagePath!.isNotEmpty
+                  image:
+                      _backgroundImagePath != null &&
+                          _backgroundImagePath!.isNotEmpty
                       ? DecorationImage(
                           image: FileImage(File(_backgroundImagePath!)),
                           fit: _getBoxFitFromMode(_backgroundImageMode),
                           opacity: _backgroundImageOpacity,
                         )
                       : null,
-                  borderRadius: _isFullScreen 
-                      ? BorderRadius.zero 
+                  borderRadius: _isFullScreen
+                      ? BorderRadius.zero
                       : BorderRadius.circular(12),
                 ),
-              child: hasHomework
-                ? Theme(
-                    data: Theme.of(context).copyWith(
-                      textTheme: Theme.of(context).textTheme.apply(
-                        fontSizeFactor: _scaleFactor / 100.0,
-                      ),
-                    ),
-                    child: SingleChildScrollView(
-                      padding: const EdgeInsets.all(12),
-                      child: IntrinsicHeight(
-                        child: Row(
-                          crossAxisAlignment: CrossAxisAlignment.start,
-                          children: List.generate(_columnCount, (index) {
-                            EdgeInsets padding;
-                            if (_columnCount == 1) {
-                              padding = EdgeInsets.zero;
-                            } else if (index == 0) {
-                              padding = const EdgeInsets.only(right: 6);
-                            } else if (index == _columnCount - 1) {
-                              padding = const EdgeInsets.only(left: 6);
-                            } else {
-                              padding = const EdgeInsets.symmetric(horizontal: 6);
-                            }
-                            
-                            return Expanded(
-                              child: Padding(
-                                padding: padding,
-                                child: Column(
-                                  children: index < columns.length ? columns[index] : [],
-                                ),
-                              ),
-                            );
-                          }),
+                child: hasHomework
+                    ? Theme(
+                        data: Theme.of(context).copyWith(
+                          textTheme: Theme.of(context).textTheme.apply(
+                            fontSizeFactor: _scaleFactor / 100.0,
+                          ),
                         ),
+                        child: SingleChildScrollView(
+                          padding: const EdgeInsets.all(12),
+                          child: IntrinsicHeight(
+                            child: Row(
+                              crossAxisAlignment: CrossAxisAlignment.start,
+                              children: List.generate(_columnCount, (index) {
+                                EdgeInsets padding;
+                                if (_columnCount == 1) {
+                                  padding = EdgeInsets.zero;
+                                } else if (index == 0) {
+                                  padding = const EdgeInsets.only(right: 6);
+                                } else if (index == _columnCount - 1) {
+                                  padding = const EdgeInsets.only(left: 6);
+                                } else {
+                                  padding = const EdgeInsets.symmetric(
+                                    horizontal: 6,
+                                  );
+                                }
+
+                                return Expanded(
+                                  child: Padding(
+                                    padding: padding,
+                                    child: Column(
+                                      children: index < columns.length
+                                          ? columns[index]
+                                          : [],
+                                    ),
+                                  ),
+                                );
+                              }),
+                            ),
+                          ),
+                        ),
+                      )
+                    : Theme(
+                        data: Theme.of(context).copyWith(
+                          textTheme: Theme.of(context).textTheme.apply(
+                            fontSizeFactor: _scaleFactor / 100.0,
+                          ),
+                        ),
+                        child: const EmptyState(),
                       ),
-                    ),
-                  )
-                : Theme(
-                    data: Theme.of(context).copyWith(
-                      textTheme: Theme.of(context).textTheme.apply(
-                        fontSizeFactor: _scaleFactor / 100.0,
-                      ),
-                    ),
-                    child: const EmptyState(),
-                  ),
               ),
             ),
           ),
           // 底部拖动条 - 仅在窗口解锁时显示
           if (!_isWindowLocked && !_isFullScreen)
-            Positioned(
-              bottom: 0,
-              left: 0,
-              right: 0,
-              child: _buildDragBar(),
-            ),
+            Positioned(bottom: 0, left: 0, right: 0, child: _buildDragBar()),
           // 工具栏 - 吸附在窗口右下角边缘
           Positioned(
             bottom: 16,
@@ -590,9 +575,11 @@ class _HomeworkBoardState extends State<HomeworkBoard> with WindowListener, Tick
               columnCount: _columnCount,
               onNewHomework: _showHomeworkEditor,
               onToggleFullScreen: _toggleFullScreen,
-              onOpenMoreOptions: () => _hideMenuAndExecute(_openMoreOptionsWindow),
+              onOpenMoreOptions: () =>
+                  _hideMenuAndExecute(_openMoreOptionsWindow),
               onToggleWindowLock: _toggleWindowLock,
-              onShowSubjectManager: () => _hideMenuAndExecute(_showSubjectManager),
+              onShowSubjectManager: () =>
+                  _hideMenuAndExecute(_showSubjectManager),
               onShowTagManager: () => _hideMenuAndExecute(_showTagManager),
               onAdjustScale: _adjustScale,
               onAdjustColumnCount: _adjustColumnCount,
@@ -613,7 +600,7 @@ class _HomeworkBoardState extends State<HomeworkBoard> with WindowListener, Tick
     setState(() {
       _scaleFactor = newScaleFactor;
     });
-    
+
     // 保存到持久化存储
     await JsonStorageService.instance.saveScaleFactor(newScaleFactor);
   }
@@ -624,7 +611,7 @@ class _HomeworkBoardState extends State<HomeworkBoard> with WindowListener, Tick
     setState(() {
       _columnCount = newColumnCount;
     });
-    
+
     // 保存到持久化存储
     await JsonStorageService.instance.saveColumnCount(newColumnCount);
   }
@@ -715,9 +702,7 @@ class _HomeworkBoardState extends State<HomeworkBoard> with WindowListener, Tick
       child: Container(
         height: 16, // 减小容器高度，为snackbar留出空间
         width: double.infinity,
-        decoration: BoxDecoration(
-          color: Colors.transparent,
-        ),
+        decoration: BoxDecoration(color: Colors.transparent),
         child: Center(
           child: Container(
             width: 150,

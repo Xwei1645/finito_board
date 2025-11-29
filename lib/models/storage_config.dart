@@ -7,7 +7,7 @@ class StorageConfig {
   final bool snapshotOnExit; // 退出应用时自动快照
   final bool limitSnapshotCount; // 是否限制快照数量
   final int maxSnapshotCount; // 最大快照数量
-  
+
   // 备份设置
   final bool autoBackupEnabled; // 是否启用自动备份
   final bool backupOnStartup; // 应用启动时备份
@@ -15,7 +15,7 @@ class StorageConfig {
   final bool backupOnExit; // 退出应用时备份
   final bool limitBackupCount; // 是否限制备份数量
   final int maxAutoBackupCount; // 最大自动备份数量
-  
+
   const StorageConfig({
     this.snapshotEnabled = false,
     this.snapshotOnEdit = false,
@@ -30,7 +30,7 @@ class StorageConfig {
     this.limitBackupCount = true,
     this.maxAutoBackupCount = 10,
   });
-  
+
   /// 从JSON创建StorageConfig
   factory StorageConfig.fromJson(Map<String, dynamic> json) {
     return StorageConfig(
@@ -48,7 +48,7 @@ class StorageConfig {
       maxAutoBackupCount: json['maxAutoBackupCount'] as int? ?? 10,
     );
   }
-  
+
   /// 转换为JSON
   Map<String, dynamic> toJson() {
     return {
@@ -66,7 +66,7 @@ class StorageConfig {
       'maxAutoBackupCount': maxAutoBackupCount,
     };
   }
-  
+
   /// 复制并修改部分字段
   StorageConfig copyWith({
     bool? snapshotEnabled,

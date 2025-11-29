@@ -35,11 +35,7 @@ class AppearanceWidgets {
               color: colorScheme.primaryContainer,
               borderRadius: BorderRadius.circular(12),
             ),
-            child: Icon(
-              icon,
-              color: colorScheme.onPrimaryContainer,
-              size: 24,
-            ),
+            child: Icon(icon, color: colorScheme.onPrimaryContainer, size: 24),
           ),
           const SizedBox(width: 16),
           Expanded(
@@ -58,7 +54,10 @@ class AppearanceWidgets {
                       ),
                     ),
                     Container(
-                      padding: const EdgeInsets.symmetric(horizontal: 12, vertical: 4),
+                      padding: const EdgeInsets.symmetric(
+                        horizontal: 12,
+                        vertical: 4,
+                      ),
                       decoration: BoxDecoration(
                         color: colorScheme.primary.withValues(alpha: 0.15),
                         borderRadius: BorderRadius.circular(12),
@@ -131,11 +130,7 @@ class AppearanceWidgets {
               color: colorScheme.primaryContainer,
               borderRadius: BorderRadius.circular(12),
             ),
-            child: Icon(
-              icon,
-              color: colorScheme.onPrimaryContainer,
-              size: 24,
-            ),
+            child: Icon(icon, color: colorScheme.onPrimaryContainer, size: 24),
           ),
           const SizedBox(width: 16),
           Expanded(
@@ -192,7 +187,9 @@ class AppearanceWidgets {
     ValueChanged<int?> onChanged,
   ) {
     final colorScheme = Theme.of(context).colorScheme;
-    Color selectedColor = currentThemeColor != null ? Color(currentThemeColor) : colorScheme.primary;
+    Color selectedColor = currentThemeColor != null
+        ? Color(currentThemeColor)
+        : colorScheme.primary;
 
     showDialog(
       context: context,
@@ -222,7 +219,9 @@ class AppearanceWidgets {
                     child: Text(
                       '#${selectedColor.toARGB32().toRadixString(16).padLeft(8, '0').toUpperCase()}',
                       style: TextStyle(
-                        color: selectedColor.computeLuminance() > 0.5 ? Colors.black : Colors.white,
+                        color: selectedColor.computeLuminance() > 0.5
+                            ? Colors.black
+                            : Colors.white,
                         fontWeight: FontWeight.bold,
                       ),
                     ),
@@ -278,45 +277,60 @@ class AppearanceWidgets {
                 Wrap(
                   spacing: 6,
                   runSpacing: 6,
-                  children: [
-                    colorScheme.primary,
-                    Colors.red,
-                    Colors.pink,
-                    Colors.purple,
-                    Colors.deepPurple,
-                    Colors.indigo,
-                    Colors.blue,
-                    Colors.lightBlue,
-                    Colors.cyan,
-                    Colors.teal,
-                    Colors.green,
-                    Colors.lightGreen,
-                    Colors.lime,
-                    Colors.yellow,
-                    Colors.amber,
-                    Colors.orange,
-                    Colors.deepOrange,
-                    Colors.brown,
-                    Colors.grey,
-                    Colors.blueGrey,
-                  ].map((color) => GestureDetector(
-                    onTap: () {
-                      setState(() {
-                        selectedColor = color;
-                      });
-                    },
-                    child: Container(
-                      width: 28,
-                      height: 28,
-                      decoration: BoxDecoration(
-                        color: color,
-                        borderRadius: BorderRadius.circular(4),
-                        border: selectedColor.toARGB32() == color.toARGB32()
-                            ? Border.all(color: colorScheme.primary, width: 2)
-                            : Border.all(color: colorScheme.outline.withValues(alpha: 0.3), width: 1),
-                      ),
-                    ),
-                  )).toList(),
+                  children:
+                      [
+                            colorScheme.primary,
+                            Colors.red,
+                            Colors.pink,
+                            Colors.purple,
+                            Colors.deepPurple,
+                            Colors.indigo,
+                            Colors.blue,
+                            Colors.lightBlue,
+                            Colors.cyan,
+                            Colors.teal,
+                            Colors.green,
+                            Colors.lightGreen,
+                            Colors.lime,
+                            Colors.yellow,
+                            Colors.amber,
+                            Colors.orange,
+                            Colors.deepOrange,
+                            Colors.brown,
+                            Colors.grey,
+                            Colors.blueGrey,
+                          ]
+                          .map(
+                            (color) => GestureDetector(
+                              onTap: () {
+                                setState(() {
+                                  selectedColor = color;
+                                });
+                              },
+                              child: Container(
+                                width: 28,
+                                height: 28,
+                                decoration: BoxDecoration(
+                                  color: color,
+                                  borderRadius: BorderRadius.circular(4),
+                                  border:
+                                      selectedColor.toARGB32() ==
+                                          color.toARGB32()
+                                      ? Border.all(
+                                          color: colorScheme.primary,
+                                          width: 2,
+                                        )
+                                      : Border.all(
+                                          color: colorScheme.outline.withValues(
+                                            alpha: 0.3,
+                                          ),
+                                          width: 1,
+                                        ),
+                                ),
+                              ),
+                            ),
+                          )
+                          .toList(),
                 ),
               ],
             ),
@@ -502,7 +516,9 @@ class AppearanceWidgets {
                                 underline: const SizedBox.shrink(),
                                 dropdownColor: colorScheme.surface,
                                 elevation: 1,
-                                borderRadius: const BorderRadius.all(Radius.circular(8)),
+                                borderRadius: const BorderRadius.all(
+                                  Radius.circular(8),
+                                ),
                                 items: const [
                                   DropdownMenuItem(value: 0, child: Text('适应')),
                                   DropdownMenuItem(value: 1, child: Text('填充')),
@@ -595,9 +611,7 @@ class AppearanceWidgets {
                                   height: innerHeight,
                                   child: Stack(
                                     children: [
-                                      Container(
-                                        color: colorScheme.surface,
-                                      ),
+                                      Container(color: colorScheme.surface),
                                       Opacity(
                                         opacity: opacity,
                                         child: FittedBox(
@@ -625,7 +639,9 @@ class AppearanceWidgets {
                 : Container(
                     height: 120,
                     decoration: BoxDecoration(
-                      color: colorScheme.surfaceContainerHighest.withValues(alpha: 0.3),
+                      color: colorScheme.surfaceContainerHighest.withValues(
+                        alpha: 0.3,
+                      ),
                       borderRadius: BorderRadius.circular(8),
                       border: Border.all(
                         color: colorScheme.outline.withValues(alpha: 0.3),
@@ -636,7 +652,9 @@ class AppearanceWidgets {
                       child: Icon(
                         Icons.image_not_supported,
                         size: 48,
-                        color: colorScheme.onSurfaceVariant.withValues(alpha: 0.5),
+                        color: colorScheme.onSurfaceVariant.withValues(
+                          alpha: 0.5,
+                        ),
                       ),
                     ),
                   ),

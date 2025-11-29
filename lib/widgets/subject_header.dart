@@ -15,7 +15,7 @@ class SubjectHeader extends StatelessWidget {
     final theme = Theme.of(context);
     final colorScheme = theme.colorScheme;
     final textScaleFactor = MediaQuery.textScalerOf(context).scale(1.0);
-    
+
     return Container(
       margin: const EdgeInsets.only(bottom: 8, top: 8),
       padding: const EdgeInsets.symmetric(horizontal: 12, vertical: 6),
@@ -26,7 +26,9 @@ class SubjectHeader extends StatelessWidget {
             style: theme.textTheme.titleLarge?.copyWith(
               fontWeight: FontWeight.w600,
               color: colorScheme.onSurface,
-              fontSize: (theme.textTheme.titleLarge?.fontSize ?? 22) * textScaleFactor,
+              fontSize:
+                  (theme.textTheme.titleLarge?.fontSize ?? 22) *
+                  textScaleFactor,
             ),
           ),
           const SizedBox(width: 8),
@@ -41,7 +43,9 @@ class SubjectHeader extends StatelessWidget {
               style: theme.textTheme.labelSmall?.copyWith(
                 fontWeight: FontWeight.w500,
                 color: colorScheme.primary,
-                fontSize: (theme.textTheme.labelSmall?.fontSize ?? 11) * textScaleFactor,
+                fontSize:
+                    (theme.textTheme.labelSmall?.fontSize ?? 11) *
+                    textScaleFactor,
               ),
             ),
           ),

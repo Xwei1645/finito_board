@@ -37,7 +37,10 @@ class RotatingFilePrinter extends LoggyPrinter {
 
   void _rotateIfNeeded() {
     if (_currentFile == null || _currentFileSize >= maxFileSize) {
-      final timestamp = DateTime.now().toIso8601String().replaceAll(':', '-').replaceAll('.', '-');
+      final timestamp = DateTime.now()
+          .toIso8601String()
+          .replaceAll(':', '-')
+          .replaceAll('.', '-');
       _currentFile = File(p.join(logDir, 'app_$timestamp.log'));
       _currentFileSize = 0;
     }
@@ -45,32 +48,42 @@ class RotatingFilePrinter extends LoggyPrinter {
 
   String _getColor(LogLevel level) {
     switch (level) {
-      case LogLevel.debug:   return '\x1B[36m'; // Cyan
-      case LogLevel.info:    return '\x1B[32m'; // Green
-      case LogLevel.warning: return '\x1B[33m'; // Yellow
-      case LogLevel.error:   return '\x1B[31m'; // Red
-      default:               return '\x1B[37m'; // White
+      case LogLevel.debug:
+        return '\x1B[36m'; // Cyan
+      case LogLevel.info:
+        return '\x1B[32m'; // Green
+      case LogLevel.warning:
+        return '\x1B[33m'; // Yellow
+      case LogLevel.error:
+        return '\x1B[31m'; // Red
+      default:
+        return '\x1B[37m'; // White
     }
   }
 
   @override
   void onLog(LogRecord record) {
     _rotateIfNeeded();
-    
+
     final time = record.time.toIso8601String();
-    final level = record.level.toString().split('.').last.toUpperCase().padRight(7);
-    
+    final level = record.level
+        .toString()
+        .split('.')
+        .last
+        .toUpperCase()
+        .padRight(7);
+
     // 写入文件
     final message = '[$time] $level | ${record.message}\n';
     _currentFile?.writeAsStringSync(message, mode: FileMode.append);
     _currentFileSize += message.length;
-    
+
     if (record.error != null) {
       final errorMsg = '  Error: ${record.error}\n';
       _currentFile?.writeAsStringSync(errorMsg, mode: FileMode.append);
       _currentFileSize += errorMsg.length;
     }
-    
+
     if (record.stackTrace != null) {
       final stackMsg = '  ${record.stackTrace}\n';
       _currentFile?.writeAsStringSync(stackMsg, mode: FileMode.append);
@@ -82,11 +95,11 @@ class RotatingFilePrinter extends LoggyPrinter {
       final color = _getColor(record.level);
       final reset = '\x1B[0m';
       debugPrint('$color[$time] $level | ${record.message}$reset');
-      
+
       if (record.error != null) {
         debugPrint('$color  Error: ${record.error}$reset');
       }
-      
+
       if (record.stackTrace != null) {
         debugPrint('$color  ${record.stackTrace}$reset');
       }
@@ -96,51 +109,54 @@ class RotatingFilePrinter extends LoggyPrinter {
 
 void main() async {
   WidgetsFlutterBinding.ensureInitialized();
-  
+
   // 初始化日志系统
   final appDir = p.dirname(Platform.resolvedExecutable);
   final logsDir = p.join(appDir, 'logs');
-  
+
   Loggy.initLoggy(
-    logPrinter: RotatingFilePrinter(logDir: logsDir, maxFileSize: 10 * 1024 * 1024),
+    logPrinter: RotatingFilePrinter(
+      logDir: logsDir,
+      maxFileSize: 10 * 1024 * 1024,
+    ),
   );
-  
+
   logInfo('应用启动');
-  
+
   // 初始化JSON存储服务
   await JsonStorageService.instance.init();
   logInfo('JSON存储服务初始化完成');
-  
+
   // 初始化备份服务
   final dataDir = p.join(appDir, 'data');
   await BackupService.instance.init(dataDir);
   logInfo('备份服务初始化完成');
-  
+
   // 初始化快照服务
   await SnapshotService.instance.init(dataDir);
   logInfo('快照服务初始化完成');
-  
+
   // 初始化设置服务
   await SettingsService.instance.initialize();
   logInfo('设置服务初始化完成');
-  
+
   // 应用启动时执行自动备份
   await BackupService.instance.backupOnStartup();
   logInfo('启动备份已执行');
-  
+
   // 应用启动时执行自动快照
   await SnapshotService.instance.snapshotOnStartup();
   logInfo('启动快照已执行');
-  
+
   if (!kIsWeb && (Platform.isWindows || Platform.isLinux || Platform.isMacOS)) {
     await windowManager.ensureInitialized();
-    
+
     // 尝试恢复窗口状态
     final savedWindowState = SettingsService.instance.getWindowState();
-    final windowSize = savedWindowState != null 
+    final windowSize = savedWindowState != null
         ? Size(savedWindowState.width, savedWindowState.height)
         : const Size(1200, 800);
-    
+
     WindowOptions windowOptions = WindowOptions(
       size: windowSize,
       center: savedWindowState == null,
@@ -149,16 +165,16 @@ void main() async {
       titleBarStyle: TitleBarStyle.hidden,
       windowButtonVisibility: false,
     );
-    
+
     windowManager.waitUntilReadyToShow(windowOptions, () async {
       await windowManager.show();
       await windowManager.focus();
-      
+
       // 恢复窗口状态
       if (savedWindowState != null) {
         await SettingsService.instance.restoreWindowState();
       }
-      
+
       // 初始状态设置为锁定（无边框，不可调整大小）
       // 初始化时先设置为无边框，再禁用调整大小
       await windowManager.setAsFrameless();
@@ -166,7 +182,7 @@ void main() async {
       await windowManager.setResizable(false);
     });
   }
-  
+
   runApp(const MyApp());
 }
 
@@ -191,7 +207,7 @@ class _MyAppState extends State<MyApp> {
     final settingsService = SettingsService.instance;
     final isDarkMode = settingsService.getDarkMode();
     final themeColor = settingsService.getThemeColor();
-    
+
     setState(() {
       _isDarkMode = isDarkMode;
       _themeColor = themeColor;
@@ -201,7 +217,7 @@ class _MyAppState extends State<MyApp> {
   @override
   Widget build(BuildContext context) {
     final seedColor = _themeColor != null ? Color(_themeColor!) : Colors.blue;
-    
+
     return ClipRRect(
       borderRadius: BorderRadius.circular(12),
       child: MaterialApp(
@@ -239,7 +255,7 @@ class _MyAppState extends State<MyApp> {
 
 class MainWindow extends StatelessWidget {
   final VoidCallback? onThemeChanged;
-  
+
   const MainWindow({super.key, this.onThemeChanged});
 
   @override

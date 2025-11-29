@@ -17,11 +17,7 @@ class StorageWidgets {
         padding: const EdgeInsets.symmetric(vertical: 4, horizontal: 4),
         child: Row(
           children: [
-            Icon(
-              icon,
-              size: 20,
-              color: colorScheme.onSurfaceVariant,
-            ),
+            Icon(icon, size: 20, color: colorScheme.onSurfaceVariant),
             const SizedBox(width: 12),
             Expanded(
               child: Text(
@@ -33,10 +29,7 @@ class StorageWidgets {
                 ),
               ),
             ),
-            Checkbox(
-              value: value,
-              onChanged: (v) => onChanged(v ?? false),
-            ),
+            Checkbox(value: value, onChanged: (v) => onChanged(v ?? false)),
           ],
         ),
       ),
@@ -54,11 +47,7 @@ class StorageWidgets {
       padding: const EdgeInsets.symmetric(vertical: 4, horizontal: 4),
       child: Row(
         children: [
-          Icon(
-            icon,
-            size: 20,
-            color: colorScheme.onSurfaceVariant,
-          ),
+          Icon(icon, size: 20, color: colorScheme.onSurfaceVariant),
           const SizedBox(width: 12),
           Expanded(
             child: Text(
@@ -70,10 +59,7 @@ class StorageWidgets {
               ),
             ),
           ),
-          Switch(
-            value: value,
-            onChanged: onChanged,
-          ),
+          Switch(value: value, onChanged: onChanged),
         ],
       ),
     );
@@ -89,11 +75,7 @@ class StorageWidgets {
   }) {
     return Row(
       children: [
-        Icon(
-          Icons.inventory_2,
-          size: 20,
-          color: colorScheme.onSurfaceVariant,
-        ),
+        Icon(Icons.inventory_2, size: 20, color: colorScheme.onSurfaceVariant),
         const SizedBox(width: 12),
         Text(
           title,
@@ -127,10 +109,7 @@ class StorageWidgets {
           ),
         ),
         const SizedBox(width: 12),
-        IconButton(
-          onPressed: onIncrement,
-          icon: const Icon(Icons.add),
-        ),
+        IconButton(onPressed: onIncrement, icon: const Icon(Icons.add)),
       ],
     );
   }
@@ -152,9 +131,14 @@ class StorageWidgets {
     }
   }
 
-  static Future<void> createManualSnapshot(Function(String) showSnackBar) async {
+  static Future<void> createManualSnapshot(
+    Function(String) showSnackBar,
+  ) async {
     showSnackBar('正在创建快照...');
-    final success = await SnapshotService.instance.createSnapshot(isAuto: false, trigger: 'manual');
+    final success = await SnapshotService.instance.createSnapshot(
+      isAuto: false,
+      trigger: 'manual',
+    );
     if (success) {
       showSnackBar('快照创建成功');
     } else {
@@ -162,7 +146,9 @@ class StorageWidgets {
     }
   }
 
-  static Future<void> openSnapshotDirectory(Function(String) showSnackBar) async {
+  static Future<void> openSnapshotDirectory(
+    Function(String) showSnackBar,
+  ) async {
     final success = await SnapshotService.instance.openSnapshotDirectory();
     if (!success) {
       showSnackBar('无法打开快照目录');

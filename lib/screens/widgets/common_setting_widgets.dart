@@ -10,7 +10,7 @@ class CommonSettingWidgets {
     required ValueChanged<bool> onChanged,
   }) {
     final colorScheme = Theme.of(context).colorScheme;
-    
+
     return Container(
       padding: const EdgeInsets.all(16),
       decoration: BoxDecoration(
@@ -32,11 +32,7 @@ class CommonSettingWidgets {
               color: colorScheme.primaryContainer,
               borderRadius: BorderRadius.circular(12),
             ),
-            child: Icon(
-              icon,
-              color: colorScheme.onPrimaryContainer,
-              size: 24,
-            ),
+            child: Icon(icon, color: colorScheme.onPrimaryContainer, size: 24),
           ),
           const SizedBox(width: 16),
           Expanded(
@@ -62,10 +58,7 @@ class CommonSettingWidgets {
               ],
             ),
           ),
-          Switch(
-            value: value,
-            onChanged: onChanged,
-          ),
+          Switch(value: value, onChanged: onChanged),
         ],
       ),
     );
@@ -79,7 +72,7 @@ class CommonSettingWidgets {
     required VoidCallback onTap,
   }) {
     final colorScheme = Theme.of(context).colorScheme;
-    
+
     return InkWell(
       onTap: onTap,
       borderRadius: BorderRadius.circular(12),
@@ -197,11 +190,7 @@ class CommonSettingWidgets {
               color: colorScheme.primaryContainer,
               borderRadius: BorderRadius.circular(12),
             ),
-            child: Icon(
-              icon,
-              color: colorScheme.onPrimaryContainer,
-              size: 24,
-            ),
+            child: Icon(icon, color: colorScheme.onPrimaryContainer, size: 24),
           ),
           const SizedBox(width: 16),
           Expanded(
@@ -286,11 +275,7 @@ class CommonSettingWidgets {
               color: colorScheme.primaryContainer,
               borderRadius: BorderRadius.circular(12),
             ),
-            child: Icon(
-              icon,
-              color: colorScheme.onPrimaryContainer,
-              size: 24,
-            ),
+            child: Icon(icon, color: colorScheme.onPrimaryContainer, size: 24),
           ),
           const SizedBox(width: 16),
           Expanded(

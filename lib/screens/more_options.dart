@@ -25,7 +25,8 @@ class MoreOptionsWindow extends StatefulWidget {
   State<MoreOptionsWindow> createState() => _MoreOptionsWindowState();
 }
 
-class _MoreOptionsWindowState extends State<MoreOptionsWindow> with WindowListener {
+class _MoreOptionsWindowState extends State<MoreOptionsWindow>
+    with WindowListener {
   bool _autoStartEnabled = false;
   int _windowLayer = 0;
   int _themeMode = 0;
@@ -100,8 +101,12 @@ class _MoreOptionsWindowState extends State<MoreOptionsWindow> with WindowListen
     for (var i = _categoryKeys.length - 1; i >= 0; i--) {
       final key = _categoryKeys[i];
       if (key?.currentContext != null) {
-        final RenderBox box = key!.currentContext!.findRenderObject() as RenderBox;
-        final position = box.localToGlobal(Offset.zero, ancestor: context.findRenderObject());
+        final RenderBox box =
+            key!.currentContext!.findRenderObject() as RenderBox;
+        final position = box.localToGlobal(
+          Offset.zero,
+          ancestor: context.findRenderObject(),
+        );
 
         if (position.dy <= 120) {
           newIndex = i;
@@ -147,7 +152,8 @@ class _MoreOptionsWindowState extends State<MoreOptionsWindow> with WindowListen
     final savedThemeColor = settingsService.getThemeColor();
     final savedBackgroundImagePath = settingsService.getBackgroundImagePath();
     final savedBackgroundImageMode = settingsService.getBackgroundImageMode();
-    final savedBackgroundImageOpacity = settingsService.getBackgroundImageOpacity();
+    final savedBackgroundImageOpacity = settingsService
+        .getBackgroundImageOpacity();
 
     final actualAutoStart = await settingsService.checkAutoStartStatus();
 
@@ -176,7 +182,7 @@ class _MoreOptionsWindowState extends State<MoreOptionsWindow> with WindowListen
       _backupOnExit = storageConfig.backupOnExit;
       _limitBackupCount = storageConfig.limitBackupCount;
       _maxAutoBackupCount = storageConfig.maxAutoBackupCount;
-      
+
       _isLoading = false;
     });
   }
@@ -191,10 +197,7 @@ class _MoreOptionsWindowState extends State<MoreOptionsWindow> with WindowListen
         title: DragToMoveArea(
           child: const SizedBox(
             width: double.infinity,
-            child: Text(
-              '更多选项',
-              style: TextStyle(fontWeight: FontWeight.bold),
-            ),
+            child: Text('更多选项', style: TextStyle(fontWeight: FontWeight.bold)),
           ),
         ),
         centerTitle: false,
@@ -285,7 +288,11 @@ class _MoreOptionsWindowState extends State<MoreOptionsWindow> with WindowListen
       child: Column(
         crossAxisAlignment: CrossAxisAlignment.start,
         children: [
-          CommonSettingWidgets.buildCategoryHeader(context, _categoryKeys[0]!, '系统'),
+          CommonSettingWidgets.buildCategoryHeader(
+            context,
+            _categoryKeys[0]!,
+            '系统',
+          ),
           const SizedBox(height: 16),
           CommonSettingWidgets.buildSettingItem(
             context: context,
@@ -297,7 +304,11 @@ class _MoreOptionsWindowState extends State<MoreOptionsWindow> with WindowListen
           ),
           const SizedBox(height: 32),
 
-          CommonSettingWidgets.buildCategoryHeader(context, _categoryKeys[1]!, '显示'),
+          CommonSettingWidgets.buildCategoryHeader(
+            context,
+            _categoryKeys[1]!,
+            '显示',
+          ),
           const SizedBox(height: 16),
           CommonSettingWidgets.buildWindowLayerItem(
             context: context,
@@ -309,7 +320,11 @@ class _MoreOptionsWindowState extends State<MoreOptionsWindow> with WindowListen
           ),
           const SizedBox(height: 32),
 
-          CommonSettingWidgets.buildCategoryHeader(context, _categoryKeys[2]!, '外观'),
+          CommonSettingWidgets.buildCategoryHeader(
+            context,
+            _categoryKeys[2]!,
+            '外观',
+          ),
           const SizedBox(height: 16),
           CommonSettingWidgets.buildThemeModeItem(
             context: context,
@@ -362,12 +377,20 @@ class _MoreOptionsWindowState extends State<MoreOptionsWindow> with WindowListen
           ),
           const SizedBox(height: 32),
 
-          CommonSettingWidgets.buildCategoryHeader(context, _categoryKeys[3]!, '存储'),
+          CommonSettingWidgets.buildCategoryHeader(
+            context,
+            _categoryKeys[3]!,
+            '存储',
+          ),
           const SizedBox(height: 16),
           _buildStorageSection(colorScheme),
           const SizedBox(height: 32),
 
-          CommonSettingWidgets.buildCategoryHeader(context, _categoryKeys[4]!, '高级'),
+          CommonSettingWidgets.buildCategoryHeader(
+            context,
+            _categoryKeys[4]!,
+            '高级',
+          ),
           const SizedBox(height: 16),
           CommonSettingWidgets.buildSettingItem(
             context: context,
@@ -387,7 +410,11 @@ class _MoreOptionsWindowState extends State<MoreOptionsWindow> with WindowListen
           ),
           const SizedBox(height: 32),
 
-          CommonSettingWidgets.buildCategoryHeader(context, _categoryKeys[5]!, '关于'),
+          CommonSettingWidgets.buildCategoryHeader(
+            context,
+            _categoryKeys[5]!,
+            '关于',
+          ),
           const SizedBox(height: 16),
           AboutWidgets.buildAboutCard(context, colorScheme),
           const SizedBox(height: 24),
@@ -396,14 +423,10 @@ class _MoreOptionsWindowState extends State<MoreOptionsWindow> with WindowListen
     );
   }
 
-
-
-
-
   Future<void> _onAutoStartChanged(bool value) async {
     final settingsService = SettingsService.instance;
     final result = await settingsService.setAutoStart(value);
-    
+
     if (result.success) {
       setState(() {
         _autoStartEnabled = value;
@@ -431,7 +454,6 @@ class _MoreOptionsWindowState extends State<MoreOptionsWindow> with WindowListen
     }
   }
 
-
   Future<void> _onThemeModeChanged(int value) async {
     final settingsService = SettingsService.instance;
     try {
@@ -448,11 +470,10 @@ class _MoreOptionsWindowState extends State<MoreOptionsWindow> with WindowListen
     }
   }
 
-
   Future<void> _onBackgroundOpacityChanged(double value) async {
     final settingsService = SettingsService.instance;
     final success = await settingsService.setBackgroundOpacity(value);
-    
+
     if (success) {
       setState(() {
         _backgroundOpacity = value;
@@ -473,9 +494,7 @@ class _MoreOptionsWindowState extends State<MoreOptionsWindow> with WindowListen
         _themeColor = colorValue;
       });
       widget.onThemeChanged?.call();
-    } else {
-      
-    }
+    } else {}
   }
 
   Future<void> _onBackgroundImagePathChanged(String? path) async {
@@ -487,9 +506,7 @@ class _MoreOptionsWindowState extends State<MoreOptionsWindow> with WindowListen
         _backgroundImagePath = path;
       });
       widget.onSettingsChanged?.call();
-    } else {
-      
-    }
+    } else {}
   }
 
   Future<void> _onBackgroundImageModeChanged(int mode) async {
@@ -501,9 +518,7 @@ class _MoreOptionsWindowState extends State<MoreOptionsWindow> with WindowListen
         _backgroundImageMode = mode;
       });
       widget.onSettingsChanged?.call();
-    } else {
-      
-    }
+    } else {}
   }
 
   Future<void> _onBackgroundImageOpacityChanged(double value) async {
@@ -515,9 +530,7 @@ class _MoreOptionsWindowState extends State<MoreOptionsWindow> with WindowListen
         _backgroundImageOpacity = value;
       });
       widget.onSettingsChanged?.call();
-    } else {
-      
-    }
+    } else {}
   }
 
   Future<void> _onClearBackgroundImage() async {
@@ -527,15 +540,13 @@ class _MoreOptionsWindowState extends State<MoreOptionsWindow> with WindowListen
   Future<void> _onShowInTaskbarChanged(bool value) async {
     final settingsService = SettingsService.instance;
     final success = await settingsService.setShowInTaskbar(value);
-    
+
     if (success) {
       setState(() {
         _showInTaskbarEnabled = value;
       });
       widget.onSettingsChanged?.call();
-    } else {
-      
-    }
+    } else {}
   }
 
   void _showOOBEDialog() {
@@ -557,19 +568,10 @@ class _MoreOptionsWindowState extends State<MoreOptionsWindow> with WindowListen
     );
   }
 
-
-
-
-
-
-
-
-
   Widget _buildStorageSection(ColorScheme colorScheme) {
     return Column(
       crossAxisAlignment: CrossAxisAlignment.start,
       children: [
-        
         _buildSnapshotCard(colorScheme),
         const SizedBox(height: 16),
 
@@ -595,7 +597,6 @@ class _MoreOptionsWindowState extends State<MoreOptionsWindow> with WindowListen
       child: Column(
         crossAxisAlignment: CrossAxisAlignment.start,
         children: [
-          
           Row(
             children: [
               Container(
@@ -650,7 +651,11 @@ class _MoreOptionsWindowState extends State<MoreOptionsWindow> with WindowListen
                     crossAxisAlignment: CrossAxisAlignment.start,
                     children: [
                       const SizedBox(height: 16),
-                      Divider(color: colorScheme.outlineVariant.withValues(alpha: 0.5)),
+                      Divider(
+                        color: colorScheme.outlineVariant.withValues(
+                          alpha: 0.5,
+                        ),
+                      ),
                       const SizedBox(height: 16),
 
                       Padding(
@@ -697,9 +702,13 @@ class _MoreOptionsWindowState extends State<MoreOptionsWindow> with WindowListen
                           onChanged: _onSnapshotOnExitChanged,
                         ),
                       ),
-                      
+
                       const SizedBox(height: 12),
-                      Divider(color: colorScheme.outlineVariant.withValues(alpha: 0.5)),
+                      Divider(
+                        color: colorScheme.outlineVariant.withValues(
+                          alpha: 0.5,
+                        ),
+                      ),
                       const SizedBox(height: 12),
 
                       _buildSwitchOption(
@@ -720,7 +729,9 @@ class _MoreOptionsWindowState extends State<MoreOptionsWindow> with WindowListen
                                   const SizedBox(height: 8),
                                   Padding(
                                     padding: const EdgeInsets.only(left: 16),
-                                    child: _buildSnapshotCountControl(colorScheme),
+                                    child: _buildSnapshotCountControl(
+                                      colorScheme,
+                                    ),
                                   ),
                                 ],
                               )
@@ -741,7 +752,10 @@ class _MoreOptionsWindowState extends State<MoreOptionsWindow> with WindowListen
                 icon: const Icon(Icons.add_a_photo_outlined, size: 20),
                 label: const Text('创建快照'),
                 style: FilledButton.styleFrom(
-                  padding: const EdgeInsets.symmetric(horizontal: 20, vertical: 12),
+                  padding: const EdgeInsets.symmetric(
+                    horizontal: 20,
+                    vertical: 12,
+                  ),
                 ),
               ),
               TextButton.icon(
@@ -749,7 +763,10 @@ class _MoreOptionsWindowState extends State<MoreOptionsWindow> with WindowListen
                 icon: const Icon(Icons.folder_open, size: 20),
                 label: const Text('打开快照目录'),
                 style: TextButton.styleFrom(
-                  padding: const EdgeInsets.symmetric(horizontal: 20, vertical: 12),
+                  padding: const EdgeInsets.symmetric(
+                    horizontal: 20,
+                    vertical: 12,
+                  ),
                 ),
               ),
             ],
@@ -776,7 +793,6 @@ class _MoreOptionsWindowState extends State<MoreOptionsWindow> with WindowListen
       child: Column(
         crossAxisAlignment: CrossAxisAlignment.start,
         children: [
-          
           Row(
             children: [
               Container(
@@ -831,7 +847,11 @@ class _MoreOptionsWindowState extends State<MoreOptionsWindow> with WindowListen
                     crossAxisAlignment: CrossAxisAlignment.start,
                     children: [
                       const SizedBox(height: 16),
-                      Divider(color: colorScheme.outlineVariant.withValues(alpha: 0.5)),
+                      Divider(
+                        color: colorScheme.outlineVariant.withValues(
+                          alpha: 0.5,
+                        ),
+                      ),
                       const SizedBox(height: 16),
 
                       Padding(
@@ -878,9 +898,13 @@ class _MoreOptionsWindowState extends State<MoreOptionsWindow> with WindowListen
                           onChanged: _onBackupOnExitChanged,
                         ),
                       ),
-                      
+
                       const SizedBox(height: 12),
-                      Divider(color: colorScheme.outlineVariant.withValues(alpha: 0.5)),
+                      Divider(
+                        color: colorScheme.outlineVariant.withValues(
+                          alpha: 0.5,
+                        ),
+                      ),
                       const SizedBox(height: 12),
 
                       _buildSwitchOption(
@@ -901,7 +925,10 @@ class _MoreOptionsWindowState extends State<MoreOptionsWindow> with WindowListen
                                   const SizedBox(height: 8),
                                   Padding(
                                     padding: const EdgeInsets.only(left: 16),
-                                    child: _buildBackupCountControl(colorScheme, enabled: true),
+                                    child: _buildBackupCountControl(
+                                      colorScheme,
+                                      enabled: true,
+                                    ),
                                   ),
                                 ],
                               )
@@ -922,7 +949,10 @@ class _MoreOptionsWindowState extends State<MoreOptionsWindow> with WindowListen
                 icon: const Icon(Icons.backup_outlined, size: 20),
                 label: const Text('立即备份'),
                 style: FilledButton.styleFrom(
-                  padding: const EdgeInsets.symmetric(horizontal: 20, vertical: 12),
+                  padding: const EdgeInsets.symmetric(
+                    horizontal: 20,
+                    vertical: 12,
+                  ),
                 ),
               ),
               TextButton.icon(
@@ -930,7 +960,10 @@ class _MoreOptionsWindowState extends State<MoreOptionsWindow> with WindowListen
                 icon: const Icon(Icons.folder_open, size: 20),
                 label: const Text('打开备份目录'),
                 style: TextButton.styleFrom(
-                  padding: const EdgeInsets.symmetric(horizontal: 20, vertical: 12),
+                  padding: const EdgeInsets.symmetric(
+                    horizontal: 20,
+                    vertical: 12,
+                  ),
                 ),
               ),
             ],
@@ -975,11 +1008,7 @@ class _MoreOptionsWindowState extends State<MoreOptionsWindow> with WindowListen
   Widget _buildSnapshotCountControl(ColorScheme colorScheme) {
     return Row(
       children: [
-        Icon(
-          Icons.inventory_2,
-          size: 20,
-          color: colorScheme.onSurfaceVariant,
-        ),
+        Icon(Icons.inventory_2, size: 20, color: colorScheme.onSurfaceVariant),
         const SizedBox(width: 12),
         Text(
           '最大快照数量',
@@ -1033,14 +1062,13 @@ class _MoreOptionsWindowState extends State<MoreOptionsWindow> with WindowListen
     );
   }
 
-  Widget _buildBackupCountControl(ColorScheme colorScheme, {required bool enabled}) {
+  Widget _buildBackupCountControl(
+    ColorScheme colorScheme, {
+    required bool enabled,
+  }) {
     return Row(
       children: [
-        Icon(
-          Icons.inventory_2,
-          size: 20,
-          color: colorScheme.onSurfaceVariant,
-        ),
+        Icon(Icons.inventory_2, size: 20, color: colorScheme.onSurfaceVariant),
         const SizedBox(width: 12),
         Text(
           '最大自动备份数量',
@@ -1163,7 +1191,6 @@ class _MoreOptionsWindowState extends State<MoreOptionsWindow> with WindowListen
   void _onLimitBackupCountChanged(bool value) async {
     setState(() {
       _limitBackupCount = value;
-      
     });
     await _saveStorageConfig();
   }
@@ -1212,10 +1239,7 @@ class _MoreOptionsWindowState extends State<MoreOptionsWindow> with WindowListen
 
   void _showSnackBar(String message) {
     ScaffoldMessenger.of(context).showSnackBar(
-      SnackBar(
-        content: Text(message),
-        duration: const Duration(seconds: 2),
-      ),
+      SnackBar(content: Text(message), duration: const Duration(seconds: 2)),
     );
   }
 }

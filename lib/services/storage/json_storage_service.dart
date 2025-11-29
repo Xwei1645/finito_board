@@ -18,33 +18,34 @@ class JsonStorageService {
   static const String _tagFileName = 'tag.json';
 
   late String _dataDir;
-  
+
   // 内存缓存
   final Map<String, Homework> _homeworkCache = {};
   final Map<String, Subject> _subjectCache = {};
   AppConfig? _configCache;
   WindowState? _windowStateCache;
   final Map<String, Tag> _tagCache = {};
-  
+
   // 防抖定时器
   Timer? _windowStateDebounceTimer;
-  
+
   // 脏标记
   bool _homeworkDirty = false;
   bool _subjectDirty = false;
   bool _configDirty = false;
   bool _windowStateDirty = false;
   bool _tagDirty = false;
-  
+
   // 写入队列定时器
   Timer? _flushTimer;
   static const Duration _flushInterval = Duration(seconds: 2);
-  
+
   // 窗口状态防抖延迟
   static const Duration _windowStateDebounceDelay = Duration(milliseconds: 500);
 
   static JsonStorageService? _instance;
-  static JsonStorageService get instance => _instance ??= JsonStorageService._();
+  static JsonStorageService get instance =>
+      _instance ??= JsonStorageService._();
 
   JsonStorageService._();
 
@@ -55,14 +56,14 @@ class JsonStorageService {
       final appDir = p.dirname(Platform.resolvedExecutable);
       _dataDir = p.join(appDir, 'data');
       logDebug('数据目录: $_dataDir');
-      
+
       // 确保data目录存在
       final dataDirEntity = Directory(_dataDir);
       if (!await dataDirEntity.exists()) {
         await dataDirEntity.create(recursive: true);
         logInfo('创建数据目录: $_dataDir');
       }
-      
+
       // 加载所有数据到缓存
       await _loadAllData();
       logInfo('JSON存储服务初始化成功');
@@ -86,22 +87,22 @@ class JsonStorageService {
     try {
       logDebug('读取JSON文件: $fileName');
       final file = File(p.join(_dataDir, fileName));
-      
+
       // 检查文件是否存在
       if (!await file.exists()) {
         logDebug('文件不存在: $fileName');
         return null;
       }
-      
+
       // 读取文件内容
       final content = await file.readAsString();
-      
+
       // 检查内容是否为空
       if (content.trim().isEmpty) {
         logDebug('文件内容为空: $fileName');
         return null;
       }
-      
+
       // 尝试解析JSON
       try {
         final decoded = json.decode(content);
@@ -132,13 +133,17 @@ class JsonStorageService {
   }
 
   /// 通用的JSON文件写入方法
-  Future<void> _writeJsonFile(String fileName, Map<String, dynamic> data, {int retries = 3}) async {
+  Future<void> _writeJsonFile(
+    String fileName,
+    Map<String, dynamic> data, {
+    int retries = 3,
+  }) async {
     for (int i = 0; i < retries; i++) {
       try {
         logDebug('写入JSON文件: $fileName (尝试 ${i + 1}/$retries)');
         final file = File(p.join(_dataDir, fileName));
         final bakFile = File(p.join(_dataDir, '$fileName.bak'));
-        
+
         // 如果目标文件存在，先创建.bak备份
         if (await file.exists()) {
           try {
@@ -149,7 +154,7 @@ class JsonStorageService {
             // 备份失败不影响主流程
           }
         }
-        
+
         // 尝试编码为JSON字符串
         String jsonString;
         try {
@@ -158,7 +163,7 @@ class JsonStorageService {
           logError('JSON编码失败: $fileName', e);
           rethrow;
         }
-        
+
         // 写入文件
         await file.writeAsString(jsonString);
         logInfo('成功写入JSON文件: $fileName');
@@ -223,7 +228,7 @@ class JsonStorageService {
       _scheduleFlush();
     }
   }
-  
+
   /// 立即写入作业数据
   Future<void> _flushHomeworkData() async {
     if (!_homeworkDirty) return;
@@ -270,7 +275,7 @@ class JsonStorageService {
       _scheduleFlush();
     }
   }
-  
+
   /// 立即写入科目数据
   Future<void> _flushSubjectData() async {
     if (!_subjectDirty) return;
@@ -318,7 +323,7 @@ class JsonStorageService {
       _scheduleFlush();
     }
   }
-  
+
   /// 立即写入配置数据
   Future<void> _flushConfigData() async {
     if (!_configDirty) return;
@@ -360,7 +365,7 @@ class JsonStorageService {
   /// 保存窗口状态数据（带防抖）
   Future<void> _saveWindowStateData({bool immediate = false}) async {
     _windowStateDirty = true;
-    
+
     if (immediate) {
       _windowStateDebounceTimer?.cancel();
       await _flushWindowStateData();
@@ -372,12 +377,13 @@ class JsonStorageService {
       });
     }
   }
-  
+
   /// 立即写入窗口状态数据
   Future<void> _flushWindowStateData() async {
     if (!_windowStateDirty) return;
     final data = {
-      'windowState': _windowStateCache?.toJson() ?? const WindowState().toJson(),
+      'windowState':
+          _windowStateCache?.toJson() ?? const WindowState().toJson(),
     };
     await _writeJsonFile(_windowStateFileName, data);
     _windowStateDirty = false;
@@ -419,13 +425,11 @@ class JsonStorageService {
       _scheduleFlush();
     }
   }
-  
+
   /// 立即写入标签数据
   Future<void> _flushTagData() async {
     if (!_tagDirty) return;
-    final data = {
-      'tags': _tagCache.values.map((t) => t.toJson()).toList(),
-    };
+    final data = {'tags': _tagCache.values.map((t) => t.toJson()).toList()};
     await _writeJsonFile(_tagFileName, data);
     _tagDirty = false;
   }
@@ -437,11 +441,11 @@ class JsonStorageService {
       _flushAll();
     });
   }
-  
+
   /// 批量写入所有脏数据
   Future<void> _flushAll() async {
     final futures = <Future>[];
-    
+
     if (_homeworkDirty) {
       futures.add(_flushHomeworkData());
     }
@@ -457,12 +461,12 @@ class JsonStorageService {
     if (_tagDirty) {
       futures.add(_flushTagData());
     }
-    
+
     if (futures.isNotEmpty) {
       await Future.wait(futures);
     }
   }
-  
+
   /// 手动触发所有待写入数据的立即写入
   Future<void> flush() async {
     logInfo('手动刷新所有待写入数据');
@@ -470,7 +474,7 @@ class JsonStorageService {
     _windowStateDebounceTimer?.cancel();
     await _flushAll();
   }
-  
+
   /// 清理资源
   void dispose() {
     _flushTimer?.cancel();
@@ -478,7 +482,7 @@ class JsonStorageService {
   }
 
   // ==================== 作业数据管理 ====================
-  
+
   /// 获取所有作业
   List<Homework> getAllHomework() {
     return _homeworkCache.values.toList();
@@ -503,8 +507,6 @@ class JsonStorageService {
     await _saveHomeworkData(immediate: true);
   }
 
-
-
   /// 根据科目UUID获取作业
   List<Homework> getHomeworkBySubjectUuid(String subjectUuid) {
     return _homeworkCache.values
@@ -520,8 +522,6 @@ class JsonStorageService {
         .toList();
   }
 
-
-
   /// 根据标签UUID获取作业
   List<Homework> getHomeworkByTagUuid(String tagUuid) {
     return _homeworkCache.values
@@ -534,16 +534,18 @@ class JsonStorageService {
     final today = DateTime.now();
     final todayStart = DateTime(today.year, today.month, today.day);
     final todayEnd = todayStart.add(const Duration(days: 1));
-    
+
     return _homeworkCache.values
-        .where((homework) => 
-            homework.dueDate.isAfter(todayStart) && 
-            homework.dueDate.isBefore(todayEnd))
+        .where(
+          (homework) =>
+              homework.dueDate.isAfter(todayStart) &&
+              homework.dueDate.isBefore(todayEnd),
+        )
         .toList();
   }
 
   // ==================== 科目数据管理 ====================
-  
+
   /// 获取所有科目
   List<Subject> getAllSubjects() {
     return _subjectCache.values.toList();
@@ -571,21 +573,15 @@ class JsonStorageService {
   /// 根据名称获取科目
   Subject? getSubjectByName(String name) {
     try {
-      return _subjectCache.values.firstWhere(
-        (subject) => subject.name == name,
-      );
+      return _subjectCache.values.firstWhere((subject) => subject.name == name);
     } catch (e) {
       logDebug('未找到科目: $name');
       return null;
     }
   }
 
-
-
-
-
   // ==================== 配置数据管理 ====================
-  
+
   /// 获取应用配置
   AppConfig getAppConfig() {
     return _configCache ?? const AppConfig();
@@ -597,8 +593,6 @@ class JsonStorageService {
     _configCache = config;
     await _saveConfigData(immediate: false);
   }
-
-
 
   /// 保存界面缩放因子
   Future<void> saveScaleFactor(double scaleFactor) async {
@@ -615,7 +609,7 @@ class JsonStorageService {
   }
 
   // ==================== 窗口状态管理 ====================
-  
+
   /// 获取窗口状态
   WindowState getWindowState() {
     return _windowStateCache ?? const WindowState();
@@ -628,14 +622,8 @@ class JsonStorageService {
     await _saveWindowStateData(immediate: false);
   }
 
-
-
-
-
-
-
   // ==================== 标签数据管理 ====================
-  
+
   /// 获取所有标签
   List<Tag> getAllTags() {
     return _tagCache.values.toList();
@@ -672,9 +660,7 @@ class JsonStorageService {
   /// 根据名称查找标签
   Tag? getTagByName(String name) {
     try {
-      return _tagCache.values.firstWhere(
-        (tag) => tag.name == name,
-      );
+      return _tagCache.values.firstWhere((tag) => tag.name == name);
     } catch (e) {
       logDebug('未找到标签: $name');
       return null;
@@ -682,7 +668,7 @@ class JsonStorageService {
   }
 
   // ==================== 存储配置管理 ====================
-  
+
   /// 获取存储配置（从 AppConfig 中提取）
   StorageConfig getStorageConfig() {
     final config = _configCache ?? const AppConfig();
@@ -722,5 +708,4 @@ class JsonStorageService {
     );
     await _saveConfigData(immediate: true);
   }
-
 }

@@ -66,11 +66,7 @@ class QuillContent extends StatelessWidget {
     } catch (e) {
       // Fallback for plain text
       logWarning('QuillContent: 富文本解析失败，使用纯文本格式: $e');
-      return Text(
-        content,
-        style: defaultTextStyle,
-        textScaler: textScaler,
-      );
+      return Text(content, style: defaultTextStyle, textScaler: textScaler);
     }
   }
 }

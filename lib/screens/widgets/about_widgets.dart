@@ -9,7 +9,7 @@ class AboutWidgets {
       future: PackageInfo.fromPlatform(),
       builder: (context, snapshot) {
         final version = snapshot.data?.version ?? '加载中...';
-        
+
         return Container(
           padding: const EdgeInsets.all(24),
           decoration: BoxDecoration(
@@ -82,7 +82,9 @@ class AboutWidgets {
                 children: [
                   TextButton.icon(
                     onPressed: () async {
-                      final uri = Uri.parse('https://github.com/Xwei1645/finito_board');
+                      final uri = Uri.parse(
+                        'https://github.com/Xwei1645/finito_board',
+                      );
                       if (await canLaunchUrl(uri)) {
                         await launchUrl(uri);
                       }
@@ -107,11 +109,11 @@ class AboutWidgets {
   static void showLicenseDialog(BuildContext context) async {
     try {
       final licenseText = await rootBundle.loadString('LICENSE');
-      
+
       if (!context.mounted) return;
-      
+
       final colorScheme = Theme.of(context).colorScheme;
-      
+
       showDialog(
         context: context,
         builder: (context) => AlertDialog(
@@ -120,11 +122,7 @@ class AboutWidgets {
           ),
           title: Row(
             children: [
-              Icon(
-                Icons.description,
-                color: colorScheme.primary,
-                size: 24,
-              ),
+              Icon(Icons.description, color: colorScheme.primary, size: 24),
               const SizedBox(width: 12),
               const Text(
                 '开放源代码许可',
@@ -138,9 +136,7 @@ class AboutWidgets {
             child: SingleChildScrollView(
               child: SelectableText(
                 licenseText,
-                style: const TextStyle(
-                  fontSize: 14,
-                ),
+                style: const TextStyle(fontSize: 14),
               ),
             ),
           ),
@@ -172,12 +168,9 @@ class AboutWidgets {
       );
     } catch (e) {
       if (!context.mounted) return;
-      
+
       ScaffoldMessenger.of(context).showSnackBar(
-        SnackBar(
-          content: Text('无法加载许可证文件: $e'),
-          backgroundColor: Colors.red,
-        ),
+        SnackBar(content: Text('无法加载许可证文件: $e'), backgroundColor: Colors.red),
       );
     }
   }

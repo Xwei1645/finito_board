@@ -6,12 +6,8 @@ import '../services/settings_service.dart';
 class OOBEDialog extends StatefulWidget {
   final VoidCallback? onCompleted;
   final VoidCallback? onThemeChanged;
-  
-  const OOBEDialog({
-    super.key,
-    this.onCompleted,
-    this.onThemeChanged,
-  });
+
+  const OOBEDialog({super.key, this.onCompleted, this.onThemeChanged});
 
   @override
   State<OOBEDialog> createState() => _OOBEDialogState();
@@ -35,10 +31,10 @@ class _OOBEDialogState extends State<OOBEDialog> {
 
   Future<void> _loadCurrentSettings() async {
     final settingsService = SettingsService.instance;
-    
+
     // 获取实际的开机自启状态
     final actualAutoStart = await settingsService.checkAutoStartStatus();
-    
+
     setState(() {
       _autoStart = actualAutoStart;
       _isDarkMode = settingsService.getDarkMode();
@@ -52,15 +48,15 @@ class _OOBEDialogState extends State<OOBEDialog> {
 
     try {
       final settingsService = SettingsService.instance;
-      
+
       // 应用开机自启设置
       await settingsService.setAutoStart(_autoStart);
       logDebug('OOBE: 开机自启设置已应用 - $_autoStart');
-      
+
       // 应用主题设置
       await settingsService.setDarkMode(_isDarkMode);
       logDebug('OOBE: 主题设置已应用 - 深色模式: $_isDarkMode');
-      
+
       // 创建快捷方式（仅在Windows平台）
       if (_isWindows) {
         if (_createDesktopShortcut) {
@@ -77,9 +73,10 @@ class _OOBEDialogState extends State<OOBEDialog> {
             logDebug('OOBE: 桌面快捷方式创建成功');
           }
         }
-        
+
         if (_createStartMenuShortcut) {
-          final startMenuResult = await settingsService.createStartMenuShortcut();
+          final startMenuResult = await settingsService
+              .createStartMenuShortcut();
           if (!startMenuResult.success && mounted) {
             logWarning('OOBE: 创建开始菜单快捷方式失败: ${startMenuResult.error}');
             ScaffoldMessenger.of(context).showSnackBar(
@@ -93,15 +90,15 @@ class _OOBEDialogState extends State<OOBEDialog> {
           }
         }
       }
-      
+
       // 标记OOBE已完成
       await _markOOBECompleted();
       logDebug('OOBE: 设置完成，OOBE 已标记为完成');
-      
+
       if (widget.onCompleted != null) {
         widget.onCompleted!();
       }
-      
+
       if (mounted) {
         Navigator.of(context).pop();
       }
@@ -110,10 +107,7 @@ class _OOBEDialogState extends State<OOBEDialog> {
       logError('OOBE: 应用设置失败', e);
       if (mounted) {
         ScaffoldMessenger.of(context).showSnackBar(
-          SnackBar(
-            content: Text('设置应用失败: $e'),
-            backgroundColor: Colors.red,
-          ),
+          SnackBar(content: Text('设置应用失败: $e'), backgroundColor: Colors.red),
         );
       }
     } finally {
@@ -133,9 +127,7 @@ class _OOBEDialogState extends State<OOBEDialog> {
   @override
   Widget build(BuildContext context) {
     return Dialog(
-      shape: RoundedRectangleBorder(
-        borderRadius: BorderRadius.circular(16),
-      ),
+      shape: RoundedRectangleBorder(borderRadius: BorderRadius.circular(16)),
       child: Container(
         width: 480,
         padding: const EdgeInsets.all(24),
@@ -170,7 +162,7 @@ class _OOBEDialogState extends State<OOBEDialog> {
               ),
             ),
             const SizedBox(height: 24),
-            
+
             // 设置选项
             _buildSettingItem(
               icon: Icons.power_settings_new,
@@ -183,7 +175,7 @@ class _OOBEDialogState extends State<OOBEDialog> {
                 });
               },
             ),
-            
+
             if (_isWindows)
               _buildSettingItem(
                 icon: Icons.desktop_windows,
@@ -196,7 +188,7 @@ class _OOBEDialogState extends State<OOBEDialog> {
                   });
                 },
               ),
-            
+
             if (_isWindows)
               _buildSettingItem(
                 icon: Icons.apps,
@@ -209,18 +201,18 @@ class _OOBEDialogState extends State<OOBEDialog> {
                   });
                 },
               ),
-            
+
             const SizedBox(height: 16),
-            
+
             // 主题选择
             Text(
               '主题设置',
-              style: Theme.of(context).textTheme.titleMedium?.copyWith(
-                fontWeight: FontWeight.w600,
-              ),
+              style: Theme.of(
+                context,
+              ).textTheme.titleMedium?.copyWith(fontWeight: FontWeight.w600),
             ),
             const SizedBox(height: 12),
-            
+
             Row(
               children: [
                 Expanded(
@@ -264,24 +256,29 @@ class _OOBEDialogState extends State<OOBEDialog> {
                 ),
               ],
             ),
-            
+
             const SizedBox(height: 32),
-            
+
             // 按钮
             Row(
               mainAxisAlignment: MainAxisAlignment.end,
               children: [
                 TextButton(
-                  onPressed: _isApplying ? null : () {
-                    Navigator.of(context).pop();
-                  },
+                  onPressed: _isApplying
+                      ? null
+                      : () {
+                          Navigator.of(context).pop();
+                        },
                   child: const Text('跳过'),
                 ),
                 const SizedBox(width: 12),
                 FilledButton(
                   onPressed: _isApplying ? null : _applySettings,
                   style: FilledButton.styleFrom(
-                    padding: const EdgeInsets.symmetric(horizontal: 24, vertical: 12),
+                    padding: const EdgeInsets.symmetric(
+                      horizontal: 24,
+                      vertical: 12,
+                    ),
                     shape: RoundedRectangleBorder(
                       borderRadius: BorderRadius.circular(20),
                     ),
@@ -317,10 +314,11 @@ class _OOBEDialogState extends State<OOBEDialog> {
             width: 40,
             height: 40,
             decoration: BoxDecoration(
-              color: (Theme.of(context).brightness == Brightness.dark
-                      ? Theme.of(context).colorScheme.primary
-                      : Theme.of(context).primaryColor)
-                  .withValues(alpha: 0.1),
+              color:
+                  (Theme.of(context).brightness == Brightness.dark
+                          ? Theme.of(context).colorScheme.primary
+                          : Theme.of(context).primaryColor)
+                      .withValues(alpha: 0.1),
               borderRadius: BorderRadius.circular(8),
             ),
             child: Icon(
@@ -338,9 +336,9 @@ class _OOBEDialogState extends State<OOBEDialog> {
               children: [
                 Text(
                   title,
-                  style: Theme.of(context).textTheme.titleSmall?.copyWith(
-                    fontWeight: FontWeight.w600,
-                  ),
+                  style: Theme.of(
+                    context,
+                  ).textTheme.titleSmall?.copyWith(fontWeight: FontWeight.w600),
                 ),
                 Text(
                   subtitle,
@@ -375,17 +373,17 @@ class _OOBEDialogState extends State<OOBEDialog> {
           border: Border.all(
             color: isSelected
                 ? (Theme.of(context).brightness == Brightness.dark
-                    ? Theme.of(context).colorScheme.primary
-                    : Theme.of(context).primaryColor)
+                      ? Theme.of(context).colorScheme.primary
+                      : Theme.of(context).primaryColor)
                 : Theme.of(context).dividerColor,
             width: isSelected ? 2 : 1,
           ),
           borderRadius: BorderRadius.circular(12),
           color: isSelected
               ? (Theme.of(context).brightness == Brightness.dark
-                  ? Theme.of(context).colorScheme.primary
-                  : Theme.of(context).primaryColor)
-                  .withValues(alpha: 0.05)
+                        ? Theme.of(context).colorScheme.primary
+                        : Theme.of(context).primaryColor)
+                    .withValues(alpha: 0.05)
               : null,
         ),
         child: Column(
@@ -394,8 +392,8 @@ class _OOBEDialogState extends State<OOBEDialog> {
               icon,
               color: isSelected
                   ? (Theme.of(context).brightness == Brightness.dark
-                      ? Theme.of(context).colorScheme.primary
-                      : Theme.of(context).primaryColor)
+                        ? Theme.of(context).colorScheme.primary
+                        : Theme.of(context).primaryColor)
                   : Theme.of(context).iconTheme.color,
               size: 32,
             ),
@@ -405,8 +403,8 @@ class _OOBEDialogState extends State<OOBEDialog> {
               style: Theme.of(context).textTheme.bodyMedium?.copyWith(
                 color: isSelected
                     ? (Theme.of(context).brightness == Brightness.dark
-                        ? Theme.of(context).colorScheme.primary
-                        : Theme.of(context).primaryColor)
+                          ? Theme.of(context).colorScheme.primary
+                          : Theme.of(context).primaryColor)
                     : null,
                 fontWeight: isSelected ? FontWeight.w600 : null,
               ),

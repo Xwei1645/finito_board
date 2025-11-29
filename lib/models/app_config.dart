@@ -13,7 +13,7 @@ class AppConfig {
   final String? backgroundImagePath; // 背景图片路径
   final int backgroundImageMode; // 背景图片显示模式: 0=适应, 1=填充, 2=拉伸
   final double backgroundImageOpacity; // 背景图片混合比例: 0.0-1.0
-  
+
   // 存储配置 - 快照设置
   final bool snapshotEnabled; // 是否启用快照
   final bool snapshotOnEdit; // 每次编辑后自动快照
@@ -21,7 +21,7 @@ class AppConfig {
   final bool snapshotOnExit; // 退出应用时自动快照
   final bool limitSnapshotCount; // 是否限制快照数量
   final int maxSnapshotCount; // 最大快照数量
-  
+
   // 存储配置 - 备份设置
   final bool autoBackupEnabled; // 是否启用自动备份
   final bool backupOnStartup; // 应用启动时备份
@@ -101,7 +101,8 @@ class AppConfig {
       themeColor: themeColor ?? this.themeColor,
       backgroundImagePath: backgroundImagePath ?? this.backgroundImagePath,
       backgroundImageMode: backgroundImageMode ?? this.backgroundImageMode,
-      backgroundImageOpacity: backgroundImageOpacity ?? this.backgroundImageOpacity,
+      backgroundImageOpacity:
+          backgroundImageOpacity ?? this.backgroundImageOpacity,
       snapshotEnabled: snapshotEnabled ?? this.snapshotEnabled,
       snapshotOnEdit: snapshotOnEdit ?? this.snapshotOnEdit,
       snapshotOnStartup: snapshotOnStartup ?? this.snapshotOnStartup,
@@ -154,18 +155,22 @@ class AppConfig {
     return AppConfig(
       theme: json['theme'] as String? ?? 'light',
       autoStartup: json['autoStartup'] as bool? ?? false,
-      availableSubjects: List<String>.from(json['availableSubjects'] as List? ?? []),
+      availableSubjects: List<String>.from(
+        json['availableSubjects'] as List? ?? [],
+      ),
       availableTags: List<String>.from(json['availableTags'] as List? ?? []),
       scaleFactor: (json['scaleFactor'] as num?)?.toDouble() ?? 100.0,
       columnCount: json['columnCount'] as int? ?? 3,
       windowLevel: json['windowLevel'] as int? ?? 0,
-      backgroundOpacity: (json['backgroundOpacity'] as num?)?.toDouble() ?? 0.95,
+      backgroundOpacity:
+          (json['backgroundOpacity'] as num?)?.toDouble() ?? 0.95,
       firstLaunch: json['firstLaunch'] as bool? ?? true,
       showInTaskbar: json['showInTaskbar'] as bool? ?? false,
       themeColor: json['themeColor'] as int?,
       backgroundImagePath: json['backgroundImagePath'] as String?,
       backgroundImageMode: json['backgroundImageMode'] as int? ?? 0,
-      backgroundImageOpacity: (json['backgroundImageOpacity'] as num?)?.toDouble() ?? 1.0,
+      backgroundImageOpacity:
+          (json['backgroundImageOpacity'] as num?)?.toDouble() ?? 1.0,
       snapshotEnabled: json['snapshotEnabled'] as bool? ?? false,
       snapshotOnEdit: json['snapshotOnEdit'] as bool? ?? false,
       snapshotOnStartup: json['snapshotOnStartup'] as bool? ?? false,

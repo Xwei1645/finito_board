@@ -9,12 +9,11 @@ import '../models/window_state.dart';
 import '../models/storage_config.dart';
 import 'storage/json_storage_service.dart';
 
-
 /// 设置操作结果
 class SettingsResult {
   final bool success;
   final String? error;
-  
+
   const SettingsResult.success() : success = true, error = null;
   const SettingsResult.failure(this.error) : success = false;
 }
@@ -22,25 +21,23 @@ class SettingsResult {
 class SettingsService {
   static SettingsService? _instance;
   static SettingsService get instance => _instance ??= SettingsService._();
-  
+
   SettingsService._();
-  
+
   /// 初始化设置服务
   Future<void> initialize() async {
     // 初始化开机自启设置
     await _initializeLaunchAtStartup();
-    
+
     // 应用已保存的设置
     await _applySettings();
   }
 
-
-  
   /// 初始化开机自启配置
   Future<void> _initializeLaunchAtStartup() async {
     try {
       final packageInfo = await PackageInfo.fromPlatform();
-      
+
       launchAtStartup.setup(
         appName: packageInfo.appName,
         appPath: Platform.resolvedExecutable,
@@ -51,20 +48,20 @@ class SettingsService {
       logWarning('开机自启配置初始化失败', e);
     }
   }
-  
+
   /// 应用已保存的设置
   Future<void> _applySettings() async {
     // 应用窗口层级设置
     final windowLevel = getWindowLevel();
     await setWindowLevel(windowLevel);
   }
-  
+
   /// 获取开机自启状态
   bool getAutoStart() {
     final config = JsonStorageService.instance.getAppConfig();
     return config.autoStartup;
   }
-  
+
   /// 检查开机自启的实际状态（从系统获取）
   Future<bool> checkAutoStartStatus() async {
     try {
@@ -76,26 +73,26 @@ class SettingsService {
       return false;
     }
   }
-  
+
   /// 设置开机自启
   Future<SettingsResult> setAutoStart(bool enabled) async {
     try {
       // 检查是否已经初始化
       final packageInfo = await PackageInfo.fromPlatform();
-      
+
       // 重新设置launch_at_startup配置，确保路径正确
       launchAtStartup.setup(
         appName: packageInfo.appName,
         appPath: Platform.resolvedExecutable,
         packageName: packageInfo.packageName,
       );
-      
+
       if (enabled) {
         await launchAtStartup.enable();
       } else {
         await launchAtStartup.disable();
       }
-      
+
       // 更新JSON配置
       final storageService = JsonStorageService.instance;
       final currentConfig = storageService.getAppConfig();
@@ -120,13 +117,13 @@ class SettingsService {
       return SettingsResult.failure(errorMessage);
     }
   }
-  
+
   /// 获取窗口层级状态
   int getWindowLevel() {
     final config = JsonStorageService.instance.getAppConfig();
     return config.windowLevel;
   }
-  
+
   /// 设置窗口层级: 0=常规, 1=置顶, 2=置底
   Future<bool> setWindowLevel(int level) async {
     try {
@@ -142,13 +139,11 @@ class SettingsService {
         await windowManager.setAlwaysOnTop(false);
         await windowManager.setAlwaysOnBottom(false);
       }
-      
+
       // 更新JSON配置
       final storageService = JsonStorageService.instance;
       final currentConfig = storageService.getAppConfig();
-      final updatedConfig = currentConfig.copyWith(
-        windowLevel: level,
-      );
+      final updatedConfig = currentConfig.copyWith(windowLevel: level);
       await storageService.saveAppConfig(updatedConfig);
       logDebug('窗口层级已设置为: $level');
       return true;
@@ -176,9 +171,7 @@ class SettingsService {
       // 更新JSON配置
       final storageService = JsonStorageService.instance;
       final currentConfig = storageService.getAppConfig();
-      final updatedConfig = currentConfig.copyWith(
-        showInTaskbar: enabled,
-      );
+      final updatedConfig = currentConfig.copyWith(showInTaskbar: enabled);
       await storageService.saveAppConfig(updatedConfig);
       logDebug('任务栏显示已${enabled ? "启用" : "禁用"}');
       return true;
@@ -193,7 +186,7 @@ class SettingsService {
     final config = JsonStorageService.instance.getAppConfig();
     return config.theme == 'dark';
   }
-  
+
   /// 设置明暗模式
   Future<bool> setDarkMode(bool enabled) async {
     try {
@@ -221,19 +214,19 @@ class SettingsService {
       return false;
     }
   }
-  
+
   /// 获取背景不透明度 (0.0 - 1.0)
   double getBackgroundOpacity() {
     final config = JsonStorageService.instance.getAppConfig();
     return config.backgroundOpacity;
   }
-  
+
   /// 设置背景不透明度
   Future<bool> setBackgroundOpacity(double opacity) async {
     try {
       // 确保值在有效范围内
       final clampedOpacity = opacity.clamp(0.0, 1.0);
-      
+
       // 更新JSON配置
       final storageService = JsonStorageService.instance;
       final currentConfig = storageService.getAppConfig();
@@ -261,11 +254,11 @@ class SettingsService {
       // 更新JSON配置
       final storageService = JsonStorageService.instance;
       final currentConfig = storageService.getAppConfig();
-      final updatedConfig = currentConfig.copyWith(
-        themeColor: colorValue,
-      );
+      final updatedConfig = currentConfig.copyWith(themeColor: colorValue);
       await storageService.saveAppConfig(updatedConfig);
-      logDebug('主题色已设置: ${colorValue != null ? "#${colorValue.toRadixString(16)}" : "默认"}');
+      logDebug(
+        '主题色已设置: ${colorValue != null ? "#${colorValue.toRadixString(16)}" : "默认"}',
+      );
       return true;
     } catch (e) {
       logError('设置主题色失败', e);
@@ -293,7 +286,7 @@ class SettingsService {
         isMinimized: minimized,
         isFullScreen: fullscreen,
       );
-      
+
       await JsonStorageService.instance.saveWindowState(windowState);
       logDebug('窗口状态已保存: $width x $height at ($x, $y)');
       return true;
@@ -323,7 +316,7 @@ class SettingsService {
           position: Offset(windowState.x, windowState.y),
           size: Size(windowState.width, windowState.height),
         );
-        
+
         if (windowState.isMaximized) {
           await windowManager.maximize();
         } else if (windowState.isMinimized) {
@@ -331,7 +324,7 @@ class SettingsService {
         } else if (windowState.isFullScreen) {
           await windowManager.setFullScreen(true);
         }
-        
+
         logInfo('窗口状态已恢复');
         return true;
       }
@@ -353,9 +346,7 @@ class SettingsService {
     try {
       final storageService = JsonStorageService.instance;
       final currentConfig = storageService.getAppConfig();
-      final updatedConfig = currentConfig.copyWith(
-        firstLaunch: false,
-      );
+      final updatedConfig = currentConfig.copyWith(firstLaunch: false);
       await storageService.saveAppConfig(updatedConfig);
       logInfo('OOBE已完成标记');
       return true;
@@ -375,22 +366,23 @@ class SettingsService {
       final packageInfo = await PackageInfo.fromPlatform();
       final executablePath = Platform.resolvedExecutable;
       final appName = packageInfo.appName;
-      
+
       // 获取桌面路径
       final result = await Process.run('powershell', [
         '-Command',
-        '[Environment]::GetFolderPath("Desktop")'
+        '[Environment]::GetFolderPath("Desktop")',
       ]);
-      
+
       if (result.exitCode != 0) {
         return const SettingsResult.failure('无法获取桌面路径');
       }
-      
+
       final desktopPath = result.stdout.toString().trim();
       final shortcutPath = '$desktopPath\\$appName.lnk';
-      
+
       // 创建快捷方式的PowerShell脚本
-      final script = '''
+      final script =
+          '''
 \$WshShell = New-Object -comObject WScript.Shell
 \$Shortcut = \$WshShell.CreateShortcut("$shortcutPath")
 \$Shortcut.TargetPath = "$executablePath"
@@ -398,12 +390,12 @@ class SettingsService {
 \$Shortcut.Description = "$appName"
 \$Shortcut.Save()
 ''';
-      
+
       final createResult = await Process.run('powershell', [
         '-Command',
-        script
+        script,
       ]);
-      
+
       if (createResult.exitCode == 0) {
         logInfo('桌面快捷方式创建成功');
         return const SettingsResult.success();
@@ -427,22 +419,23 @@ class SettingsService {
       final packageInfo = await PackageInfo.fromPlatform();
       final executablePath = Platform.resolvedExecutable;
       final appName = packageInfo.appName;
-      
+
       // 获取开始菜单程序文件夹路径
       final result = await Process.run('powershell', [
         '-Command',
-        '[Environment]::GetFolderPath("Programs")'
+        '[Environment]::GetFolderPath("Programs")',
       ]);
-      
+
       if (result.exitCode != 0) {
         return const SettingsResult.failure('无法获取开始菜单路径');
       }
-      
+
       final programsPath = result.stdout.toString().trim();
       final shortcutPath = '$programsPath\\$appName.lnk';
-      
+
       // 创建快捷方式的PowerShell脚本
-      final script = '''
+      final script =
+          '''
 \$WshShell = New-Object -comObject WScript.Shell
 \$Shortcut = \$WshShell.CreateShortcut("$shortcutPath")
 \$Shortcut.TargetPath = "$executablePath"
@@ -450,12 +443,12 @@ class SettingsService {
 \$Shortcut.Description = "$appName"
 \$Shortcut.Save()
 ''';
-      
+
       final createResult = await Process.run('powershell', [
         '-Command',
-        script
+        script,
       ]);
-      
+
       if (createResult.exitCode == 0) {
         logInfo('开始菜单快捷方式创建成功');
         return const SettingsResult.success();
@@ -481,9 +474,7 @@ class SettingsService {
       // 更新JSON配置
       final storageService = JsonStorageService.instance;
       final currentConfig = storageService.getAppConfig();
-      final updatedConfig = currentConfig.copyWith(
-        backgroundImagePath: path,
-      );
+      final updatedConfig = currentConfig.copyWith(backgroundImagePath: path);
       await storageService.saveAppConfig(updatedConfig);
       logDebug('背景图片路径已设置: ${path ?? "无"}');
       return true;
@@ -505,9 +496,7 @@ class SettingsService {
       // 更新JSON配置
       final storageService = JsonStorageService.instance;
       final currentConfig = storageService.getAppConfig();
-      final updatedConfig = currentConfig.copyWith(
-        backgroundImageMode: mode,
-      );
+      final updatedConfig = currentConfig.copyWith(backgroundImageMode: mode);
       await storageService.saveAppConfig(updatedConfig);
       logDebug('背景图片显示模式已设置为: $mode');
       return true;
@@ -559,5 +548,4 @@ class SettingsService {
       return false;
     }
   }
-
 }

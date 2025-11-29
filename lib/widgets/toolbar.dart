@@ -3,64 +3,64 @@ import 'package:split_button_m3e/split_button_m3e.dart';
 import 'custom_split_button.dart';
 
 /// 工具栏组件
-/// 
+///
 /// 显示在窗口右下角，使用 SplitButton 样式
 /// 左侧是加号图标，右侧可以打开 PopupMenu
 class Toolbar extends StatefulWidget {
   /// 工具栏透明度（0.0-1.0）
   final double opacity;
-  
+
   /// 背景透明度（用于计算工具栏背景色）
   final double backgroundOpacity;
-  
+
   /// 是否全屏状态
   final bool isFullScreen;
-  
+
   /// 窗口是否锁定
   final bool isWindowLocked;
-  
+
   /// 全屏前的窗口锁定状态
   final bool windowLockedBeforeFullScreen;
-  
+
   /// 界面缩放倍数（百分比）
   final double scaleFactor;
-  
+
   /// 作业列数
   final int columnCount;
-  
+
   /// 新建作业回调
   final VoidCallback onNewHomework;
-  
+
   /// 全屏切换回调
   final VoidCallback onToggleFullScreen;
-  
+
   /// 打开更多选项回调
   final VoidCallback onOpenMoreOptions;
-  
+
   /// 切换窗口锁定回调
   final VoidCallback onToggleWindowLock;
-  
+
   /// 显示科目管理器回调
   final VoidCallback onShowSubjectManager;
-  
+
   /// 显示标签管理器回调
   final VoidCallback onShowTagManager;
-  
+
   /// 调整界面缩放回调
   final void Function(double delta) onAdjustScale;
-  
+
   /// 调整作业列数回调
   final void Function(int delta) onAdjustColumnCount;
-  
+
   /// 退出应用回调
   final VoidCallback onExitApplication;
-  
+
   /// 鼠标进入工具栏回调
   final VoidCallback onMouseEnter;
-  
+
   /// 鼠标离开工具栏回调
   final VoidCallback onMouseExit;
-  
+
   /// 工具栏按钮点击回调（用于重置透明度定时器）
   final VoidCallback onButtonPressed;
 
@@ -137,7 +137,7 @@ class _ToolbarState extends State<Toolbar> {
     final onSurface = colorScheme.onSurface;
     final onSurfaceVariant = colorScheme.onSurfaceVariant;
     final errorColor = colorScheme.error;
-    
+
     return MouseRegion(
       onEnter: (_) => widget.onMouseEnter(),
       onExit: (_) => widget.onMouseExit(),
@@ -167,7 +167,10 @@ class _ToolbarState extends State<Toolbar> {
                   children: [
                     Icon(Icons.more_horiz, size: 18, color: onSurface),
                     SizedBox(width: 12),
-                    Text('更多选项...', style: TextStyle(fontSize: 14, color: onSurface)),
+                    Text(
+                      '更多选项...',
+                      style: TextStyle(fontSize: 14, color: onSurface),
+                    ),
                   ],
                 ),
               ),
@@ -202,21 +205,23 @@ class _ToolbarState extends State<Toolbar> {
                         widget.onToggleFullScreen();
                       },
                       child: Padding(
-                        padding: const EdgeInsets.symmetric(horizontal: 16, vertical: 12),
+                        padding: const EdgeInsets.symmetric(
+                          horizontal: 16,
+                          vertical: 12,
+                        ),
                         child: Row(
                           children: [
                             Icon(
-                              widget.isFullScreen ? Icons.fullscreen_exit : Icons.fullscreen,
+                              widget.isFullScreen
+                                  ? Icons.fullscreen_exit
+                                  : Icons.fullscreen,
                               size: 18,
                               color: onSurface,
                             ),
                             SizedBox(width: 8),
                             Text(
                               widget.isFullScreen ? '退出全屏' : '全屏',
-                              style: TextStyle(
-                                fontSize: 14,
-                                color: onSurface,
-                              ),
+                              style: TextStyle(fontSize: 14, color: onSurface),
                             ),
                           ],
                         ),
@@ -226,28 +231,41 @@ class _ToolbarState extends State<Toolbar> {
                   // 锁定/解锁
                   Expanded(
                     child: InkWell(
-                      onTap: widget.isFullScreen ? null : () {
-                        Navigator.of(context).pop();
-                        widget.onToggleWindowLock();
-                      },
+                      onTap: widget.isFullScreen
+                          ? null
+                          : () {
+                              Navigator.of(context).pop();
+                              widget.onToggleWindowLock();
+                            },
                       child: Padding(
-                        padding: const EdgeInsets.symmetric(horizontal: 16, vertical: 12),
+                        padding: const EdgeInsets.symmetric(
+                          horizontal: 16,
+                          vertical: 12,
+                        ),
                         child: Row(
                           children: [
                             Icon(
-                              (widget.isFullScreen ? widget.windowLockedBeforeFullScreen : widget.isWindowLocked) ? Icons.lock_open : Icons.lock,
+                              (widget.isFullScreen
+                                      ? widget.windowLockedBeforeFullScreen
+                                      : widget.isWindowLocked)
+                                  ? Icons.lock_open
+                                  : Icons.lock,
                               size: 18,
-                              color: widget.isFullScreen 
-                                  ? onSurfaceVariant.withOpacity(0.4)
+                              color: widget.isFullScreen
+                                  ? onSurfaceVariant.withValues(alpha: 0.4)
                                   : onSurface,
                             ),
                             SizedBox(width: 8),
                             Text(
-                              (widget.isFullScreen ? widget.windowLockedBeforeFullScreen : widget.isWindowLocked) ? '解锁' : '锁定',
+                              (widget.isFullScreen
+                                      ? widget.windowLockedBeforeFullScreen
+                                      : widget.isWindowLocked)
+                                  ? '解锁'
+                                  : '锁定',
                               style: TextStyle(
                                 fontSize: 14,
-                                color: widget.isFullScreen 
-                                    ? onSurfaceVariant.withOpacity(0.4)
+                                color: widget.isFullScreen
+                                    ? onSurfaceVariant.withValues(alpha: 0.4)
                                     : onSurface,
                               ),
                             ),
@@ -264,7 +282,10 @@ class _ToolbarState extends State<Toolbar> {
                         // TODO: 实现收起功能
                       },
                       child: Padding(
-                        padding: const EdgeInsets.symmetric(horizontal: 16, vertical: 12),
+                        padding: const EdgeInsets.symmetric(
+                          horizontal: 16,
+                          vertical: 12,
+                        ),
                         child: Row(
                           children: [
                             Icon(
@@ -275,10 +296,7 @@ class _ToolbarState extends State<Toolbar> {
                             SizedBox(width: 8),
                             Text(
                               '收起',
-                              style: TextStyle(
-                                fontSize: 14,
-                                color: onSurface,
-                              ),
+                              style: TextStyle(fontSize: 14, color: onSurface),
                             ),
                           ],
                         ),
@@ -318,21 +336,17 @@ class _ToolbarState extends State<Toolbar> {
                         widget.onShowSubjectManager();
                       },
                       child: Padding(
-                        padding: const EdgeInsets.symmetric(horizontal: 16, vertical: 12),
+                        padding: const EdgeInsets.symmetric(
+                          horizontal: 16,
+                          vertical: 12,
+                        ),
                         child: Row(
                           children: [
-                            Icon(
-                              Icons.subject,
-                              size: 18,
-                              color: onSurface,
-                            ),
+                            Icon(Icons.subject, size: 18, color: onSurface),
                             SizedBox(width: 8),
                             Text(
                               '科目',
-                              style: TextStyle(
-                                fontSize: 14,
-                                color: onSurface,
-                              ),
+                              style: TextStyle(fontSize: 14, color: onSurface),
                             ),
                           ],
                         ),
@@ -347,21 +361,17 @@ class _ToolbarState extends State<Toolbar> {
                         widget.onShowTagManager();
                       },
                       child: Padding(
-                        padding: const EdgeInsets.symmetric(horizontal: 16, vertical: 12),
+                        padding: const EdgeInsets.symmetric(
+                          horizontal: 16,
+                          vertical: 12,
+                        ),
                         child: Row(
                           children: [
-                            Icon(
-                              Icons.label,
-                              size: 18,
-                              color: onSurface,
-                            ),
+                            Icon(Icons.label, size: 18, color: onSurface),
                             SizedBox(width: 8),
                             Text(
                               '标签',
-                              style: TextStyle(
-                                fontSize: 14,
-                                color: onSurface,
-                              ),
+                              style: TextStyle(fontSize: 14, color: onSurface),
                             ),
                           ],
                         ),
@@ -399,28 +409,28 @@ class _ToolbarState extends State<Toolbar> {
                     children: [
                       Text(
                         '界面缩放',
-                        style: TextStyle(
-                          fontSize: 12,
-                          color: onSurface,
-                        ),
+                        style: TextStyle(fontSize: 12, color: onSurface),
                       ),
                       const Spacer(),
                       InkWell(
-                        onTap: canDecrease ? () {
-                          setMenuState(() {
-                            _localScaleFactor = (_localScaleFactor - 10).clamp(50.0, 200.0);
-                          });
-                          _handleScaleAdjust(-10);
-                        } : null,
+                        onTap: canDecrease
+                            ? () {
+                                setMenuState(() {
+                                  _localScaleFactor = (_localScaleFactor - 10)
+                                      .clamp(50.0, 200.0);
+                                });
+                                _handleScaleAdjust(-10);
+                              }
+                            : null,
                         borderRadius: BorderRadius.circular(20),
                         child: Padding(
                           padding: const EdgeInsets.all(6.0),
                           child: Icon(
                             Icons.remove,
                             size: 16,
-                            color: canDecrease 
+                            color: canDecrease
                                 ? onSurface
-                                : onSurfaceVariant.withOpacity(0.4),
+                                : onSurfaceVariant.withValues(alpha: 0.4),
                           ),
                         ),
                       ),
@@ -437,21 +447,24 @@ class _ToolbarState extends State<Toolbar> {
                         ),
                       ),
                       InkWell(
-                        onTap: canIncrease ? () {
-                          setMenuState(() {
-                            _localScaleFactor = (_localScaleFactor + 10).clamp(50.0, 200.0);
-                          });
-                          _handleScaleAdjust(10);
-                        } : null,
+                        onTap: canIncrease
+                            ? () {
+                                setMenuState(() {
+                                  _localScaleFactor = (_localScaleFactor + 10)
+                                      .clamp(50.0, 200.0);
+                                });
+                                _handleScaleAdjust(10);
+                              }
+                            : null,
                         borderRadius: BorderRadius.circular(20),
                         child: Padding(
                           padding: const EdgeInsets.all(6.0),
                           child: Icon(
                             Icons.add,
                             size: 16,
-                            color: canIncrease 
+                            color: canIncrease
                                 ? onSurface
-                                : onSurfaceVariant.withOpacity(0.4),
+                                : onSurfaceVariant.withValues(alpha: 0.4),
                           ),
                         ),
                       ),
@@ -473,28 +486,28 @@ class _ToolbarState extends State<Toolbar> {
                     children: [
                       Text(
                         '作业列数',
-                        style: TextStyle(
-                          fontSize: 12,
-                          color: onSurface,
-                        ),
+                        style: TextStyle(fontSize: 12, color: onSurface),
                       ),
                       const Spacer(),
                       InkWell(
-                        onTap: canDecrease ? () {
-                          setMenuState(() {
-                            _localColumnCount = (_localColumnCount - 1).clamp(1, 5);
-                          });
-                          _handleColumnCountAdjust(-1);
-                        } : null,
+                        onTap: canDecrease
+                            ? () {
+                                setMenuState(() {
+                                  _localColumnCount = (_localColumnCount - 1)
+                                      .clamp(1, 5);
+                                });
+                                _handleColumnCountAdjust(-1);
+                              }
+                            : null,
                         borderRadius: BorderRadius.circular(20),
                         child: Padding(
                           padding: const EdgeInsets.all(6.0),
                           child: Icon(
                             Icons.remove,
                             size: 16,
-                            color: canDecrease 
+                            color: canDecrease
                                 ? onSurface
-                                : onSurfaceVariant.withOpacity(0.4),
+                                : onSurfaceVariant.withValues(alpha: 0.4),
                           ),
                         ),
                       ),
@@ -511,21 +524,24 @@ class _ToolbarState extends State<Toolbar> {
                         ),
                       ),
                       InkWell(
-                        onTap: canIncrease ? () {
-                          setMenuState(() {
-                            _localColumnCount = (_localColumnCount + 1).clamp(1, 5);
-                          });
-                          _handleColumnCountAdjust(1);
-                        } : null,
+                        onTap: canIncrease
+                            ? () {
+                                setMenuState(() {
+                                  _localColumnCount = (_localColumnCount + 1)
+                                      .clamp(1, 5);
+                                });
+                                _handleColumnCountAdjust(1);
+                              }
+                            : null,
                         borderRadius: BorderRadius.circular(20),
                         child: Padding(
                           padding: const EdgeInsets.all(6.0),
                           child: Icon(
                             Icons.add,
                             size: 16,
-                            color: canIncrease 
+                            color: canIncrease
                                 ? onSurface
-                                : onSurfaceVariant.withOpacity(0.4),
+                                : onSurfaceVariant.withValues(alpha: 0.4),
                           ),
                         ),
                       ),
@@ -547,7 +563,10 @@ class _ToolbarState extends State<Toolbar> {
                   children: [
                     Icon(Icons.exit_to_app, size: 18, color: errorColor),
                     SizedBox(width: 12),
-                    Text('退出...', style: TextStyle(fontSize: 14, color: errorColor)),
+                    Text(
+                      '退出...',
+                      style: TextStyle(fontSize: 14, color: errorColor),
+                    ),
                   ],
                 ),
               ),
