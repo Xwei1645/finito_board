@@ -121,6 +121,14 @@ packages:
       url: "https://pub.flutter-io.cn"
     source: hosted
     version: "0.4.1"
+  dynamic_color:
+    dependency: transitive
+    description:
+      name: dynamic_color
+      sha256: "43a5a6679649a7731ab860334a5812f2067c2d9ce6452cf069c5e0c25336c17c"
+      url: "https://pub.flutter-io.cn"
+    source: hosted
+    version: "1.8.1"
   fake_async:
     dependency: transitive
     description:
@@ -373,6 +381,14 @@ packages:
       url: "https://pub.flutter-io.cn"
     source: hosted
     version: "2.0.3"
+  m3e_design:
+    dependency: transitive
+    description:
+      name: m3e_design
+      sha256: "15ff0ef4c43553d855c5e866a9aee8231d44919fe2bb354b1259337bdfd659b4"
+      url: "https://pub.flutter-io.cn"
+    source: hosted
+    version: "0.2.1"
   markdown:
     dependency: transitive
     description:
@@ -626,6 +642,14 @@ packages:
       url: "https://pub.flutter-io.cn"
     source: hosted
     version: "1.10.1"
+  split_button_m3e:
+    dependency: "direct main"
+    description:
+      name: split_button_m3e
+      sha256: "8864b612e2475cf8d070783d5d834c8da98b7489365e4597e5b4f6ef85d50f66"
+      url: "https://pub.flutter-io.cn"
+    source: hosted
+    version: "0.2.1"
   stack_trace:
     dependency: transitive
     description:
