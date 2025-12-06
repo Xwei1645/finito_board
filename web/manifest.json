@@ -1,6 +1,6 @@
 {
-    "name": "finito_board",
-    "short_name": "finito_board",
+    "name": "zooni",
+    "short_name": "zooni",
     "start_url": ".",
     "display": "standalone",
     "background_color": "#0175C2",

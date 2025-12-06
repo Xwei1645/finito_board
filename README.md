@@ -1,5 +1,5 @@
 <div align="center">
-    <h1>Finito Board</h1>
+    <h1>Zooni</h1>
     <p>🎯 一个 Previous Gen 的教室大屏作业看板</p>
 </div>
 

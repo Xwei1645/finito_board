@@ -46,7 +46,7 @@ class AboutWidgets {
                       crossAxisAlignment: CrossAxisAlignment.start,
                       children: [
                         Text(
-                          'FinitoBoard',
+                          'Zooni',
                           style: TextStyle(
                             fontSize: 24,
                             fontWeight: FontWeight.w600,
@@ -83,7 +83,7 @@ class AboutWidgets {
                   TextButton.icon(
                     onPressed: () async {
                       final uri = Uri.parse(
-                        'https://github.com/Xwei1645/finito_board',
+                        'https://github.com/Xwei1645/zooni',
                       );
                       if (await canLaunchUrl(uri)) {
                         await launchUrl(uri);
@@ -147,7 +147,7 @@ class AboutWidgets {
                 Navigator.of(context).pop();
                 showLicensePage(
                   context: context,
-                  applicationName: 'FinitoBoard',
+                  applicationName: 'Zooni',
                   applicationVersion: null,
                 );
               },

@@ -33,7 +33,7 @@ jobs:
       - name: Upload windows artifact
         uses: actions/upload-artifact@v4
         with:
-          name: finito-board-windows-x64
+          name: zooni-windows-x64
           path: |
             build\windows\x64\runner\Release
 
@@ -63,6 +63,6 @@ jobs:
       - name: Upload Linux artifact
         uses: actions/upload-artifact@v4
         with:
-          name: finito-board-linux-x64
+          name: zooni-linux-x64
           path: |
             build/linux/x64/release/bundle

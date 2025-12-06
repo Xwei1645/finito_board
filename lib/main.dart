@@ -245,7 +245,7 @@ class _MyAppState extends State<MyApp> {
     return ClipRRect(
       borderRadius: BorderRadius.circular(_windowCornerRadius),
       child: MaterialApp(
-        title: 'FinitoBoard',
+        title: 'Zooni',
         theme: ThemeData(
           colorScheme: ColorScheme.fromSeed(
             seedColor: seedColor,

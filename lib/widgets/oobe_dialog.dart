@@ -147,7 +147,7 @@ class _OOBEDialogState extends State<OOBEDialog> {
                 ),
                 const SizedBox(width: 12),
                 Text(
-                  '欢迎使用 FinitoBoard',
+                  '欢迎使用 Zooni',
                   style: Theme.of(context).textTheme.headlineSmall?.copyWith(
                     fontWeight: FontWeight.bold,
                   ),
