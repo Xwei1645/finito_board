@@ -1,11 +1,9 @@
 import 'package:flutter/material.dart';
-import 'package:split_button_m3e/split_button_m3e.dart';
-import 'custom_split_button.dart';
 
 /// 工具栏组件
 ///
-/// 显示在窗口右下角，使用 SplitButton 样式
-/// 左侧是加号图标，右侧可以打开 PopupMenu
+/// 显示在窗口右下角，使用 FloatingActionButton 样式
+/// 点击新建作业，长按打开更多选项菜单
 class Toolbar extends StatefulWidget {
   /// 工具栏透明度（0.0-1.0）
   final double opacity;
@@ -95,6 +93,7 @@ class _ToolbarState extends State<Toolbar> {
   // 用于菜单内部即时更新的本地状态
   late double _localScaleFactor;
   late int _localColumnCount;
+  final GlobalKey _fabKey = GlobalKey();
 
   @override
   void initState() {
@@ -131,419 +130,445 @@ class _ToolbarState extends State<Toolbar> {
     widget.onAdjustColumnCount(delta);
   }
 
-  @override
-  Widget build(BuildContext context) {
+  void _showContextMenu() {
+    final RenderBox? button =
+        _fabKey.currentContext?.findRenderObject() as RenderBox?;
+    if (button == null) return;
+    final RenderBox overlay =
+        Navigator.of(context).overlay!.context.findRenderObject() as RenderBox;
+    final RelativeRect position = RelativeRect.fromRect(
+      Rect.fromPoints(
+        button.localToGlobal(Offset.zero, ancestor: overlay),
+        button.localToGlobal(
+          button.size.bottomRight(Offset.zero),
+          ancestor: overlay,
+        ),
+      ),
+      Offset.zero & overlay.size,
+    );
+
     final colorScheme = Theme.of(context).colorScheme;
     final onSurface = colorScheme.onSurface;
     final onSurfaceVariant = colorScheme.onSurfaceVariant;
     final errorColor = colorScheme.error;
 
+    showMenu<String>(
+      context: context,
+      position: position,
+      items: [
+        // 更多选项
+        PopupMenuItem<String>(
+          value: 'more_options',
+          padding: const EdgeInsets.symmetric(vertical: 4),
+          height: 44,
+          onTap: widget.onOpenMoreOptions,
+          child: Padding(
+            padding: const EdgeInsets.symmetric(horizontal: 16),
+            child: Row(
+              children: [
+                Icon(Icons.more_horiz, size: 18, color: onSurface),
+                SizedBox(width: 12),
+                Text(
+                  '更多选项...',
+                  style: TextStyle(fontSize: 14, color: onSurface),
+                ),
+              ],
+            ),
+          ),
+        ),
+        PopupMenuDivider(height: 1),
+        // 窗口控制标题
+        PopupMenuItem<String>(
+          enabled: false,
+          padding: const EdgeInsets.fromLTRB(16, 8, 16, 4),
+          height: 32,
+          child: Text(
+            '窗口控制',
+            style: TextStyle(
+              fontSize: 11,
+              color: onSurfaceVariant,
+              fontWeight: FontWeight.w600,
+            ),
+          ),
+        ),
+        // 全屏 和 锁定/解锁 放在同一行
+        PopupMenuItem<String>(
+          enabled: false,
+          padding: EdgeInsets.zero,
+          height: 44,
+          child: Row(
+            children: [
+              // 全屏/退出全屏
+              Expanded(
+                child: InkWell(
+                  onTap: () {
+                    Navigator.of(context).pop();
+                    widget.onToggleFullScreen();
+                  },
+                  child: Padding(
+                    padding: const EdgeInsets.symmetric(
+                      horizontal: 16,
+                      vertical: 12,
+                    ),
+                    child: Row(
+                      children: [
+                        Icon(
+                          widget.isFullScreen
+                              ? Icons.fullscreen_exit
+                              : Icons.fullscreen,
+                          size: 18,
+                          color: onSurface,
+                        ),
+                        SizedBox(width: 8),
+                        Text(
+                          widget.isFullScreen ? '还原' : '全屏',
+                          style: TextStyle(fontSize: 14, color: onSurface),
+                        ),
+                      ],
+                    ),
+                  ),
+                ),
+              ),
+              // 锁定/解锁
+              Expanded(
+                child: InkWell(
+                  onTap: widget.isFullScreen
+                      ? null
+                      : () {
+                          Navigator.of(context).pop();
+                          widget.onToggleWindowLock();
+                        },
+                  child: Padding(
+                    padding: const EdgeInsets.symmetric(
+                      horizontal: 16,
+                      vertical: 12,
+                    ),
+                    child: Row(
+                      children: [
+                        Icon(
+                          (widget.isFullScreen
+                                  ? widget.windowLockedBeforeFullScreen
+                                  : widget.isWindowLocked)
+                              ? Icons.lock_open
+                              : Icons.lock,
+                          size: 18,
+                          color: onSurface,
+                        ),
+                        SizedBox(width: 8),
+                        Text(
+                          (widget.isFullScreen
+                                  ? widget.windowLockedBeforeFullScreen
+                                  : widget.isWindowLocked)
+                              ? '解锁'
+                              : '锁定',
+                          style: TextStyle(fontSize: 14, color: onSurface),
+                        ),
+                      ],
+                    ),
+                  ),
+                ),
+              ),
+            ],
+          ),
+        ),
+        PopupMenuDivider(height: 1),
+        // 编辑选项标题
+        PopupMenuItem<String>(
+          enabled: false,
+          padding: const EdgeInsets.fromLTRB(16, 8, 16, 4),
+          height: 32,
+          child: Text(
+            '编辑...',
+            style: TextStyle(
+              fontSize: 11,
+              color: onSurfaceVariant,
+              fontWeight: FontWeight.w600,
+            ),
+          ),
+        ),
+        // 科目 和 标签 放在同一行
+        PopupMenuItem<String>(
+          enabled: false,
+          padding: EdgeInsets.zero,
+          height: 44,
+          child: Row(
+            children: [
+              // 科目
+              Expanded(
+                child: InkWell(
+                  onTap: () {
+                    Navigator.of(context).pop();
+                    widget.onShowSubjectManager();
+                  },
+                  child: Padding(
+                    padding: const EdgeInsets.symmetric(
+                      horizontal: 16,
+                      vertical: 12,
+                    ),
+                    child: Row(
+                      children: [
+                        Icon(Icons.subject, size: 18, color: onSurface),
+                        SizedBox(width: 8),
+                        Text(
+                          '科目',
+                          style: TextStyle(fontSize: 14, color: onSurface),
+                        ),
+                      ],
+                    ),
+                  ),
+                ),
+              ),
+              // 标签
+              Expanded(
+                child: InkWell(
+                  onTap: () {
+                    Navigator.of(context).pop();
+                    widget.onShowTagManager();
+                  },
+                  child: Padding(
+                    padding: const EdgeInsets.symmetric(
+                      horizontal: 16,
+                      vertical: 12,
+                    ),
+                    child: Row(
+                      children: [
+                        Icon(Icons.label, size: 18, color: onSurface),
+                        SizedBox(width: 8),
+                        Text(
+                          '标签',
+                          style: TextStyle(fontSize: 14, color: onSurface),
+                        ),
+                      ],
+                    ),
+                  ),
+                ),
+              ),
+            ],
+          ),
+        ),
+        PopupMenuDivider(height: 1),
+        // 界面设置标题
+        PopupMenuItem<String>(
+          enabled: false,
+          padding: const EdgeInsets.fromLTRB(16, 8, 16, 4),
+          height: 32,
+          child: Text(
+            '界面设置',
+            style: TextStyle(
+              fontSize: 11,
+              color: onSurfaceVariant,
+              fontWeight: FontWeight.w600,
+            ),
+          ),
+        ),
+        // 界面缩放
+        PopupMenuItem<String>(
+          enabled: false,
+          padding: const EdgeInsets.symmetric(horizontal: 12, vertical: 4),
+          height: 44,
+          child: StatefulBuilder(
+            builder: (context, setMenuState) {
+              final canDecrease = _localScaleFactor > 50.0;
+              final canIncrease = _localScaleFactor < 200.0;
+              return Row(
+                children: [
+                  Text(
+                    '界面缩放',
+                    style: TextStyle(fontSize: 12, color: onSurface),
+                  ),
+                  const Spacer(),
+                  InkWell(
+                    onTap: canDecrease
+                        ? () {
+                            setMenuState(() {
+                              _localScaleFactor = (_localScaleFactor - 10)
+                                  .clamp(50.0, 200.0);
+                            });
+                            _handleScaleAdjust(-10);
+                          }
+                        : null,
+                    borderRadius: BorderRadius.circular(20),
+                    child: Padding(
+                      padding: const EdgeInsets.all(6.0),
+                      child: Icon(
+                        Icons.remove,
+                        size: 16,
+                        color: canDecrease
+                            ? onSurface
+                            : onSurfaceVariant.withValues(alpha: 0.4),
+                      ),
+                    ),
+                  ),
+                  SizedBox(
+                    width: 50,
+                    child: Text(
+                      '${_localScaleFactor.toInt()}%',
+                      textAlign: TextAlign.center,
+                      style: TextStyle(
+                        fontSize: 12,
+                        fontWeight: FontWeight.w500,
+                        color: onSurface,
+                      ),
+                    ),
+                  ),
+                  InkWell(
+                    onTap: canIncrease
+                        ? () {
+                            setMenuState(() {
+                              _localScaleFactor = (_localScaleFactor + 10)
+                                  .clamp(50.0, 200.0);
+                            });
+                            _handleScaleAdjust(10);
+                          }
+                        : null,
+                    borderRadius: BorderRadius.circular(20),
+                    child: Padding(
+                      padding: const EdgeInsets.all(6.0),
+                      child: Icon(
+                        Icons.add,
+                        size: 16,
+                        color: canIncrease
+                            ? onSurface
+                            : onSurfaceVariant.withValues(alpha: 0.4),
+                      ),
+                    ),
+                  ),
+                ],
+              );
+            },
+          ),
+        ),
+        // 作业列数
+        PopupMenuItem<String>(
+          enabled: false,
+          padding: const EdgeInsets.symmetric(horizontal: 12, vertical: 4),
+          height: 44,
+          child: StatefulBuilder(
+            builder: (context, setMenuState) {
+              final canDecrease = _localColumnCount > 1;
+              final canIncrease = _localColumnCount < 5;
+              return Row(
+                children: [
+                  Text(
+                    '作业列数',
+                    style: TextStyle(fontSize: 12, color: onSurface),
+                  ),
+                  const Spacer(),
+                  InkWell(
+                    onTap: canDecrease
+                        ? () {
+                            setMenuState(() {
+                              _localColumnCount = (_localColumnCount - 1).clamp(
+                                1,
+                                5,
+                              );
+                            });
+                            _handleColumnCountAdjust(-1);
+                          }
+                        : null,
+                    borderRadius: BorderRadius.circular(20),
+                    child: Padding(
+                      padding: const EdgeInsets.all(6.0),
+                      child: Icon(
+                        Icons.remove,
+                        size: 16,
+                        color: canDecrease
+                            ? onSurface
+                            : onSurfaceVariant.withValues(alpha: 0.4),
+                      ),
+                    ),
+                  ),
+                  SizedBox(
+                    width: 50,
+                    child: Text(
+                      '$_localColumnCount 列',
+                      textAlign: TextAlign.center,
+                      style: TextStyle(
+                        fontSize: 12,
+                        fontWeight: FontWeight.w500,
+                        color: onSurface,
+                      ),
+                    ),
+                  ),
+                  InkWell(
+                    onTap: canIncrease
+                        ? () {
+                            setMenuState(() {
+                              _localColumnCount = (_localColumnCount + 1).clamp(
+                                1,
+                                5,
+                              );
+                            });
+                            _handleColumnCountAdjust(1);
+                          }
+                        : null,
+                    borderRadius: BorderRadius.circular(20),
+                    child: Padding(
+                      padding: const EdgeInsets.all(6.0),
+                      child: Icon(
+                        Icons.add,
+                        size: 16,
+                        color: canIncrease
+                            ? onSurface
+                            : onSurfaceVariant.withValues(alpha: 0.4),
+                      ),
+                    ),
+                  ),
+                ],
+              );
+            },
+          ),
+        ),
+        PopupMenuDivider(height: 1),
+        // 退出
+        PopupMenuItem<String>(
+          value: 'exit',
+          padding: const EdgeInsets.symmetric(vertical: 4),
+          height: 44,
+          onTap: widget.onExitApplication,
+          child: Padding(
+            padding: const EdgeInsets.symmetric(horizontal: 16),
+            child: Row(
+              children: [
+                Icon(Icons.exit_to_app, size: 18, color: errorColor),
+                SizedBox(width: 12),
+                Text(
+                  '退出...',
+                  style: TextStyle(fontSize: 14, color: errorColor),
+                ),
+              ],
+            ),
+          ),
+        ),
+      ],
+    ).then((value) {
+      widget.onButtonPressed();
+      // 打开菜单时同步本地状态
+      setState(() {
+        _localScaleFactor = widget.scaleFactor;
+        _localColumnCount = widget.columnCount;
+      });
+    });
+  }
+
+  @override
+  Widget build(BuildContext context) {
     return MouseRegion(
       onEnter: (_) => widget.onMouseEnter(),
       onExit: (_) => widget.onMouseExit(),
       child: Opacity(
         opacity: widget.opacity,
-        child: CustomSplitButton<String>(
-          size: SplitButtonM3ESize.sm,
-          shape: SplitButtonM3EShape.round,
-          emphasis: SplitButtonM3EEmphasis.tonal,
-          leadingIcon: Icons.add,
-          onPressed: () {
-            widget.onButtonPressed();
-            widget.onNewHomework();
-          },
-          leadingTooltip: '新建作业',
-          trailingTooltip: '快捷菜单',
-          menuBuilder: (BuildContext context) => <PopupMenuEntry<String>>[
-            // 更多选项
-            PopupMenuItem<String>(
-              value: 'more_options',
-              padding: const EdgeInsets.symmetric(vertical: 4),
-              height: 44,
-              onTap: widget.onOpenMoreOptions,
-              child: Padding(
-                padding: const EdgeInsets.symmetric(horizontal: 16),
-                child: Row(
-                  children: [
-                    Icon(Icons.more_horiz, size: 18, color: onSurface),
-                    SizedBox(width: 12),
-                    Text(
-                      '更多选项...',
-                      style: TextStyle(fontSize: 14, color: onSurface),
-                    ),
-                  ],
-                ),
-              ),
-            ),
-            PopupMenuDivider(height: 1),
-            // 窗口控制标题
-            PopupMenuItem<String>(
-              enabled: false,
-              padding: const EdgeInsets.fromLTRB(16, 8, 16, 4),
-              height: 32,
-              child: Text(
-                '窗口控制',
-                style: TextStyle(
-                  fontSize: 11,
-                  color: onSurfaceVariant,
-                  fontWeight: FontWeight.w600,
-                ),
-              ),
-            ),
-            // 全屏 和 锁定/解锁 放在同一行
-            PopupMenuItem<String>(
-              enabled: false,
-              padding: EdgeInsets.zero,
-              height: 44,
-              child: Row(
-                children: [
-                  // 全屏/退出全屏
-                  Expanded(
-                    child: InkWell(
-                      onTap: () {
-                        Navigator.of(context).pop();
-                        widget.onToggleFullScreen();
-                      },
-                      child: Padding(
-                        padding: const EdgeInsets.symmetric(
-                          horizontal: 16,
-                          vertical: 12,
-                        ),
-                        child: Row(
-                          children: [
-                            Icon(
-                              widget.isFullScreen
-                                  ? Icons.fullscreen_exit
-                                  : Icons.fullscreen,
-                              size: 18,
-                              color: onSurface,
-                            ),
-                            SizedBox(width: 8),
-                            Text(
-                              widget.isFullScreen ? '还原' : '全屏',
-                              style: TextStyle(fontSize: 14, color: onSurface),
-                            ),
-                          ],
-                        ),
-                      ),
-                    ),
-                  ),
-                  // 锁定/解锁
-                  Expanded(
-                    child: InkWell(
-                      onTap: widget.isFullScreen
-                          ? null
-                          : () {
-                              Navigator.of(context).pop();
-                              widget.onToggleWindowLock();
-                            },
-                      child: Padding(
-                        padding: const EdgeInsets.symmetric(
-                          horizontal: 16,
-                          vertical: 12,
-                        ),
-                        child: Row(
-                          children: [
-                            Icon(
-                              (widget.isFullScreen
-                                      ? widget.windowLockedBeforeFullScreen
-                                      : widget.isWindowLocked)
-                                  ? Icons.lock_open
-                                  : Icons.lock,
-                              size: 18,
-                              color: onSurface,
-                            ),
-                            SizedBox(width: 8),
-                            Text(
-                              (widget.isFullScreen
-                                      ? widget.windowLockedBeforeFullScreen
-                                      : widget.isWindowLocked)
-                                  ? '解锁'
-                                  : '锁定',
-                              style: TextStyle(fontSize: 14, color: onSurface),
-                            ),
-                          ],
-                        ),
-                      ),
-                    ),
-                  ),
-                ],
-              ),
-            ),
-            PopupMenuDivider(height: 1),
-            // 编辑选项标题
-            PopupMenuItem<String>(
-              enabled: false,
-              padding: const EdgeInsets.fromLTRB(16, 8, 16, 4),
-              height: 32,
-              child: Text(
-                '编辑...',
-                style: TextStyle(
-                  fontSize: 11,
-                  color: onSurfaceVariant,
-                  fontWeight: FontWeight.w600,
-                ),
-              ),
-            ),
-            // 科目 和 标签 放在同一行
-            PopupMenuItem<String>(
-              enabled: false,
-              padding: EdgeInsets.zero,
-              height: 44,
-              child: Row(
-                children: [
-                  // 科目
-                  Expanded(
-                    child: InkWell(
-                      onTap: () {
-                        Navigator.of(context).pop();
-                        widget.onShowSubjectManager();
-                      },
-                      child: Padding(
-                        padding: const EdgeInsets.symmetric(
-                          horizontal: 16,
-                          vertical: 12,
-                        ),
-                        child: Row(
-                          children: [
-                            Icon(Icons.subject, size: 18, color: onSurface),
-                            SizedBox(width: 8),
-                            Text(
-                              '科目',
-                              style: TextStyle(fontSize: 14, color: onSurface),
-                            ),
-                          ],
-                        ),
-                      ),
-                    ),
-                  ),
-                  // 标签
-                  Expanded(
-                    child: InkWell(
-                      onTap: () {
-                        Navigator.of(context).pop();
-                        widget.onShowTagManager();
-                      },
-                      child: Padding(
-                        padding: const EdgeInsets.symmetric(
-                          horizontal: 16,
-                          vertical: 12,
-                        ),
-                        child: Row(
-                          children: [
-                            Icon(Icons.label, size: 18, color: onSurface),
-                            SizedBox(width: 8),
-                            Text(
-                              '标签',
-                              style: TextStyle(fontSize: 14, color: onSurface),
-                            ),
-                          ],
-                        ),
-                      ),
-                    ),
-                  ),
-                ],
-              ),
-            ),
-            PopupMenuDivider(height: 1),
-            // 界面设置标题
-            PopupMenuItem<String>(
-              enabled: false,
-              padding: const EdgeInsets.fromLTRB(16, 8, 16, 4),
-              height: 32,
-              child: Text(
-                '界面设置',
-                style: TextStyle(
-                  fontSize: 11,
-                  color: onSurfaceVariant,
-                  fontWeight: FontWeight.w600,
-                ),
-              ),
-            ),
-            // 界面缩放
-            PopupMenuItem<String>(
-              enabled: false,
-              padding: const EdgeInsets.symmetric(horizontal: 12, vertical: 4),
-              height: 44,
-              child: StatefulBuilder(
-                builder: (context, setMenuState) {
-                  final canDecrease = _localScaleFactor > 50.0;
-                  final canIncrease = _localScaleFactor < 200.0;
-                  return Row(
-                    children: [
-                      Text(
-                        '界面缩放',
-                        style: TextStyle(fontSize: 12, color: onSurface),
-                      ),
-                      const Spacer(),
-                      InkWell(
-                        onTap: canDecrease
-                            ? () {
-                                setMenuState(() {
-                                  _localScaleFactor = (_localScaleFactor - 10)
-                                      .clamp(50.0, 200.0);
-                                });
-                                _handleScaleAdjust(-10);
-                              }
-                            : null,
-                        borderRadius: BorderRadius.circular(20),
-                        child: Padding(
-                          padding: const EdgeInsets.all(6.0),
-                          child: Icon(
-                            Icons.remove,
-                            size: 16,
-                            color: canDecrease
-                                ? onSurface
-                                : onSurfaceVariant.withValues(alpha: 0.4),
-                          ),
-                        ),
-                      ),
-                      SizedBox(
-                        width: 50,
-                        child: Text(
-                          '${_localScaleFactor.toInt()}%',
-                          textAlign: TextAlign.center,
-                          style: TextStyle(
-                            fontSize: 12,
-                            fontWeight: FontWeight.w500,
-                            color: onSurface,
-                          ),
-                        ),
-                      ),
-                      InkWell(
-                        onTap: canIncrease
-                            ? () {
-                                setMenuState(() {
-                                  _localScaleFactor = (_localScaleFactor + 10)
-                                      .clamp(50.0, 200.0);
-                                });
-                                _handleScaleAdjust(10);
-                              }
-                            : null,
-                        borderRadius: BorderRadius.circular(20),
-                        child: Padding(
-                          padding: const EdgeInsets.all(6.0),
-                          child: Icon(
-                            Icons.add,
-                            size: 16,
-                            color: canIncrease
-                                ? onSurface
-                                : onSurfaceVariant.withValues(alpha: 0.4),
-                          ),
-                        ),
-                      ),
-                    ],
-                  );
-                },
-              ),
-            ),
-            // 作业列数
-            PopupMenuItem<String>(
-              enabled: false,
-              padding: const EdgeInsets.symmetric(horizontal: 12, vertical: 4),
-              height: 44,
-              child: StatefulBuilder(
-                builder: (context, setMenuState) {
-                  final canDecrease = _localColumnCount > 1;
-                  final canIncrease = _localColumnCount < 5;
-                  return Row(
-                    children: [
-                      Text(
-                        '作业列数',
-                        style: TextStyle(fontSize: 12, color: onSurface),
-                      ),
-                      const Spacer(),
-                      InkWell(
-                        onTap: canDecrease
-                            ? () {
-                                setMenuState(() {
-                                  _localColumnCount = (_localColumnCount - 1)
-                                      .clamp(1, 5);
-                                });
-                                _handleColumnCountAdjust(-1);
-                              }
-                            : null,
-                        borderRadius: BorderRadius.circular(20),
-                        child: Padding(
-                          padding: const EdgeInsets.all(6.0),
-                          child: Icon(
-                            Icons.remove,
-                            size: 16,
-                            color: canDecrease
-                                ? onSurface
-                                : onSurfaceVariant.withValues(alpha: 0.4),
-                          ),
-                        ),
-                      ),
-                      SizedBox(
-                        width: 50,
-                        child: Text(
-                          '$_localColumnCount 列',
-                          textAlign: TextAlign.center,
-                          style: TextStyle(
-                            fontSize: 12,
-                            fontWeight: FontWeight.w500,
-                            color: onSurface,
-                          ),
-                        ),
-                      ),
-                      InkWell(
-                        onTap: canIncrease
-                            ? () {
-                                setMenuState(() {
-                                  _localColumnCount = (_localColumnCount + 1)
-                                      .clamp(1, 5);
-                                });
-                                _handleColumnCountAdjust(1);
-                              }
-                            : null,
-                        borderRadius: BorderRadius.circular(20),
-                        child: Padding(
-                          padding: const EdgeInsets.all(6.0),
-                          child: Icon(
-                            Icons.add,
-                            size: 16,
-                            color: canIncrease
-                                ? onSurface
-                                : onSurfaceVariant.withValues(alpha: 0.4),
-                          ),
-                        ),
-                      ),
-                    ],
-                  );
-                },
-              ),
-            ),
-            PopupMenuDivider(height: 1),
-            // 退出
-            PopupMenuItem<String>(
-              value: 'exit',
-              padding: const EdgeInsets.symmetric(vertical: 4),
-              height: 44,
-              onTap: widget.onExitApplication,
-              child: Padding(
-                padding: const EdgeInsets.symmetric(horizontal: 16),
-                child: Row(
-                  children: [
-                    Icon(Icons.exit_to_app, size: 18, color: errorColor),
-                    SizedBox(width: 12),
-                    Text(
-                      '退出...',
-                      style: TextStyle(fontSize: 14, color: errorColor),
-                    ),
-                  ],
-                ),
-              ),
-            ),
-          ],
-          onSelected: (value) {
-            widget.onButtonPressed();
-            // 打开菜单时同步本地状态
-            setState(() {
-              _localScaleFactor = widget.scaleFactor;
-              _localColumnCount = widget.columnCount;
-            });
-          },
+        child: GestureDetector(
+          onLongPress: _showContextMenu,
+          child: FloatingActionButton.small(
+            key: _fabKey,
+            onPressed: () {
+              widget.onButtonPressed();
+              widget.onNewHomework();
+            },
+            tooltip: '新建作业',
+            child: const Icon(Icons.add),
+          ),
         ),
       ),
     );
