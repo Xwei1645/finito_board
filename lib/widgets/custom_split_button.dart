@@ -21,6 +21,7 @@ class CustomSplitButton<T> extends StatefulWidget {
     this.leadingTooltip,
     this.trailingTooltip,
     this.enabled = true,
+    this.scaleFactor = 1.0,
   });
 
   final SplitButtonM3ESize size;
@@ -34,6 +35,7 @@ class CustomSplitButton<T> extends StatefulWidget {
   final String? leadingTooltip;
   final String? trailingTooltip;
   final bool enabled;
+  final double scaleFactor;
 
   @override
   State<CustomSplitButton<T>> createState() => _CustomSplitButtonState<T>();
@@ -67,7 +69,7 @@ class _CustomSplitButtonState<T> extends State<CustomSplitButton<T>> {
           height: height,
           outerRadius: outerRadius,
         ),
-        const SizedBox(width: 2), // inner gap
+        SizedBox(width: 2 * widget.scaleFactor), // inner gap
         // Trailing segment (menu trigger)
         _buildTrailingSegment(
           key: _buttonKey,
@@ -94,7 +96,7 @@ class _CustomSplitButtonState<T> extends State<CustomSplitButton<T>> {
         mainAxisSize: MainAxisSize.min,
         children: [
           Icon(widget.leadingIcon, size: iconSize, color: onContainerColor),
-          const SizedBox(width: 8),
+          SizedBox(width: 8 * widget.scaleFactor),
           Text(
             widget.label!,
             style: TextStyle(color: onContainerColor, fontSize: 14),
@@ -120,13 +122,13 @@ class _CustomSplitButtonState<T> extends State<CustomSplitButton<T>> {
         color: containerColor,
         borderRadius: BorderRadius.horizontal(
           left: Radius.circular(outerRadius),
-          right: const Radius.circular(4),
+          right: Radius.circular(4 * widget.scaleFactor),
         ),
         child: InkWell(
           onTap: widget.enabled ? widget.onPressed : null,
           borderRadius: BorderRadius.horizontal(
             left: Radius.circular(outerRadius),
-            right: const Radius.circular(4),
+            right: Radius.circular(4 * widget.scaleFactor),
           ),
           child: Container(
             height: height,
@@ -153,18 +155,18 @@ class _CustomSplitButtonState<T> extends State<CustomSplitButton<T>> {
         key: key,
         color: containerColor,
         borderRadius: BorderRadius.horizontal(
-          left: const Radius.circular(4),
+          left: Radius.circular(4 * widget.scaleFactor),
           right: Radius.circular(outerRadius),
         ),
         child: InkWell(
           onTap: widget.enabled ? () => _openMenu(context) : null,
           borderRadius: BorderRadius.horizontal(
-            left: const Radius.circular(4),
+            left: Radius.circular(4 * widget.scaleFactor),
             right: Radius.circular(outerRadius),
           ),
           child: Container(
             height: height,
-            padding: const EdgeInsets.symmetric(horizontal: 12),
+            padding: EdgeInsets.symmetric(horizontal: 12 * widget.scaleFactor),
             child: Center(
               child: AnimatedRotation(
                 duration: const Duration(milliseconds: 120),
@@ -247,47 +249,68 @@ class _CustomSplitButtonState<T> extends State<CustomSplitButton<T>> {
   }
 
   double _getHeight() {
+    double baseHeight;
     switch (widget.size) {
       case SplitButtonM3ESize.xs:
-        return 32;
+        baseHeight = 32;
+        break;
       case SplitButtonM3ESize.sm:
-        return 40;
+        baseHeight = 40;
+        break;
       case SplitButtonM3ESize.md:
-        return 56;
+        baseHeight = 56;
+        break;
       case SplitButtonM3ESize.lg:
-        return 96;
+        baseHeight = 96;
+        break;
       case SplitButtonM3ESize.xl:
-        return 136;
+        baseHeight = 136;
+        break;
     }
+    return baseHeight * widget.scaleFactor;
   }
 
   double _getIconSize() {
+    double baseSize;
     switch (widget.size) {
       case SplitButtonM3ESize.xs:
-        return 20;
+        baseSize = 20;
+        break;
       case SplitButtonM3ESize.sm:
-        return 24;
+        baseSize = 24;
+        break;
       case SplitButtonM3ESize.md:
-        return 24;
+        baseSize = 24;
+        break;
       case SplitButtonM3ESize.lg:
-        return 32;
+        baseSize = 32;
+        break;
       case SplitButtonM3ESize.xl:
-        return 40;
+        baseSize = 40;
+        break;
     }
+    return baseSize * widget.scaleFactor;
   }
 
   double _getHorizontalPadding() {
+    double basePadding;
     switch (widget.size) {
       case SplitButtonM3ESize.xs:
-        return 12;
+        basePadding = 12;
+        break;
       case SplitButtonM3ESize.sm:
-        return 16;
+        basePadding = 16;
+        break;
       case SplitButtonM3ESize.md:
-        return 24;
+        basePadding = 24;
+        break;
       case SplitButtonM3ESize.lg:
-        return 48;
+        basePadding = 48;
+        break;
       case SplitButtonM3ESize.xl:
-        return 64;
+        basePadding = 64;
+        break;
     }
+    return basePadding * widget.scaleFactor;
   }
 }

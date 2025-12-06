@@ -148,6 +148,7 @@ class _ToolbarState extends State<Toolbar> {
           shape: SplitButtonM3EShape.round,
           emphasis: SplitButtonM3EEmphasis.tonal,
           leadingIcon: Icons.add,
+          scaleFactor: 1.0,
           onPressed: () {
             widget.onButtonPressed();
             widget.onNewHomework();

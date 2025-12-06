@@ -10,10 +10,8 @@ class EmptyState extends StatelessWidget {
     final theme = Theme.of(context);
     final colorScheme = theme.colorScheme;
 
-    // 获取字体缩放因子
-    final textScaleFactor = MediaQuery.textScalerOf(context).scale(1.0);
-    final iconSize = 64 * textScaleFactor;
-    final containerSize = 120 * textScaleFactor;
+    const iconSize = 64.0;
+    const containerSize = 120.0;
 
     return Center(
       child: Container(
@@ -43,9 +41,7 @@ class EmptyState extends StatelessWidget {
               style: theme.textTheme.headlineMedium?.copyWith(
                 color: colorScheme.onSurface,
                 fontWeight: FontWeight.w600,
-                fontSize:
-                    (theme.textTheme.headlineMedium?.fontSize ?? 28) *
-                    textScaleFactor,
+                fontSize: theme.textTheme.headlineMedium?.fontSize ?? 28,
               ),
             ),
             const SizedBox(height: 12),
@@ -55,9 +51,7 @@ class EmptyState extends StatelessWidget {
               '点击右下角的 + 按钮开始添加作业',
               style: theme.textTheme.bodyLarge?.copyWith(
                 color: colorScheme.onSurfaceVariant,
-                fontSize:
-                    (theme.textTheme.bodyLarge?.fontSize ?? 16) *
-                    textScaleFactor,
+                fontSize: theme.textTheme.bodyLarge?.fontSize ?? 16,
               ),
               textAlign: TextAlign.center,
             ),

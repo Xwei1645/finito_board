@@ -413,6 +413,7 @@ class _HomeworkBoardState extends State<HomeworkBoard>
           SubjectHeader(
             subjectName: subject.name,
             homeworkCount: subjectHomeworks.length,
+            scaleFactor: _scaleFactor,
           ),
         );
 
@@ -426,6 +427,7 @@ class _HomeworkBoardState extends State<HomeworkBoard>
               onTap: () => _selectHomework(homework.uuid),
               onEdit: () => _onEditHomework(homework.uuid),
               onDelete: () => _onDeleteHomework(homework.uuid),
+              scaleFactor: _scaleFactor,
             ),
           );
         }
@@ -448,6 +450,7 @@ class _HomeworkBoardState extends State<HomeworkBoard>
         SubjectHeader(
           subjectName: '未知',
           homeworkCount: invalidSubjectHomeworks.length,
+          scaleFactor: _scaleFactor,
         ),
       );
 
@@ -461,6 +464,7 @@ class _HomeworkBoardState extends State<HomeworkBoard>
             onTap: () => _selectHomework(homework.uuid),
             onEdit: () => _onEditHomework(homework.uuid),
             onDelete: () => _onDeleteHomework(homework.uuid),
+            scaleFactor: _scaleFactor,
           ),
         );
       }
@@ -492,7 +496,7 @@ class _HomeworkBoardState extends State<HomeworkBoard>
       backgroundColor: Colors.transparent,
       body: Stack(
         children: [
-          // 背景容器
+          // 背景容器和内容（应用缩放）
           GestureDetector(
             onTap: () {
               // 取消选中卡片
@@ -521,11 +525,9 @@ class _HomeworkBoardState extends State<HomeworkBoard>
                       : null,
                 ),
                 child: hasHomework
-                    ? Theme(
-                        data: Theme.of(context).copyWith(
-                          textTheme: Theme.of(context).textTheme.apply(
-                            fontSizeFactor: _scaleFactor / 100.0,
-                          ),
+                    ? MediaQuery(
+                        data: MediaQuery.of(context).copyWith(
+                          textScaler: TextScaler.linear(_scaleFactor / 100.0),
                         ),
                         child: SingleChildScrollView(
                           padding: const EdgeInsets.all(12),
@@ -561,12 +563,8 @@ class _HomeworkBoardState extends State<HomeworkBoard>
                           ),
                         ),
                       )
-                    : Theme(
-                        data: Theme.of(context).copyWith(
-                          textTheme: Theme.of(context).textTheme.apply(
-                            fontSizeFactor: _scaleFactor / 100.0,
-                          ),
-                        ),
+                    : Transform.scale(
+                        scale: _scaleFactor / 100.0,
                         child: const EmptyState(),
                       ),
               ),

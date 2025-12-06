@@ -13,6 +13,7 @@ class HomeworkCard extends StatefulWidget {
   final VoidCallback onTap;
   final VoidCallback onEdit;
   final VoidCallback onDelete;
+  final double scaleFactor;
 
   const HomeworkCard({
     super.key,
@@ -21,6 +22,7 @@ class HomeworkCard extends StatefulWidget {
     required this.onTap,
     required this.onEdit,
     required this.onDelete,
+    this.scaleFactor = 100.0,
   });
 
   @override
@@ -140,17 +142,18 @@ class _HomeworkCardState extends State<HomeworkCard> {
     final theme = Theme.of(context);
     final colorScheme = theme.colorScheme;
     final textColor = colorScheme.onSurface;
+    final s = widget.scaleFactor / 100.0;
 
     return GestureDetector(
       onTap: widget.onTap,
       child: AnimatedContainer(
         duration: const Duration(milliseconds: 200),
         width: double.infinity,
-        margin: const EdgeInsets.symmetric(vertical: 8.0),
-        padding: const EdgeInsets.all(16), // MD3 间距
+        margin: EdgeInsets.symmetric(vertical: 8.0 * s),
+        padding: EdgeInsets.all(16 * s), // MD3 间距
         decoration: BoxDecoration(
           color: _getCardBackgroundColor(colorScheme),
-          borderRadius: BorderRadius.circular(12), // 与快捷菜单保持一致的圆角
+          borderRadius: BorderRadius.circular(12 * s), // 与快捷菜单保持一致的圆角
         ),
         child: Column(
           crossAxisAlignment: CrossAxisAlignment.start,
@@ -192,12 +195,12 @@ class _HomeworkCardState extends State<HomeworkCard> {
                       ),
                     ),
                   ),
-            const SizedBox(height: 8),
+            SizedBox(height: 8 * s),
 
             // 截止日期和标签
             Wrap(
-              spacing: 8,
-              runSpacing: 6,
+              spacing: 8 * s,
+              runSpacing: 6 * s,
               crossAxisAlignment: WrapCrossAlignment.center,
               children: [
                 // 截止日期
@@ -206,12 +209,12 @@ class _HomeworkCardState extends State<HomeworkCard> {
                   children: [
                     Icon(
                       Icons.access_time,
-                      size: 16,
+                      size: 16 * s,
                       color: _isOverdue()
                           ? colorScheme.error
                           : colorScheme.onSurfaceVariant,
                     ),
-                    const SizedBox(width: 6),
+                    SizedBox(width: 6 * s),
                     Text(
                       _getFormattedDate(),
                       style: theme.textTheme.bodySmall?.copyWith(
@@ -232,13 +235,13 @@ class _HomeworkCardState extends State<HomeworkCard> {
                     .getTagNamesByUuids(widget.homework.tagUuids)
                     .map(
                       (tagName) => Container(
-                        padding: const EdgeInsets.symmetric(
-                          horizontal: 8,
-                          vertical: 4,
+                        padding: EdgeInsets.symmetric(
+                          horizontal: 8 * s,
+                          vertical: 4 * s,
                         ),
                         decoration: BoxDecoration(
                           color: colorScheme.secondaryContainer,
-                          borderRadius: BorderRadius.circular(8),
+                          borderRadius: BorderRadius.circular(8 * s),
                         ),
                         child: Text(
                           tagName,
@@ -254,13 +257,13 @@ class _HomeworkCardState extends State<HomeworkCard> {
 
             // 编辑和删除按钮
             if (widget.isSelected) ...[
-              const SizedBox(height: 12),
+              SizedBox(height: 12 * s),
               Row(
                 mainAxisAlignment: MainAxisAlignment.end,
                 children: [
                   IconButton(
                     // 改为填充样式的按钮
-                    icon: const Icon(Icons.edit, size: 18),
+                    icon: Icon(Icons.edit, size: 18 * s),
                     onPressed: widget.onEdit,
                     tooltip: '编辑',
                     style: IconButton.styleFrom(
@@ -268,26 +271,26 @@ class _HomeworkCardState extends State<HomeworkCard> {
                       backgroundColor: colorScheme.primaryContainer.withAlpha(
                         77,
                       ),
-                      padding: const EdgeInsets.all(8),
-                      minimumSize: const Size(36, 36),
+                      padding: EdgeInsets.all(8 * s),
+                      minimumSize: Size(36 * s, 36 * s),
                       shape: RoundedRectangleBorder(
-                        borderRadius: BorderRadius.circular(8),
+                        borderRadius: BorderRadius.circular(8 * s),
                       ),
                     ),
                   ),
-                  const SizedBox(width: 8),
+                  SizedBox(width: 8 * s),
                   IconButton(
                     // 改为填充样式的按钮
-                    icon: const Icon(Icons.delete, size: 18),
+                    icon: Icon(Icons.delete, size: 18 * s),
                     onPressed: widget.onDelete,
                     tooltip: '删除',
                     style: IconButton.styleFrom(
                       foregroundColor: colorScheme.error,
                       backgroundColor: colorScheme.errorContainer.withAlpha(77),
-                      padding: const EdgeInsets.all(8),
-                      minimumSize: const Size(36, 36),
+                      padding: EdgeInsets.all(8 * s),
+                      minimumSize: Size(36 * s, 36 * s),
                       shape: RoundedRectangleBorder(
-                        borderRadius: BorderRadius.circular(8),
+                        borderRadius: BorderRadius.circular(8 * s),
                       ),
                     ),
                   ),
