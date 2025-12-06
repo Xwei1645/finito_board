@@ -4,7 +4,7 @@ import 'package:split_button_m3e/split_button_m3e.dart';
 /// 自定义 SplitButton 组件
 ///
 /// 基于 split_button_m3e，修改了：
-/// 1. 菜单显示在按钮上方（而不是下方）
+/// 1. 菜单显示在按钮下方（默认位置）
 /// 2. 箭头方向互换（默认向上，展开时向下）
 /// 3. 菜单背景色为白色
 class CustomSplitButton<T> extends StatefulWidget {
@@ -203,15 +203,11 @@ class _CustomSplitButtonState<T> extends State<CustomSplitButton<T>> {
       ancestor: overlay,
     );
 
-    const double menuVerticalOffset = 4.0;
-    final double buttonRight = buttonTopLeft.dx + buttonBox.size.width;
-    final double buttonBottom = buttonTopLeft.dy + buttonBox.size.height;
-
     final RelativeRect position = RelativeRect.fromLTRB(
-      buttonRight - buttonBox.size.width,
-      buttonBottom + menuVerticalOffset,
-      overlay.size.width - buttonRight,
-      overlay.size.height - buttonBottom - menuVerticalOffset,
+      buttonTopLeft.dx,
+      buttonTopLeft.dy,
+      overlay.size.width - buttonTopLeft.dx - buttonBox.size.width,
+      overlay.size.height - buttonTopLeft.dy - buttonBox.size.height,
     );
 
     final T? result = await showMenu<T>(

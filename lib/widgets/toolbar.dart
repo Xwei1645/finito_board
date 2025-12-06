@@ -190,7 +190,7 @@ class _ToolbarState extends State<Toolbar> {
                 ),
               ),
             ),
-            // 全屏、锁定/解锁 和 收起 放在同一行
+            // 全屏 和 锁定/解锁 放在同一行
             PopupMenuItem<String>(
               enabled: false,
               padding: EdgeInsets.zero,
@@ -220,7 +220,7 @@ class _ToolbarState extends State<Toolbar> {
                             ),
                             SizedBox(width: 8),
                             Text(
-                              widget.isFullScreen ? '退出全屏' : '全屏',
+                              widget.isFullScreen ? '还原' : '全屏',
                               style: TextStyle(fontSize: 14, color: onSurface),
                             ),
                           ],
@@ -251,9 +251,7 @@ class _ToolbarState extends State<Toolbar> {
                                   ? Icons.lock_open
                                   : Icons.lock,
                               size: 18,
-                              color: widget.isFullScreen
-                                  ? onSurfaceVariant.withValues(alpha: 0.4)
-                                  : onSurface,
+                              color: onSurface,
                             ),
                             SizedBox(width: 8),
                             Text(
@@ -262,40 +260,6 @@ class _ToolbarState extends State<Toolbar> {
                                       : widget.isWindowLocked)
                                   ? '解锁'
                                   : '锁定',
-                              style: TextStyle(
-                                fontSize: 14,
-                                color: widget.isFullScreen
-                                    ? onSurfaceVariant.withValues(alpha: 0.4)
-                                    : onSurface,
-                              ),
-                            ),
-                          ],
-                        ),
-                      ),
-                    ),
-                  ),
-                  // 收起
-                  Expanded(
-                    child: InkWell(
-                      onTap: () {
-                        Navigator.of(context).pop();
-                        // TODO: 实现收起功能
-                      },
-                      child: Padding(
-                        padding: const EdgeInsets.symmetric(
-                          horizontal: 16,
-                          vertical: 12,
-                        ),
-                        child: Row(
-                          children: [
-                            Icon(
-                              Icons.picture_in_picture_alt,
-                              size: 18,
-                              color: onSurface,
-                            ),
-                            SizedBox(width: 8),
-                            Text(
-                              '收起',
                               style: TextStyle(fontSize: 14, color: onSurface),
                             ),
                           ],
