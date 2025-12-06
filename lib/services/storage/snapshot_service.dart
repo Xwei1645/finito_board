@@ -18,17 +18,17 @@ class SnapshotService {
 
   /// 初始化快照服务
   Future<void> init(String dataDir) async {
-    logInfo('Initializing snapshot service with data dir: $dataDir');
+    logInfo('初始化快照服务，数据目录 : $dataDir');
     _dataDir = dataDir;
     _snapshotDir = p.join(p.dirname(dataDir), 'snapshots');
 
     // 确保快照目录存在
     final snapshotDirEntity = Directory(_snapshotDir);
     if (!await snapshotDirEntity.exists()) {
-      logDebug('Creating snapshot directory: $_snapshotDir');
+      logDebug('创建快照目录 : $_snapshotDir');
       await snapshotDirEntity.create(recursive: true);
     }
-    logInfo('Snapshot service initialized successfully');
+    logInfo('快照服务初始化成功');
   }
 
   /// 创建快照
@@ -39,9 +39,7 @@ class SnapshotService {
     String trigger = 'manual',
   }) async {
     try {
-      logInfo(
-        'Creating snapshot: type=${isAuto ? 'auto' : 'manual'}, trigger=$trigger',
-      );
+      logInfo('创建快照 : 类型 = ${isAuto ? '自动' : '手动'}, 触发 = $trigger');
       final timestamp = DateFormat('yyyyMMdd_HHmmss').format(DateTime.now());
       final snapshotType = isAuto ? 'auto' : 'manual';
       final snapshotName = '${snapshotType}_${trigger}_$timestamp';
@@ -50,31 +48,31 @@ class SnapshotService {
       // 创建快照目录
       final snapshotDirEntity = Directory(snapshotPath);
       await snapshotDirEntity.create(recursive: true);
-      logDebug('Snapshot directory created: $snapshotPath');
+      logDebug('快照目录已创建 : $snapshotPath');
 
       // 只备份作业数据文件
       final homeworkFile = File(p.join(_dataDir, 'homework.json'));
       if (await homeworkFile.exists()) {
         final targetPath = p.join(snapshotPath, 'homework.json');
         await homeworkFile.copy(targetPath);
-        logDebug('Homework file copied to snapshot');
+        logDebug('作业文件已复制到快照');
       } else {
         // 如果没有作业文件，删除刚创建的空目录
-        logDebug('No homework file found, deleting empty snapshot directory');
+        logDebug('未找到作业文件，删除空快照目录');
         await snapshotDirEntity.delete();
         return false;
       }
 
       // 如果是自动快照，清理旧的快照
       if (isAuto) {
-        logDebug('Cleaning old snapshots');
+        logDebug('清理旧快照');
         await _cleanOldSnapshots();
       }
 
-      logInfo('Snapshot created successfully: $snapshotName');
+      logInfo('快照创建成功 : $snapshotName');
       return true;
     } catch (e) {
-      logError('Failed to create snapshot', e);
+      logError('快照创建失败', e);
       return false;
     }
   }
@@ -86,12 +84,12 @@ class SnapshotService {
 
       // 如果未启用限制，则不清理快照
       if (!config.limitSnapshotCount) {
-        logDebug('Snapshot count limit not enabled, skipping cleanup');
+        logDebug('快照数量限制未启用，跳过清理');
         return;
       }
 
       final maxCount = config.maxSnapshotCount;
-      logDebug('Cleaning old snapshots with max count: $maxCount');
+      logDebug('清理旧快照，最大数量 : $maxCount');
 
       // 获取所有快照
       final snapshotDir = Directory(_snapshotDir);
@@ -113,17 +111,17 @@ class SnapshotService {
 
       // 删除超出数量限制的快照
       if (snapshots.length > maxCount) {
-        logDebug('Deleting ${snapshots.length - maxCount} old snapshots');
+        logDebug('删除 ${snapshots.length - maxCount} 个旧快照');
         for (int i = maxCount; i < snapshots.length; i++) {
           await snapshots[i].delete(recursive: true);
         }
-        logDebug('Old snapshots cleaned successfully');
+        logDebug('旧快照清理成功');
       } else {
-        logDebug('No snapshots to clean (${snapshots.length} <= $maxCount)');
+        logDebug('无需清理快照 (${snapshots.length} <= $maxCount)');
       }
     } catch (e) {
       // 清理失败，静默处理
-      logError('Failed to clean old snapshots', e);
+      logError('清理旧快照失败', e);
     }
   }
 
@@ -132,10 +130,10 @@ class SnapshotService {
     final snapshots = <SnapshotInfo>[];
 
     try {
-      logDebug('Getting snapshot list from: $_snapshotDir');
+      logDebug('从以下位置获取快照列表 : $_snapshotDir');
       final snapshotDir = Directory(_snapshotDir);
       if (!await snapshotDir.exists()) {
-        logDebug('Snapshot directory does not exist');
+        logDebug('快照目录不存在');
         return snapshots;
       }
 
@@ -172,10 +170,10 @@ class SnapshotService {
 
       // 按创建时间倒序排序
       snapshots.sort((a, b) => b.createdAt.compareTo(a.createdAt));
-      logDebug('Found ${snapshots.length} snapshots');
+      logDebug('找到 ${snapshots.length} 个快照');
     } catch (e) {
       // 获取失败，返回空列表
-      logError('Failed to get snapshot list', e);
+      logError('获取快照列表失败', e);
     }
 
     return snapshots;

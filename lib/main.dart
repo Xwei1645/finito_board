@@ -65,7 +65,8 @@ class RotatingFilePrinter extends LoggyPrinter {
   void onLog(LogRecord record) {
     _rotateIfNeeded();
 
-    final time = record.time.toIso8601String();
+    final time =
+        '${record.time.year}-${record.time.month.toString().padLeft(2, '0')}-${record.time.day.toString().padLeft(2, '0')} ${record.time.hour.toString().padLeft(2, '0')}:${record.time.minute.toString().padLeft(2, '0')}:${record.time.second.toString().padLeft(2, '0')}.${(record.time.millisecond ~/ 10).toString().padLeft(2, '0')}';
     final level = record.level
         .toString()
         .split('.')
@@ -74,7 +75,7 @@ class RotatingFilePrinter extends LoggyPrinter {
         .padRight(7);
 
     // 写入文件
-    final message = '[$time] $level | ${record.message}\n';
+    final message = '$time | $level | ${record.message}\n';
     _currentFile?.writeAsStringSync(message, mode: FileMode.append);
     _currentFileSize += message.length;
 
@@ -94,7 +95,7 @@ class RotatingFilePrinter extends LoggyPrinter {
     if (kDebugMode) {
       final color = _getColor(record.level);
       final reset = '\x1B[0m';
-      debugPrint('$color[$time] $level | ${record.message}$reset');
+      debugPrint('$color$time | $level | ${record.message}$reset');
 
       if (record.error != null) {
         debugPrint('$color  Error: ${record.error}$reset');
