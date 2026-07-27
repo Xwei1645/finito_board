@@ -1,16 +1,20 @@
 name: Release
 
 on:
-  push:
-    tags:
-      - 'v*'
+  workflow_dispatch:
+    inputs:
+      version:
+        description: 'Release version (example: v1.0.0)'
+        required: true
+        default: 'v0.1.0'
 
 permissions:
   contents: write
 
 jobs:
   build:
-    runs-on: windows-latest
+    runs-on: windows-2022
+
     steps:
       - name: Clone repository
         uses: actions/checkout@v4
@@ -21,6 +25,20 @@ jobs:
           flutter-version: '3.35.4'
           channel: stable
 
+      # 修复 CMake 使用旧 VS 生成器缓存
+      - name: Clean Flutter build
+        shell: pwsh
+        run: |
+          flutter clean
+
+          if (Test-Path "windows\build") {
+            Remove-Item -Recurse -Force "windows\build"
+          }
+
+          if (Test-Path "windows\CMakeCache.txt") {
+            Remove-Item -Force "windows\CMakeCache.txt"
+          }
+
       - name: Init flutter env
         run: flutter pub get
 
@@ -28,8 +46,11 @@ jobs:
         run: flutter build windows --release
 
       - name: Create archive
+        shell: pwsh
         run: |
-          Compress-Archive -Path "build\windows\x64\runner\Release\*" -DestinationPath "zooni-windows-x64.zip"
+          Compress-Archive `
+            -Path "build\windows\x64\runner\Release\*" `
+            -DestinationPath "zooni-windows-x64.zip"
 
       - name: Upload artifact
         uses: actions/upload-artifact@v4
@@ -37,25 +58,34 @@ jobs:
           name: zooni-windows-x64
           path: zooni-windows-x64.zip
 
+
   release:
     needs: build
     runs-on: ubuntu-latest
+
     steps:
       - name: Clone repository
         uses: actions/checkout@v4
 
-      - name: Download all artifacts
+      - name: Download artifacts
         uses: actions/download-artifact@v4
         with:
           path: artifacts
 
+
       - name: Determine release type
         id: release-type
+        shell: bash
         run: |
-          TAG_NAME=${GITHUB_REF#refs/tags/}
+          TAG_NAME="${{ github.event.inputs.version }}"
+
           echo "tag_name=$TAG_NAME" >> $GITHUB_OUTPUT
-          
-          if [[ "$TAG_NAME" =~ -dev(\.[0-9]+)?$ ]] || [[ "$TAG_NAME" =~ -beta(\.[0-9]+)?$ ]] || [[ "$TAG_NAME" =~ -alpha(\.[0-9]+)?$ ]] || [[ "$TAG_NAME" =~ -rc(\.[0-9]+)?$ ]]; then
+
+          if [[ "$TAG_NAME" =~ -dev(\.[0-9]+)?$ ]] ||
+             [[ "$TAG_NAME" =~ -beta(\.[0-9]+)?$ ]] ||
+             [[ "$TAG_NAME" =~ -alpha(\.[0-9]+)?$ ]] ||
+             [[ "$TAG_NAME" =~ -rc(\.[0-9]+)?$ ]]
+          then
             echo "is_prerelease=true" >> $GITHUB_OUTPUT
             echo "Release type: Pre-release"
           else
@@ -63,13 +93,13 @@ jobs:
             echo "Release type: Stable release"
           fi
 
+
       - name: Prepare release assets
         run: |
           mkdir -p release-assets
-          find artifacts -name "*.zip" | while read file; do
-            cp "$file" release-assets/
-          done
+          find artifacts -name "*.zip" -exec cp {} release-assets/ \;
           ls -la release-assets/
+
 
       - name: Create Release
         uses: softprops/action-gh-release@v1
@@ -80,9 +110,10 @@ jobs:
           files: release-assets/*
           body: |
             ## 🚀 ${{ steps.release-type.outputs.tag_name }}
-            
+
             ---
-            
+
             ${{ steps.release-type.outputs.is_prerelease == 'true' && '⚠️ **This is a pre-release version!**' || '' }}
+
         env:
           GITHUB_TOKEN: ${{ secrets.GITHUB_TOKEN }}
