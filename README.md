@@ -1,5 +1,16 @@
 <div align="center">
     <h1>Zooni</h1>
+    <p>🎯 一个面向教室大屏的作业展示与管理看板</p>
+</div>
+
+> [!IMPORTANT]
+> 本仓库已停止维护，后续开发已迁移至 [Zooni Next](https://github.com/Xwei1645/zooni-next)。
+> 请前往新仓库获取最新版本。
+
+<details>
+<summary>了解旧版 Zooni...</summary>
+<div align="center">
+    <h1>Zooni</h1>
     <p>🎯 一个 Previous Gen 的教室大屏作业看板</p>
 </div>
 
@@ -31,3 +42,5 @@
 ---
 
 ⭐ 如果这个项目对您有帮助，请给我们一个 Star！
+
+</details>
